@@ -1,0 +1,11 @@
+.clients-page .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.client-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}

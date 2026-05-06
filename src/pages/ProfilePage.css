@@ -1,0 +1,103 @@
+.profile-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-top: var(--space-lg);
+}
+
+.profile-bg-gradient {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(255,95,59,0.15), rgba(91,141,239,0.1));
+}
+
+.profile-info {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl) var(--space-xl);
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.ps-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.ps-value {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-md);
+}
+
+.ps-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.cert-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.profile-menu {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-base);
+  border-bottom: var(--border);
+  transition: background var(--transition);
+}
+.menu-item:last-child { border-bottom: none; }
+.menu-item:active { background: var(--bg-hover); }
+
+.menu-danger .menu-label { color: var(--red); }
+
+.menu-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-label { font-weight: 500; font-size: var(--fs-base); }
+
+.menu-count {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+}

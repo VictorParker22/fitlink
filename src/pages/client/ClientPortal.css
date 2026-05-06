@@ -1,0 +1,84 @@
+.client-portal-greeting {
+  font-size: var(--fs-sm);
+  color: var(--text-tertiary);
+}
+.client-portal-name {
+  font-family: var(--font-heading);
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.cp-today-card {
+  background: linear-gradient(135deg, var(--accent), #ff8a65);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  color: white;
+}
+.cp-today-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+.cp-today-name {
+  font-family: var(--font-heading);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  margin-top: 4px;
+}
+.cp-today-meta {
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-sm);
+  font-size: var(--fs-sm);
+  opacity: 0.9;
+}
+.cp-today-btn {
+  margin-top: var(--space-base);
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  backdrop-filter: blur(8px);
+}
+
+/* Client workout card */
+.cw-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-base);
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-lg);
+}
+.cw-card:active { background: var(--bg-hover); }
+
+.cw-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cw-info { flex: 1; min-width: 0; }
+.cw-name {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  color: var(--text-primary);
+}
+.cw-meta {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.cw-actions {
+  display: flex;
+  gap: var(--space-sm);
+}

@@ -1,0 +1,114 @@
+.client-profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-lg) 0 var(--space-base);
+}
+
+.client-quick-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-xl);
+  width: 100%;
+  justify-content: center;
+}
+
+.cqs-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cqs-value {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--fs-xl);
+  display: flex;
+  align-items: center;
+}
+
+.cqs-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.cqs-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255,255,255,0.06);
+}
+
+.tab-content { min-height: 200px; }
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+  border-bottom: var(--border);
+}
+.summary-row:last-child { border-bottom: none; }
+
+.summary-val {
+  font-weight: 600;
+  font-size: var(--fs-base);
+}
+
+.session-item-time {
+  font-weight: 600;
+  font-size: var(--fs-base);
+}
+
+.plan-features { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+.plan-feature {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.progress-chart {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-base);
+}
+
+/* Top exercises volume bars */
+.top-exercise-row {
+  padding: var(--space-sm) 0;
+}
+.top-ex-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.top-ex-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.top-ex-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-text));
+  border-radius: 3px;
+  transition: width 600ms var(--ease);
+}
+
+/* Workout history cards */
+.wh-card {
+  transition: transform var(--transition-fast);
+}
+.wh-card:active {
+  transform: scale(0.98);
+}

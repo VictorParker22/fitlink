@@ -1,0 +1,112 @@
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.week-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: var(--fs-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.week-arrow:active { background: var(--bg-hover); }
+
+.week-days {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+}
+
+.day-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-sm) 0;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+.day-btn:active { opacity: 0.7; }
+
+.day-name {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.day-num {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  color: var(--text-tertiary);
+}
+
+.day-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.day-btn.today { background: var(--bg-elevated); }
+.day-btn.today .day-num { color: var(--text-primary); }
+
+.day-btn.selected { background: var(--accent); }
+.day-btn.selected .day-name { color: rgba(255,255,255,0.7); }
+.day-btn.selected .day-num { color: white; }
+.day-btn.selected .day-dot { background: white; }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; gap: var(--space-md); }
+
+.timeline-item { display: flex; gap: var(--space-md); }
+
+.timeline-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 52px;
+  padding-top: 12px;
+}
+
+.tl-start { font-size: var(--fs-xs); font-weight: 600; color: var(--text-primary); }
+.tl-end { font-size: 10px; color: var(--text-tertiary); }
+
+.timeline-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 14px;
+}
+
+.tl-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tl-bar {
+  width: 2px;
+  flex: 1;
+  min-height: 16px;
+  margin-top: 4px;
+  border-radius: 1px;
+}
+
+.timeline-card {
+  flex: 1;
+  border-radius: var(--radius-md) !important;
+  padding: var(--space-md) var(--space-base) !important;
+}
+
+.tl-client-name { font-weight: 600; font-size: var(--fs-base); }
