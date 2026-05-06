@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { IconDumbbell, IconPhone, IconMail } from '../components/Icons';
 import './LoginPage.css';
 
@@ -15,11 +16,13 @@ export default function LoginPage() {
   // Shared state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showEmailLink, setShowEmailLink] = useState(false);
   const [success, setSuccess] = useState('');
 
   // Phone fields
   const [phone, setPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [phoneEmail, setPhoneEmail] = useState('');
   const [phoneName, setPhoneName] = useState('');
 
   // Email fields
@@ -74,6 +77,15 @@ export default function LoginPage() {
       const metadata = {};
       if (phoneName.trim()) metadata.name = phoneName.trim();
       await verifyOtp(phone, otpCode, metadata);
+
+      // Link email if provided (prevents duplicate accounts)
+      if (phoneEmail.trim()) {
+        try {
+          await supabase.auth.updateUser({ email: phoneEmail.trim() });
+        } catch (linkErr) {
+          console.warn('Email link failed:', linkErr);
+        }
+      }
       // Auth state change handles redirect
     } catch (err) {
       setError(err.message || 'Invalid verification code');
@@ -223,6 +235,31 @@ export default function LoginPage() {
                     autoComplete="name"
                   />
                 </div>
+
+                {/* Optional email linking */}
+                {!showEmailLink ? (
+                  <button
+                    type="button"
+                    className="link-email-toggle"
+                    onClick={() => setShowEmailLink(true)}
+                  >
+                    Already have an email account? <span className="text-accent">Link it</span>
+                  </button>
+                ) : (
+                  <div className="input-group">
+                    <label className="input-label">Email (optional — links your accounts)</label>
+                    <input
+                      className="input"
+                      type="email"
+                      placeholder="coach@example.com"
+                      value={phoneEmail}
+                      onChange={(e) => setPhoneEmail(e.target.value)}
+                      id="phone-email-link"
+                      autoComplete="email"
+                    />
+                    <p className="input-hint">Prevents duplicate accounts if you already signed up with email</p>
+                  </div>
+                )}
 
                 <div className="input-group">
                   <label className="input-label">Verification Code</label>

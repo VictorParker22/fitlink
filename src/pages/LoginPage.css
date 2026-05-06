@@ -242,3 +242,70 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+/* Email link toggle (phone OTP step) */
+.link-email-toggle {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: var(--space-sm) 0;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.link-email-toggle:hover {
+  color: var(--text-secondary);
+}
+
+/* Contact Picker */
+.contact-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.contact-picker-manual {
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-base);
+}
+
+.contact-picker-manual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-base);
+}
+
+.contact-picker-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-base);
+}
+
+/* Contact import section in Add Client modal */
+.contact-import-section {
+  background: var(--bg-elevated);
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: var(--radius-md);
+  padding: var(--space-base);
+}
+
+/* Add client success state */
+.add-client-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-xl) 0;
+}
+
+.success-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-base);
+}
