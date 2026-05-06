@@ -144,6 +144,67 @@
   font-size: var(--fs-sm);
 }
 
+/* Auth method tabs (Phone / Email toggle) */
+.auth-tabs {
+  display: flex;
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  margin-bottom: var(--space-lg);
+  gap: 3px;
+}
+
+.auth-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 10px var(--space-base);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.auth-tab.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* OTP input — large, centered digits */
+.input-otp {
+  font-size: var(--fs-2xl) !important;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  text-align: center;
+  font-family: var(--font-mono, 'SF Mono', 'Menlo', monospace);
+}
+
+/* Sent-to info bar */
+.otp-sent-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+}
+
+/* Input hint text */
+.input-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-xs);
+}
+
 /* Auth messages */
 .auth-message {
   padding: var(--space-md);

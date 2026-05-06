@@ -29,6 +29,7 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // --- Email/Password Auth ---
   const signIn = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
@@ -47,6 +48,37 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
+  // --- Phone OTP Auth ---
+  // Step 1: Send OTP to phone number
+  const signInWithPhone = useCallback(async (phone) => {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      phone,
+    });
+    if (error) throw error;
+    return data;
+  }, []);
+
+  // Step 2: Verify the OTP code
+  const verifyOtp = useCallback(async (phone, token, metadata = {}) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms',
+    });
+    if (error) throw error;
+
+    // Update user metadata if provided (name, role, etc.)
+    if (data.user && Object.keys(metadata).length > 0) {
+      const { error: updateErr } = await supabase.auth.updateUser({
+        data: metadata,
+      });
+      if (updateErr) console.error('Failed to update user metadata:', updateErr);
+    }
+
+    return data;
+  }, []);
+
+  // --- Google OAuth ---
   const signInWithGoogle = useCallback(async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -70,6 +102,8 @@ export function AuthProvider({ children }) {
     userRole,
     signIn,
     signUp,
+    signInWithPhone,
+    verifyOtp,
     signInWithGoogle,
     signOut,
     isAuthenticated: !!session,
