@@ -15,6 +15,7 @@ import ProfilePage from './pages/ProfilePage';
 import MessagesPage from './pages/MessagesPage';
 import ChatPage from './pages/ChatPage';
 import WorkoutsPage from './pages/WorkoutsPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Client portal
 import { ClientProvider } from './pages/client/ClientContext';
@@ -70,6 +71,7 @@ function TrainerRoutes() {
         <Route path="/subscriptions" element={<SubscriptionsPage />} />
         <Route path="/schedule" element={<SchedulePage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />

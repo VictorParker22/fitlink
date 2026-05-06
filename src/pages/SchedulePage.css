@@ -110,3 +110,60 @@
 }
 
 .tl-client-name { font-weight: 600; font-size: var(--fs-base); }
+
+/* Session actions — revealed on card tap */
+.session-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: var(--border);
+  animation: slideDown 0.2s var(--ease);
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.session-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  transition: all var(--transition-fast);
+}
+
+.session-action-btn.complete {
+  background: var(--green-soft);
+  color: var(--green);
+}
+.session-action-btn.complete:active {
+  background: var(--green);
+  color: white;
+}
+
+.session-action-btn.cancel {
+  background: var(--red-soft);
+  color: var(--red);
+}
+.session-action-btn.cancel:active {
+  background: var(--red);
+  color: white;
+}
+
+/* Dimming for done/cancelled sessions */
+.session-done {
+  opacity: 0.6;
+}
+
+.timeline-card {
+  cursor: pointer;
+}
+.timeline-card:active {
+  background: var(--bg-hover) !important;
+}

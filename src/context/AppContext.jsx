@@ -163,6 +163,29 @@ export function AppProvider({ children }) {
     return data;
   }, [user, clients]);
 
+  const updateSession = useCallback(async (id, updates) => {
+    const { data, error } = await supabase
+      .from('sessions')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    setSessions((prev) => prev.map((s) => (s.id === id ? data : s)));
+
+    // Log activity for completed sessions
+    if (updates.status === 'completed') {
+      const session = sessions.find((s) => s.id === id);
+      const client = session ? clients.find((c) => c.id === session.client_id) : null;
+      await supabase.from('activities').insert({
+        trainer_id: user.id,
+        type: 'session',
+        message: `Session completed with ${client?.name || session?.group_name || 'client'}`,
+      });
+    }
+    return data;
+  }, [user, sessions, clients]);
+
   const getClientSessions = useCallback((clientId) => {
     return sessions.filter((s) => s.client_id === clientId);
   }, [sessions]);
@@ -258,6 +281,7 @@ export function AppProvider({ children }) {
     addReferral,
     sessions,
     addSession,
+    updateSession,
     activities,
     revenueData,
     leaderboard,

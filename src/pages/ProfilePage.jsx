@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
@@ -8,6 +9,7 @@ import './ProfilePage.css';
 
 export default function ProfilePage() {
   const { trainer, updateTrainer, logout, clients, totalReferrals } = useApp();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -43,7 +45,7 @@ export default function ProfilePage() {
   const menuItems = [
     { icon: <IconAward size={18} color="var(--accent)" />, label: 'Certifications', count: certifications.length },
     { icon: <IconDumbbell size={18} color="var(--blue)" />, label: 'Specializations', count: specializations.length },
-    { icon: <IconSettings size={18} color="var(--text-secondary)" />, label: 'Settings' },
+    { icon: <IconSettings size={18} color="var(--text-secondary)" />, label: 'Settings', action: () => navigate('/settings') },
     { icon: <IconLogout size={18} color="var(--red)" />, label: 'Sign Out', action: logout, danger: true },
   ];
 

@@ -126,6 +126,24 @@ export default function LoginPage() {
     }
   };
 
+  // --- Forgot Password ---
+  const handleForgotPassword = async () => {
+    if (!email.trim()) return setError('Enter your email first, then click Forgot Password');
+    setError('');
+    setLoading(true);
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+      if (resetError) throw resetError;
+      setSuccess('Password reset link sent! Check your email.');
+    } catch (err) {
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const switchMode = (mode) => {
     setAuthMode(mode);
     setError('');
@@ -343,6 +361,16 @@ export default function LoginPage() {
                 id="login-password"
               />
             </div>
+
+            {!isSignUp && (
+              <button
+                type="button"
+                className="forgot-password-link"
+                onClick={handleForgotPassword}
+              >
+                Forgot password?
+              </button>
+            )}
 
             <button
               type="submit"

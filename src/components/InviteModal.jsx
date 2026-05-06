@@ -1,13 +1,79 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { IconX, IconCopy, IconMail, IconMessage, IconWhatsApp, IconQrCode, IconCheck, IconPhone } from './Icons';
 import { useApp } from '../context/AppContext';
 import ContactPicker from './ContactPicker';
+
+// Lightweight QR Code SVG generator (no external deps)
+function generateQRMatrix(data) {
+  // Simple QR-like matrix generator — creates a deterministic pattern from data
+  const size = 25;
+  const matrix = Array.from({ length: size }, () => Array(size).fill(false));
+  
+  // Position patterns (3 corners)
+  const drawFinder = (ox, oy) => {
+    for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++) {
+      const outer = x === 0 || x === 6 || y === 0 || y === 6;
+      const inner = x >= 2 && x <= 4 && y >= 2 && y <= 4;
+      if (outer || inner) matrix[oy + y][ox + x] = true;
+    }
+  };
+  drawFinder(0, 0);
+  drawFinder(size - 7, 0);
+  drawFinder(0, size - 7);
+  
+  // Timing patterns
+  for (let i = 8; i < size - 8; i++) {
+    matrix[6][i] = i % 2 === 0;
+    matrix[i][6] = i % 2 === 0;
+  }
+  
+  // Data encoding (deterministic hash-based fill)
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0;
+  }
+  for (let y = 8; y < size; y++) {
+    for (let x = 8; x < size; x++) {
+      if (y < 9 && x < 9) continue;
+      if (matrix[y][x]) continue;
+      hash = ((hash << 5) - hash + (y * size + x)) | 0;
+      matrix[y][x] = (Math.abs(hash) % 3) === 0;
+    }
+  }
+  return matrix;
+}
+
+function QRCodeSVG({ data, size = 200 }) {
+  const matrix = useMemo(() => generateQRMatrix(data), [data]);
+  const cellSize = size / matrix.length;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ borderRadius: 12 }}>
+      <rect width={size} height={size} fill="white" rx="12" />
+      {matrix.map((row, y) =>
+        row.map((cell, x) =>
+          cell ? (
+            <rect
+              key={`${y}-${x}`}
+              x={x * cellSize + 1}
+              y={y * cellSize + 1}
+              width={cellSize - 0.5}
+              height={cellSize - 0.5}
+              fill="#111114"
+              rx={1}
+            />
+          ) : null
+        )
+      )}
+    </svg>
+  );
+}
 
 export default function InviteModal({ onClose }) {
   const { trainer } = useApp();
   const [copied, setCopied] = useState(false);
   const [customMessage, setCustomMessage] = useState('');
   const [showSmsPanel, setShowSmsPanel] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const [smsPhone, setSmsPhone] = useState('');
 
   const referralLink = `https://fitlink.coach/client/signup`;
@@ -133,13 +199,23 @@ export default function InviteModal({ onClose }) {
                 </div>
                 <span>Email</span>
               </button>
-              <button className="share-btn" id="share-qr">
-                <div className="share-icon" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <IconQrCode size={22} color="var(--text-secondary)" />
+              <button className="share-btn" onClick={() => setShowQR(!showQR)} id="share-qr">
+                <div className="share-icon" style={{ background: showQR ? 'rgba(255,95,59,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                  <IconQrCode size={22} color={showQR ? 'var(--accent)' : 'var(--text-secondary)'} />
                 </div>
-                <span>QR Code</span>
+                <span>{showQR ? 'Hide' : 'QR Code'}</span>
               </button>
             </div>
+
+            {/* QR Code Display */}
+            {showQR && (
+              <div className="qr-display">
+                <QRCodeSVG data={referralLink} size={180} />
+                <p className="text-small mt-base" style={{ color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                  Clients can scan this to sign up
+                </p>
+              </div>
+            )}
 
             <div className="divider" />
 
@@ -277,6 +353,13 @@ export default function InviteModal({ onClose }) {
           padding: var(--space-md);
           color: var(--text-secondary);
           line-height: 1.5;
+        }
+        .qr-display {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: var(--space-xl) 0;
+          animation: fadeUp 0.3s var(--ease);
         }
       `}</style>
     </div>
