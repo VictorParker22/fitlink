@@ -62,6 +62,7 @@ Key env var: VITE_SUPABASE_PUBLISHABLE_KEY
 | `workout_exercises` | v2 | Exercises within a workout (sets, reps, rest) |
 | `client_workouts` | v2 | Workouts assigned to clients |
 | `workout_logs` | v4 | Client exercise logging (weight, reps, completed per set) |
+| `progress_photos` | v5 | Before/after photos with category (front/side/back/other) |
 
 **All tables have RLS** (Row Level Security) so trainers only see their own data, clients only see theirs.
 
@@ -70,6 +71,7 @@ Key env var: VITE_SUPABASE_PUBLISHABLE_KEY
 2. `supabase_migration_v2.sql` — Messaging + workout builder + 42 exercise seeds
 3. `supabase_migration_v3.sql` — Client portal support (auth_user_id + client RLS)
 4. `supabase_migration_v4.sql` — Onboarding flag + workout_logs table
+5. `supabase_migration_v5.sql` — Progress photos table + Supabase Storage bucket instructions
 
 ---
 
@@ -95,7 +97,10 @@ src/
 │   ├── Header.jsx              # Page header with back button
 │   ├── StatCard.jsx            # Dashboard stat card
 │   ├── ClientCard.jsx          # Client list item
-│   ├── ProgressChart.jsx       # Custom SVG line chart
+│   ├── ProgressChart.jsx       # Custom SVG line + bar chart (dual mode)
+│   ├── ProgressStats.jsx       # Horizontal stat chips (volume, streak, PRs, completion)
+│   ├── PhotoUploadModal.jsx    # Photo upload with compression + category selector
+│   ├── PhotoGallery.jsx        # Photo grid, full-screen viewer, before/after comparison
 │   ├── InviteModal.jsx         # Referral invite (WhatsApp/SMS/Email/QR)
 │   ├── AddClientModal.jsx      # Add client form (bottom sheet)
 │   ├── BookSessionModal.jsx    # Book session form (bottom sheet)
@@ -246,6 +251,9 @@ await supabase.from('activities').insert({
 12. ✅ **PWA** — Service worker, manifest, installable on home screen
 13. ✅ **Push Notifications** — Session reminders (1hr before), message alerts
 14. ✅ **Design Overhaul** — Everfit/Hevy-inspired, Lucide icons, warm coral palette
+15. ✅ **Client Progress Analytics** — Volume charts, PRs, streaks, top exercises from real workout_logs
+16. ✅ **Progress Photos** — Upload with compression, gallery grid, before/after comparison mode
+17. ✅ **Deployment Config** — vercel.json with SPA rewrites, git initialized
 
 ---
 
@@ -254,15 +262,13 @@ await supabase.from('activities').insert({
 | Priority | Feature | Notes |
 |---|---|---|
 | 🔴 | **Stripe Payments** | Paused per user request. Would enable in-app subscription billing |
-| 🟠 | **Progress Photos** | Before/after using Supabase Storage. Marketing material for trainers |
 | 🟠 | **Email Notifications** | Welcome emails, session reminders via Supabase Edge Functions + Resend |
 | 🟡 | **Trainer Settings Page** | Working hours, notification prefs, plan management CRUD |
-| 🟡 | **Client Progress Dashboard** | Charts from workout_logs data (weight/strength trends over time) |
 | 🟡 | **Workout Plan Templates** | "Push Day", "Pull Day" presets trainers can clone |
-| 🟢 | **Code Splitting** | Bundle is 554KB — use React.lazy() to split by route |
+| 🟢 | **Code Splitting** | Bundle is 576KB — use React.lazy() to split by route |
 | 🟢 | **Error Boundaries** | Graceful error handling |
 | 🟢 | **Dark/Light Theme** | Currently dark-only |
-| 🟢 | **Deployment** | Deploy to Vercel/Netlify |
+| 🟢 | **Deploy to Vercel** | Config ready (vercel.json), needs GitHub push + Vercel connect |
 
 ---
 
@@ -282,7 +288,9 @@ npm run build
 npm run preview
 ```
 
-**Build output**: `554KB JS, 33KB CSS, 14 precached PWA entries`
+**Build output**: `576KB JS, 34KB CSS, 14 precached PWA entries`
+
+**Git**: Initialized, first commit `b9a28eb`. No remote set yet — push to GitHub then deploy via Vercel.
 
 ---
 
