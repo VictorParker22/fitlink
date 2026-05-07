@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [authMode, setAuthMode] = useState('phone');
   // Phone flow steps: 'phone' → 'otp' → done
   const [phoneStep, setPhoneStep] = useState('phone');
+  const [isNewUser, setIsNewUser] = useState(true);
   const [isSignUp, setIsSignUp] = useState(false);
 
   // Shared state
@@ -54,6 +55,15 @@ export default function LoginPage() {
     try {
       await signInWithPhone(formatted);
       setPhone(formatted);
+
+      // Check if this phone already has a trainer account
+      const { data: existingTrainer } = await supabase
+        .from('trainers')
+        .select('id')
+        .eq('phone', formatted)
+        .maybeSingle();
+      setIsNewUser(!existingTrainer);
+
       setPhoneStep('otp');
       setSuccess('Verification code sent! Check your phone.');
     } catch (err) {
@@ -241,42 +251,47 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                <div className="input-group">
-                  <label className="input-label">Your Name</label>
-                  <input
-                    className="input"
-                    type="text"
-                    placeholder="Coach Mike Johnson"
-                    value={phoneName}
-                    onChange={(e) => setPhoneName(e.target.value)}
-                    id="phone-name"
-                    autoComplete="name"
-                  />
-                </div>
+                {/* Only show name/email fields for NEW users */}
+                {isNewUser && (
+                  <>
+                    <div className="input-group">
+                      <label className="input-label">Your Name</label>
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="Coach Mike Johnson"
+                        value={phoneName}
+                        onChange={(e) => setPhoneName(e.target.value)}
+                        id="phone-name"
+                        autoComplete="name"
+                      />
+                    </div>
 
-                {/* Optional email linking */}
-                {!showEmailLink ? (
-                  <button
-                    type="button"
-                    className="link-email-toggle"
-                    onClick={() => setShowEmailLink(true)}
-                  >
-                    Already have an email account? <span className="text-accent">Link it</span>
-                  </button>
-                ) : (
-                  <div className="input-group">
-                    <label className="input-label">Email (optional — links your accounts)</label>
-                    <input
-                      className="input"
-                      type="email"
-                      placeholder="coach@example.com"
-                      value={phoneEmail}
-                      onChange={(e) => setPhoneEmail(e.target.value)}
-                      id="phone-email-link"
-                      autoComplete="email"
-                    />
-                    <p className="input-hint">Prevents duplicate accounts if you already signed up with email</p>
-                  </div>
+                    {/* Optional email linking */}
+                    {!showEmailLink ? (
+                      <button
+                        type="button"
+                        className="link-email-toggle"
+                        onClick={() => setShowEmailLink(true)}
+                      >
+                        Already have an email account? <span className="text-accent">Link it</span>
+                      </button>
+                    ) : (
+                      <div className="input-group">
+                        <label className="input-label">Email (optional — links your accounts)</label>
+                        <input
+                          className="input"
+                          type="email"
+                          placeholder="coach@example.com"
+                          value={phoneEmail}
+                          onChange={(e) => setPhoneEmail(e.target.value)}
+                          id="phone-email-link"
+                          autoComplete="email"
+                        />
+                        <p className="input-hint">Prevents duplicate accounts if you already signed up with email</p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="input-group">
