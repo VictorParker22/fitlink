@@ -53,8 +53,8 @@ export default function HomePage() {
           </h1>
 
           <p className="fl-lede">
-            FitLink holds the roster, the programming, the check-ins and the money, so the
-            only thing left between you and your athletes is the coaching.
+            The roster. The programming. The check-ins. The money. Handled.
+            All that’s left is the coaching.
           </p>
 
           <WaitlistForm source="home-hero" />
@@ -73,12 +73,11 @@ export default function HomePage() {
           <p className="fl-kicker">01 — The session</p>
           <h2 className="fl-h2">Mid-set is no place<br />for a keyboard.</h2>
           <p className="fl-body-wide">
-            This is the screen an athlete actually lives on. Weight and reps move on steppers
-            built for a hand that just finished squatting; the finished set collapses to one
-            line; the rest timer runs — or gets skipped for the whole workout in one tap.
+            Steppers, not typing. Finished sets fold away. The rest timer runs itself —
+            or doesn’t. Your call, one tap.
           </p>
           <p className="fl-body-wide">
-            And the coach is right there in the session, because the product is the
+            And your coach is right there in the session. Because the product is the
             relationship, not the logbook.
           </p>
           <Link className="fl-btn-ghost" to="/athletes">The athlete side →</Link>
@@ -92,7 +91,7 @@ export default function HomePage() {
       <section className="fl-section fl-section-alt">
         <div data-reveal>
           <p className="fl-kicker">02 — The money</p>
-          <h2 className="fl-h2">Watch what a 10% fee leaves on the table. Yours.</h2>
+          <h2 className="fl-h2">We take ten. You keep the&nbsp;rest.</h2>
         </div>
         <LiveEconomy />
       </section>
@@ -107,19 +106,19 @@ export default function HomePage() {
         <div className="fl-statwall">
           <div className="fl-stat" data-reveal>
             <p className="fl-stat-n">90<span className="fl-stat-unit">%</span></p>
-            <p className="fl-stat-l">of athlete revenue stays with the coach</p>
+            <p className="fl-stat-l">stays with the coach. Every month, every dollar.</p>
           </div>
           <div className="fl-stat" data-reveal="2">
             <p className="fl-stat-n">$0</p>
-            <p className="fl-stat-l">monthly fee — a slow month costs nothing</p>
+            <p className="fl-stat-l">monthly fee. A slow month costs exactly that.</p>
           </div>
           <div className="fl-stat" data-reveal="3">
             <p className="fl-stat-n">1</p>
-            <p className="fl-stat-l">tap to log a set, steppers not keyboards</p>
+            <p className="fl-stat-l">tap logs a set. Keyboards stay in the office.</p>
           </div>
           <div className="fl-stat" data-reveal="4">
             <p className="fl-stat-n">100<span className="fl-stat-unit">%</span></p>
-            <p className="fl-stat-l">of your roster leaves with you if you go</p>
+            <p className="fl-stat-l">of your roster leaves with you. If you ever do.</p>
           </div>
         </div>
       </section>
@@ -128,7 +127,7 @@ export default function HomePage() {
       <section className="fl-section fl-section-alt">
         <div data-reveal>
           <p className="fl-kicker">04 — Find your page</p>
-          <h2 className="fl-h2">Three ways into the same product.</h2>
+          <h2 className="fl-h2">Three doors. One product.</h2>
         </div>
 
         <div className="fl-doors">
@@ -136,8 +135,8 @@ export default function HomePage() {
             <p className="fl-door-kicker">For coaches</p>
             <h3 className="fl-door-title">Your whole business, one place</h3>
             <p className="fl-door-body">
-              Seasons, check-ins, payments and the roster — with a calculator that shows what
-              your book keeps here.
+              Seasons, check-ins, payments, roster. And a calculator that does
+              your math before you commit.
             </p>
             <span className="fl-door-go" aria-hidden="true">→</span>
           </Link>
@@ -146,8 +145,8 @@ export default function HomePage() {
             <p className="fl-door-kicker">For athletes</p>
             <h3 className="fl-door-title">A coach in your pocket</h3>
             <p className="fl-door-body">
-              Log a set in one tap, see the demo before you load the bar, and talk to a human
-              who knows your name.
+              One tap logs the set. The demo plays before you load the bar.
+              And a human knows your name.
             </p>
             <span className="fl-door-go" aria-hidden="true">→</span>
           </Link>
@@ -156,8 +155,8 @@ export default function HomePage() {
             <p className="fl-door-kicker">For gyms</p>
             <h3 className="fl-door-title">Seats, rosters, revenue</h3>
             <p className="fl-door-body">
-              Run several coaches under one roof, see what a business needs to see — and
-              nothing your coaches' athletes said in private.
+              Every coach under one roof. Everything a business needs to see.
+              Nothing said in private.
             </p>
             <span className="fl-door-go" aria-hidden="true">→</span>
           </Link>
@@ -180,28 +179,25 @@ export default function HomePage() {
               <p className="fl-glass-n">Rule one</p>
               <h3>The relationship is the product</h3>
               <p>
-                Every fitness app tracks sets. Almost none carry the conversation — the cue
-                from last week, the check-in in your own words, the reply from someone who
-                knows your name. So the thread sits inside the session, not in a separate tab
-                you forget to open.
+                Every app tracks sets. Almost none carry the conversation.
+                So the thread lives inside the session — not in a tab you
+                forget to open.
               </p>
             </article>
             <article className="fl-glass" data-reveal="2">
               <p className="fl-glass-n">Rule two</p>
               <h3>The money follows the work</h3>
               <p>
-                Platforms that charge coaches monthly get paid whether the coach does or not.
-                We flipped the incentive: a flat 10% means FitLink earns only when a coach
-                earns, and a slow month costs nothing. Our side of the table is your side.
+                Monthly-fee platforms get paid whether you do or not. We flipped it:
+                FitLink earns only when you earn. Same side of the table.
               </p>
             </article>
             <article className="fl-glass" data-reveal="3">
               <p className="fl-glass-n">Rule three</p>
               <h3>Nothing you built gets held hostage</h3>
               <p>
-                Your roster, your programmes, your library — they leave with you if you go.
-                That is enforced in the database, not promised in the terms, because a promise
-                you cannot verify is just a mood.
+                Your roster, your programmes, your library — they leave with you.
+                Enforced in the database, not promised in the terms.
               </p>
             </article>
           </div>
@@ -236,8 +232,7 @@ export default function HomePage() {
       <section className="fl-close">
         <h2 className="fl-display fl-display-close">This year.</h2>
         <p className="fl-body-wide">
-          FitLink launches on iOS and Android. Coaches on the list get in first — bring one
-          athlete and see if it fits.
+          iOS and Android. Coaches on the list get in first.
         </p>
         <div className="fl-close-form"><WaitlistForm source="home-close" /></div>
       </section>

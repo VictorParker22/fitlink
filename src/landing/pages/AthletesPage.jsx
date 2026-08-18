@@ -27,8 +27,8 @@ export default function AthletesPage() {
             <span className="fl-accent">the sessions.</span>
           </h1>
           <p className="fl-lede">
-            The programme, the food, the check-in and the conversation — in the same pocket
-            as your music.
+            The programme, the food, the check-in, the conversation.
+            Same pocket as your music.
           </p>
         </div>
       </section>
@@ -36,45 +36,44 @@ export default function AthletesPage() {
       <section className="fl-section">
         <div className="fl-grid fl-grid-3">
           <article className="fl-card">
-            <h3>Log a set in one tap</h3>
+            <h3>One tap. Set logged.</h3>
             <p>
-              Weight and reps move on steppers, not a keyboard. Typing is there if you prefer
-              it — it just isn’t the only way in.
+              Steppers, not keyboards. Typing’s there if you want it.
+              You won’t.
             </p>
           </article>
           <article className="fl-card">
-            <h3>See it before you lift it</h3>
+            <h3>See it. Then lift it.</h3>
             <p>
-              Every exercise carries a demo and a muscle map, so you know what you are doing
-              before you load the bar.
+              Every exercise ships with a demo and a muscle map.
+              Know before you load.
             </p>
           </article>
           <article className="fl-card">
             <h3>Rest timers that adapt</h3>
             <p>
-              Per-set timers when you want structure, one tap to skip them for the whole
-              workout when you don’t — and it asks once, not every set.
+              Structure when you want it. One tap to skip the lot when you don’t.
+              It asks once.
             </p>
           </article>
           <article className="fl-card">
-            <h3>Food that fits the week</h3>
+            <h3>Food that bends. Macros that don’t.</h3>
             <p>
-              Meal plans you can swap when real life happens, with the macros kept honest
-              either way.
+              Swap any meal when life happens. The numbers stay honest.
             </p>
           </article>
           <article className="fl-card">
             <h3>Check-ins in your own words</h3>
             <p>
-              Not a form with ten sliders. You say how the week went; your coach reads it and
-              answers like a person.
+              No sliders. You say how the week went.
+              A person answers.
             </p>
           </article>
           <article className="fl-card">
             <h3>Your data is yours</h3>
             <p>
-              Delete your account and everything goes — sessions, photos, messages,
-              measurements. Your coach keeps their business records, not your life.
+              Delete your account and everything goes. Your coach keeps
+              their books — not your life.
             </p>
           </article>
         </div>

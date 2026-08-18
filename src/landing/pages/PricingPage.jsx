@@ -40,8 +40,8 @@ export default function PricingPage() {
       <section className="fl-section fl-section-first">
         <p className="fl-kicker">Pricing</p>
         <h1 className="fl-display fl-display-page">
-          One number, and it’s on<br />
-          <span className="fl-accent">our side of the table.</span>
+          Ten percent.<br />
+          <span className="fl-accent">That’s the whole story.</span>
         </h1>
 
         <div className="fl-price-row">
@@ -50,9 +50,8 @@ export default function PricingPage() {
             <p className="fl-price-big">10%</p>
             <p className="fl-price-sub">flat platform fee</p>
             <p className="fl-price-body">
-              No monthly fee. No per-athlete charge. You keep 90% of everything your athletes
-              pay, and Stripe’s processing fee is the only other deduction — which you would pay
-              anywhere. A slow month costs you nothing, because we only earn when you do.
+              No monthly fee. No per-athlete charge. You keep 90% of everything.
+              A slow month costs nothing — we earn when you earn, and only then.
             </p>
           </article>
 
@@ -61,8 +60,8 @@ export default function PricingPage() {
             <p className="fl-price-big">$29.99</p>
             <p className="fl-price-sub">per month, or $249 a year</p>
             <p className="fl-price-body">
-              Optional, and bought by the athlete rather than the coach. Everything a coached
-              athlete needs works without it.
+              Optional, and the athlete’s call — never the coach’s bill.
+              Everything a coached athlete needs works without it.
             </p>
           </article>
 
@@ -71,8 +70,7 @@ export default function PricingPage() {
             <p className="fl-price-big">Per seat</p>
             <p className="fl-price-sub">priced per organisation</p>
             <p className="fl-price-body">
-              A gym pays for the seats its coaches occupy — the first seat is free, and hiring
-              the second coach is what starts billing. Ask us at{' '}
+              First seat free. The second coach is what starts billing. Ask at{' '}
               <a className="fl-inline-link" href={`mailto:${SUPPORT}`}>{SUPPORT}</a> and we will
               quote it plainly.
             </p>
@@ -82,7 +80,7 @@ export default function PricingPage() {
 
       <section className="fl-section fl-section-alt">
         <p className="fl-kicker">Questions</p>
-        <h2 className="fl-h2">The ones worth answering.</h2>
+        <h2 className="fl-h2">Asked. Answered.</h2>
 
         <div className="fl-faq">
           {FAQS.map((item, i) => (
@@ -105,7 +103,7 @@ export default function PricingPage() {
       <section className="fl-close">
         <h2 className="fl-h2">Still weighing it?</h2>
         <p className="fl-body-wide">
-          The calculator on the coaches page does the arithmetic for your exact book.
+          The calculator on the coaches page runs your exact numbers.
         </p>
         <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
       </section>

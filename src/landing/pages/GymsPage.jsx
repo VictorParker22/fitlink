@@ -29,42 +29,42 @@ export default function GymsPage() {
             <span className="fl-accent">None of them boxed in.</span>
           </h1>
           <p className="fl-lede">
-            A gym on FitLink buys seats, sees the business, and stays out of the coaching.
-            That boundary is built into the product, not written into a policy.
+            Buy seats. See the business. Stay out of the coaching.
+            The boundary is built in — not written down.
           </p>
         </div>
       </section>
 
       <section className="fl-section">
         <p className="fl-kicker">What you see</p>
-        <h2 className="fl-h2">The business view, and only the business view.</h2>
+        <h2 className="fl-h2">The business view. And only that.</h2>
         <div className="fl-grid">
           <article className="fl-card">
             <h3>Seats and the roster</h3>
             <p>
-              Who is on a seat, how many athletes each coach carries, and when each coach last
-              did real work — stamped by actual writes, not app-opens.
+              Who’s on a seat, who carries how many athletes, who worked when.
+              Stamped by real work, not app-opens.
             </p>
           </article>
           <article className="fl-card">
             <h3>Revenue this month</h3>
             <p>
-              Summed from succeeded payments, per coach. If a number isn’t measured, the screen
-              says so instead of showing a zero that looks like an answer.
+              Summed from real payments, per coach. Unmeasured numbers say so —
+              they don’t pose as zeros.
             </p>
           </article>
           <article className="fl-card">
             <h3>Your share, in the open</h3>
             <p>
-              If your gym takes a cut of coach revenue, you set it as a visible split the
-              coaches can read — not a fee buried in terms. Every change is logged.
+              Your cut is a split your coaches can read — not a fee buried
+              in terms. Every change is logged.
             </p>
           </article>
           <article className="fl-card">
             <h3>Never the private half</h3>
             <p>
-              No coaching threads, no check-ins, no health data. The org role has no switch
-              that reveals them, so it cannot be turned on by anyone — including us.
+              No threads, no check-ins, no health data. There is no switch
+              that reveals them. Not even for us.
             </p>
           </article>
         </div>
@@ -102,8 +102,7 @@ export default function GymsPage() {
       <section className="fl-close">
         <h2 className="fl-h2">Running coaches under one roof?</h2>
         <p className="fl-body-wide">
-          Seat pricing is set per organisation, and we quote it plainly. Tell us how many
-          coaches you run and what you take today — we’ll tell you what it looks like here.
+          Tell us how many coaches you run. We’ll quote it plainly.
         </p>
         <a className="fl-btn fl-btn-lg" href={GYM_MAIL}>Talk to us</a>
       </section>
