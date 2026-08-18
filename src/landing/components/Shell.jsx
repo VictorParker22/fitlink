@@ -56,7 +56,7 @@ export default function Shell() {
             </NavLink>
           ))}
         </nav>
-        <a className="fl-btn fl-btn-sm" href={NOTIFY_HREF}>Get launch news</a>
+        <Link className="fl-btn fl-btn-sm" to="/">Get early access</Link>
       </header>
 
       <main id="main">

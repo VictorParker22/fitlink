@@ -5,6 +5,7 @@ import LiveEconomy from '../components/LiveEconomy.jsx';
 import PhoneDemo from '../components/PhoneDemo.jsx';
 import Ticker from '../components/Ticker.jsx';
 import { useReveal } from '../components/useReveal.js';
+import WaitlistForm from '../components/WaitlistForm.jsx';
 
 /**
  * Home — rebuilt after studying how athletic brands actually lay out.
@@ -37,9 +38,13 @@ export default function HomePage() {
         <div className="fl-hero-veil" aria-hidden="true" />
 
         <div className="fl-hero-inner">
+          {/* The identity anchor. The audit's finding: the hero hook told
+              you the terms before the page ever said what FitLink IS. This
+              line does that job in eight words; "launching this year" keeps
+              the honesty without leading with deflation. */}
           <p className="fl-eyebrow">
             <span className="fl-dot" aria-hidden="true" />
-            In development · first release on iOS and Android
+            FitLink — the app coaching businesses run on · launching this year
           </p>
 
           <h1 className="fl-display">
@@ -52,10 +57,7 @@ export default function HomePage() {
             only thing left between you and your athletes is the coaching.
           </p>
 
-          <div className="fl-hero-cta">
-            <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
-            <Link className="fl-btn-ghost fl-btn-lg" to="/coaches">I coach</Link>
-          </div>
+          <WaitlistForm source="home-hero" />
 
           <p className="fl-hero-note">
             Flat 10% fee. Payments land in your own Stripe account. Your athletes stay yours.
@@ -234,11 +236,10 @@ export default function HomePage() {
       <section className="fl-close">
         <h2 className="fl-display fl-display-close">This year.</h2>
         <p className="fl-body-wide">
-          FitLink launches on iOS and Android. No waitlist form — there is no waitlist system
-          behind it yet, and a form that eats addresses is worse than an email that reaches a
-          person.
+          FitLink launches on iOS and Android. Coaches on the list get in first — bring one
+          athlete and see if it fits.
         </p>
-        <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Email us</a>
+        <div className="fl-close-form"><WaitlistForm source="home-close" /></div>
       </section>
     </>
   );
