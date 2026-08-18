@@ -888,3 +888,9 @@
     background: rgba(24, 27, 23, 0.94);
   }
 }
+
+/* Sign in sits quiet next to the loud CTA — returning users know what
+   they are looking for; the button is for everyone else. */
+.fl-nav-signin { color: var(--text-2); font-size: 14px; margin-right: 4px; transition: color 0.18s; }
+.fl-nav-signin:hover { color: var(--text); }
+@media (max-width: 560px) { .fl-nav-signin { display: none; } }

@@ -56,6 +56,11 @@ export default function Shell() {
             </NavLink>
           ))}
         </nav>
+        {/* The app itself, exported for web, lives at app.fitlink.coach —
+            a separate Vercel project on the fitlink-native repo. Until that
+            domain is attached this 404s, which is honest: the button appears
+            when the door exists. */}
+        <a className="fl-nav-signin" href="https://app.fitlink.coach">Sign in</a>
         <Link className="fl-btn fl-btn-sm" to="/">Get early access</Link>
       </header>
 
