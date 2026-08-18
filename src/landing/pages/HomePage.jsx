@@ -89,7 +89,7 @@ export default function HomePage() {
 
       {/* ── The economy, running ─────────────────────────────── */}
       <section className="fl-section fl-section-alt">
-        <div data-reveal>
+        <div data-reveal className="fl-centered">
           <p className="fl-kicker">02 — The money</p>
           <h2 className="fl-h2">We take ten. You keep the&nbsp;rest.</h2>
         </div>
@@ -125,7 +125,7 @@ export default function HomePage() {
 
       {/* ── Three doors ──────────────────────────────────────── */}
       <section className="fl-section fl-section-alt">
-        <div data-reveal>
+        <div data-reveal className="fl-centered">
           <p className="fl-kicker">04 — Find your page</p>
           <h2 className="fl-h2">Three doors. One product.</h2>
         </div>

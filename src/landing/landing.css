@@ -789,3 +789,102 @@
 @media (max-width: 560px) {
   .fl-wl-row { flex-direction: column; }
 }
+
+/* ════ Liquid glass, everywhere ═══════════════════════════════════
+   One glass section was a demo, not a language. This pass makes glass
+   the site's chrome material, the way Apple's Liquid Glass works: the
+   nav is a floating pill, every card is a pane, and the page carries
+   ambient light behind everything — because blur with nothing behind
+   it is just a grey rectangle. Overrides live below the originals and
+   win by cascade, so the structural rules above stay untouched. */
+
+/* ── The light the glass bends ────────────────────────────────── */
+/* Fixed ambient glows under the whole page. Subtle on purpose: they
+   exist to be refracted, not to be seen. */
+.fl::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(42% 34% at 12% 18%, rgba(198, 242, 78, 0.07), transparent 70%),
+    radial-gradient(38% 30% at 88% 42%, rgba(120, 200, 120, 0.06), transparent 70%),
+    radial-gradient(44% 36% at 45% 88%, rgba(198, 242, 78, 0.05), transparent 70%);
+}
+.fl > * { position: relative; z-index: 1; }
+
+/* ── The material ─────────────────────────────────────────────── */
+.fl-nav,
+.fl-card,
+.fl-door,
+.fl-price,
+.fl-stat,
+.fl-glass,
+.fl-calc,
+.fl-econ-chart,
+.fl-uber-bar,
+.fl-wl-done {
+  background: rgba(24, 27, 23, 0.48);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid rgba(237, 239, 232, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(237, 239, 232, 0.08),
+    0 18px 50px -28px rgba(0, 0, 0, 0.65);
+}
+
+/* ── The nav becomes the floating pill ────────────────────────── */
+.fl-nav {
+  top: 12px;
+  margin: 0 auto;
+  max-width: calc(var(--max) + 48px);
+  border-radius: 999px;
+  border-bottom: 1px solid rgba(237, 239, 232, 0.09); /* restore the ring */
+  padding: 10px 22px;
+}
+/* Breathing room where the bar used to sit flush. */
+.fl main { padding-top: 8px; }
+@media (max-width: 760px) {
+  .fl-nav { margin: 0 10px; max-width: none; }
+}
+
+/* ── Cards keep their radii, lose their opacity ───────────────── */
+.fl-btn-ghost {
+  background: rgba(24, 27, 23, 0.4);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.fl-wl-input {
+  background: rgba(24, 27, 23, 0.45);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.fl-chip {
+  background: rgba(24, 27, 23, 0.4);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Stat wall: from a bordered slab to four floating panes. The 1px-gap
+   grid trick painted opaque cells; glass wants air between panes. */
+.fl-statwall {
+  gap: 14px; background: none; border: 0; border-radius: 0; overflow: visible;
+}
+.fl-stat { border-radius: 24px; }
+
+/* The phone's screen stays OPAQUE on purpose: it renders the real app,
+   and the real app is not made of glass. A translucent phone screen
+   would be a mock-up of a product we didn't ship. */
+
+/* The split ad stays solid too — its whole argument is hard contrast,
+   and glass would soften exactly what makes it land. */
+
+/* Sections that read like Apple sections: the big statement, centred. */
+.fl-centered { text-align: center; }
+.fl-centered .fl-h2 { margin-left: auto; margin-right: auto; }
+
+/* Old blur engines get opaque panes instead of unreadable text. */
+@supports not (backdrop-filter: blur(1px)) {
+  .fl-nav, .fl-card, .fl-door, .fl-price, .fl-stat, .fl-glass,
+  .fl-calc, .fl-econ-chart, .fl-uber-bar, .fl-wl-done {
+    background: rgba(24, 27, 23, 0.94);
+  }
+}
