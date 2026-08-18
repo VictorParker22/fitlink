@@ -660,3 +660,101 @@
 @media (prefers-reduced-motion: reduce) {
   [data-reveal] { opacity: 1; transform: none; transition: none; }
 }
+
+/* ════ Vision band + glass + the split ════════════════════════════ */
+
+/* Glassmorphism needs something behind it to refract, or it is just a
+   grey card with a border. The vision band supplies lit colour — two
+   large glows drifting slowly — and the glass panels float over it. */
+.fl-vision {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(70px, 12vh, 140px) var(--pad);
+}
+.fl-vision-glow {
+  position: absolute; inset: -20%;
+  background:
+    radial-gradient(38% 45% at 22% 30%, rgba(198, 242, 78, 0.25), transparent 70%),
+    radial-gradient(34% 42% at 78% 68%, rgba(120, 200, 120, 0.16), transparent 70%),
+    radial-gradient(30% 36% at 60% 15%, rgba(198, 242, 78, 0.10), transparent 70%);
+  animation: fl-glow-drift 22s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes fl-glow-drift {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to { transform: translate3d(2%, 2%, 0) scale(1.08); }
+}
+.fl-vision-inner { position: relative; max-width: var(--max); margin: 0 auto; }
+
+.fl-vision-cards {
+  display: grid; gap: 18px; margin-top: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+.fl-glass {
+  background: rgba(24, 27, 23, 0.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid rgba(237, 239, 232, 0.1);
+  /* The top-edge highlight is what sells glass as material rather than
+     as a translucent div — light lands on the upper rim first. */
+  box-shadow:
+    inset 0 1px 0 rgba(237, 239, 232, 0.09),
+    0 24px 60px -30px rgba(0, 0, 0, 0.7);
+  border-radius: 26px;
+  padding: 28px;
+}
+.fl-glass-n {
+  font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 12px; font-weight: 600;
+}
+.fl-glass h3 {
+  font-family: var(--head); font-weight: 600; font-size: 19px;
+  letter-spacing: -0.4px; margin: 0 0 10px; color: var(--text);
+}
+.fl-glass p:last-child { font-size: 14px; line-height: 1.65; color: var(--text-2); margin: 0; }
+
+/* Old blur engines render backdrop-filter as fully transparent. Give
+   them an opaque card instead of unreadable text over the glow. */
+@supports not (backdrop-filter: blur(1px)) {
+  .fl-glass { background: rgba(24, 27, 23, 0.92); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fl-vision-glow { animation: none; }
+}
+
+/* ── The split (wallet | keys) ────────────────────────────────── */
+.fl-uber { max-width: var(--max); margin: 0 auto; padding: 0 var(--pad) clamp(64px, 10vh, 120px); }
+.fl-uber-panels {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border-radius: 28px 28px 0 0; overflow: hidden;
+  border: 1px solid var(--border); border-bottom: 0;
+}
+.fl-uber-dark, .fl-uber-light { padding: clamp(28px, 5vw, 64px); min-height: clamp(260px, 36vw, 420px); display: flex; flex-direction: column; }
+.fl-uber-dark { background: #0a0c0a; }
+.fl-uber-light { background: var(--accent); }
+.fl-uber-line {
+  font-family: 'Anton', var(--head); text-transform: uppercase;
+  font-size: clamp(22px, 3.6vw, 44px); line-height: 1.04; letter-spacing: 0.4px;
+  margin: 0 0 auto;
+}
+.fl-uber-dark .fl-uber-line { color: var(--text); }
+.fl-uber-light .fl-uber-line { color: var(--on-accent); }
+.fl-uber-sub { font-size: 12px; margin: 18px 0 0; }
+.fl-uber-dark .fl-uber-sub { color: var(--text-3); }
+.fl-uber-light .fl-uber-sub { color: rgba(16, 18, 16, 0.65); }
+
+.fl-uber-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 0 0 28px 28px;
+  padding: 18px clamp(20px, 4vw, 40px);
+  font-family: var(--body); font-weight: 600; font-size: 15px; color: var(--text);
+  transition: background 0.2s, border-color 0.2s;
+}
+.fl-uber-bar:hover { background: var(--accent-soft); border-color: var(--accent); }
+.fl-uber-bar span:last-child { color: var(--accent); font-size: 22px; line-height: 1; }
+
+@media (max-width: 640px) {
+  .fl-uber-panels { grid-template-columns: 1fr; }
+  .fl-uber-dark, .fl-uber-light { min-height: 0; }
+}

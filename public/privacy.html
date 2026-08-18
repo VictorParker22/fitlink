@@ -6,16 +6,14 @@
   <title>FitLink — Privacy Policy</title>
   <link rel="icon" href="/favicon.png">
   <style>
-    :root { --bg: #0f0f13; --card: #1a1a22; --accent: #6C63FF; --text: #e4e4e8; --dim: #8b8b9e; --border: #2a2a35; }
+    :root { --bg: #101210; --card: #181b17; --accent: #c6f24e; --text: #edefe8; --dim: #9ba095; --border: #262a24; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
-    .container { max-width: 720px; margin: 0 auto; padding: 60px 24px 100px; }
-    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; text-decoration: none; }
-    .logo svg { width: 32px; height: 32px; }
-    .logo span { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+    .container { max-width: 760px; margin: 0 auto; padding: 60px 24px 100px; }
     h1 { font-size: 2rem; margin-bottom: 8px; }
     .subtitle { color: var(--dim); margin-bottom: 40px; font-size: 0.9rem; }
-    h2 { font-size: 1.2rem; color: var(--accent); margin-top: 36px; margin-bottom: 12px; }
+    h2 { font-size: 1.25rem; color: var(--accent); margin-top: 40px; margin-bottom: 12px; }
+    h3 { font-size: 1rem; color: var(--text); margin-top: 22px; margin-bottom: 8px; }
     p, li { color: var(--dim); font-size: 0.95rem; margin-bottom: 12px; }
     ul { padding-left: 20px; }
     li { margin-bottom: 6px; }
@@ -23,7 +21,11 @@
     a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin: 20px 0; }
-    .badge { display: inline-block; background: var(--accent); color: #fff; font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge { display: inline-block; background: var(--accent); color: #101210; font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; font-weight: 700; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 0.88rem; vertical-align: top; }
+    th { color: var(--text); font-weight: 600; }
+    td { color: var(--dim); }
     .footer { text-align: center; color: var(--dim); font-size: 0.8rem; margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); }
     .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 0.9rem; margin-bottom: 24px; }
   </style>
@@ -33,87 +35,138 @@
     <a href="/" class="back-link">&larr; Back to FitLink</a>
 
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Last updated: June 2026</p>
+    <p class="subtitle">Applies to the FitLink app (com.fitlink.app) for iOS and Android, and to fitlink.coach. Last updated: 18 August 2026.</p>
 
     <div class="card">
-      <span class="badge">TLDR</span>
-      <p>FitLink collects only the data needed to connect coaches with clients and deliver fitness services. We never sell your data. You can delete your account at any time.</p>
+      <span class="badge">The short version</span>
+      <p><strong>FitLink connects coaches with the athletes they train.</strong> We collect what that takes and nothing more. We do not sell your data, we do not run advertising, and we do not share your health information with anyone except the coach you chose. Delete your account and your data goes with it — the exact mechanics are on the <a href="/delete-account">delete-account page</a>.</p>
     </div>
 
-    <h2>1. Information We Collect</h2>
-    <p>We collect the following categories of information:</p>
+    <h2>1. Who we are</h2>
+    <p>FitLink ("we", "us") operates the FitLink mobile application and the fitlink.coach website. For data protection purposes, FitLink is the controller of the personal data described in this policy. Contact: <a href="mailto:support@getfitlink.com">support@getfitlink.com</a>.</p>
+    <p><strong>One important distinction:</strong> your coach is an independent professional, not our employee. For the coaching relationship itself — the programmes they write for you, the notes they keep about your training — your coach acts as a controller of that information in their own right, the same way any trainer keeps records about their clients. This policy covers what <em>FitLink the platform</em> does with data.</p>
+
+    <h2>2. What we collect</h2>
+    <h3>Account data</h3>
     <ul>
-      <li><strong>Account Information:</strong> Name, email address, phone number, and profile photo when you create an account.</li>
-      <li><strong>Health &amp; Fitness Data:</strong> With your explicit permission, we access Apple Health or Google Health Connect data including steps, heart rate, active energy, sleep, and workout metrics.</li>
-      <li><strong>Workout &amp; Nutrition Data:</strong> Exercise logs, diet plans, progress photos, and assessment data entered by you or your coach.</li>
-      <li><strong>Payment Information:</strong> Payment details are processed securely through Stripe. We do not store your credit card numbers on our servers.</li>
-      <li><strong>Communications:</strong> Messages exchanged between coaches and clients within the app.</li>
-      <li><strong>Device Information:</strong> Device type, OS version, and push notification tokens for delivering notifications.</li>
+      <li>Name, email address, phone number, profile photo, and password (stored only as a cryptographic hash — we cannot read it).</li>
+      <li>Your role (coach or athlete) and onboarding answers such as goals, training styles, and availability.</li>
+    </ul>
+    <h3>Health and fitness data</h3>
+    <ul>
+      <li>Workouts, logged sets (weight, reps, time), personal records, and session history.</li>
+      <li>Body measurements, weight, height, age, and gender where you choose to provide them.</li>
+      <li>Meal plans, food logs, and nutrition targets.</li>
+      <li>Check-ins and habit tracking you complete for your coach.</li>
+      <li>Progress photos you upload. These are stored in private storage and served only through short-lived signed links — they are never publicly addressable.</li>
+      <li>With your explicit device-level permission only: data from Apple Health or Google Health Connect (such as steps, heart rate, sleep, and active energy). You can revoke this in your device settings at any time, and revoking it does not break the rest of the app.</li>
+    </ul>
+    <h3>Messages</h3>
+    <ul>
+      <li>Messages and attachments exchanged between you and your coach inside the app. These exist so your coaching thread works across your devices. Our staff do not read them except where strictly necessary to investigate abuse, fraud, or a legal demand — and access of that kind is logged internally.</li>
+    </ul>
+    <h3>Payment data</h3>
+    <ul>
+      <li>Payments are processed by Stripe. <strong>Card numbers never touch our servers</strong> — we receive and store only transaction records: amount, currency, date, status, and which coach and plan the payment relates to.</li>
+      <li>In-app subscriptions (such as Athlete Elite) are processed by Apple or Google and managed through RevenueCat. We receive entitlement status, not your payment details.</li>
+      <li>Coaches connect their own Stripe account for payouts. Identity verification for payouts is performed by Stripe under Stripe's own terms; we never see the underlying documents.</li>
+    </ul>
+    <h3>Technical data</h3>
+    <ul>
+      <li>Push notification tokens, so your device can receive messages and session reminders.</li>
+      <li>Basic product analytics — which screens are used and how often — tied to your account id, so we can tell what is working. We do not use advertising trackers and there are no third-party ad SDKs in the app.</li>
+      <li>Security logs: failed and rejected requests are recorded (who, what, when) to detect attacks. This is a protection for you, not surveillance of you.</li>
     </ul>
 
-    <h2>2. How We Use Your Data</h2>
+    <h2>3. What we use it for</h2>
     <ul>
-      <li>To provide and maintain the FitLink service</li>
-      <li>To connect clients with their coaches</li>
-      <li>To display health metrics and track fitness progress</li>
-      <li>To process payments and manage subscriptions</li>
-      <li>To send push notifications about workouts, messages, and reminders</li>
-      <li>To improve our app and user experience</li>
+      <li><strong>Running the product:</strong> showing your programme, syncing your logs, delivering messages, processing payments, sending the notifications you asked for.</li>
+      <li><strong>The coaching relationship:</strong> giving your coach the visibility you signed up for (see section 4 — this is the heart of the product and of this policy).</li>
+      <li><strong>Safety and security:</strong> detecting account takeover attempts, payment fraud, and abuse.</li>
+      <li><strong>Legal obligations:</strong> tax and accounting records for payments.</li>
+      <li><strong>Improving FitLink:</strong> aggregate usage analysis. Aggregates contain nothing that identifies you.</li>
+    </ul>
+    <p>We do <strong>not</strong> use your data for advertising, we do not sell it, and we do not share it with data brokers. If that ever changed, this policy would change first and you would be told inside the app before anything took effect.</p>
+
+    <h2>4. Who can see what</h2>
+    <p>This is the section most policies bury. Ours is the product's core promise, so here it is plainly:</p>
+    <table>
+      <tr><th>Who</th><th>What they can see</th></tr>
+      <tr>
+        <td><strong>Your coach</strong></td>
+        <td>Your profile, goals, workouts and logs, check-ins, meal plans and food logs, measurements, progress photos you share, and your messages with them. This is the service: you hired them to see this. When you stop working with a coach, their forward visibility ends; they retain their own business records of sessions already delivered, as any professional does.</td>
+      </tr>
+      <tr>
+        <td><strong>A gym (organisation) your coach belongs to</strong></td>
+        <td>Business figures only: seats in use, how many athletes each coach carries, revenue totals, and when a coach last worked. <strong>A gym can never see inside a coaching thread, a check-in, a health record, or a progress photo.</strong> There is no administrative switch that reveals them — the restriction is built into the database itself, not into a settings page.</td>
+      </tr>
+      <tr>
+        <td><strong>Other athletes</strong></td>
+        <td>Nothing about you. There is no social feed and no public profile of your training.</td>
+      </tr>
+      <tr>
+        <td><strong>FitLink staff</strong></td>
+        <td>Operational metadata (account status, payment records, security logs). Content access — messages, photos, health data — is exceptional, logged, and limited to abuse, fraud, or legal-demand investigation.</td>
+      </tr>
+      <tr>
+        <td><strong>The public</strong></td>
+        <td>For coaches only: the marketplace profile you choose to publish (name, photo, bio, specialties, offered passes). Athletes have no public surface at all.</td>
+      </tr>
+    </table>
+
+    <h2>5. Service providers</h2>
+    <p>FitLink runs on a small number of processors, each receiving only what its job requires:</p>
+    <table>
+      <tr><th>Provider</th><th>Role</th><th>What they process</th></tr>
+      <tr><td>Supabase</td><td>Database, authentication, and file storage (hosted in the United States)</td><td>The account, fitness, and message data described above</td></tr>
+      <tr><td>Stripe</td><td>Payments and coach payouts</td><td>Payment card data (theirs alone), transaction records, coach payout identity</td></tr>
+      <tr><td>Apple / Google + RevenueCat</td><td>In-app subscriptions</td><td>Purchase and entitlement status</td></tr>
+      <tr><td>Expo</td><td>Push notification delivery</td><td>Push tokens and notification payloads</td></tr>
+      <tr><td>Mux</td><td>Live and on-demand class video</td><td>Video streams coaches publish</td></tr>
+      <tr><td>Spoonacular</td><td>Food and recipe data</td><td>Food search queries (not tied to your identity by them)</td></tr>
+      <tr><td>Layers</td><td>Product analytics</td><td>Screen and feature usage tied to account id</td></tr>
+    </table>
+    <p>Each provider is bound by its own data processing terms. We will not add a provider that would receive health data without updating this table first.</p>
+
+    <h2>6. Where your data lives, and for how long</h2>
+    <ul>
+      <li>Primary storage is in the United States. If you use FitLink from elsewhere, your data is transferred to and processed in the US.</li>
+      <li>Your data is kept while your account exists.</li>
+      <li><strong>Delete your account</strong> (Profile → Delete account, or the process on the <a href="/delete-account">delete-account page</a>) and your profile, logs, messages, photos, measurements, and enrolments are permanently removed, immediately.</li>
+      <li>Two things survive deletion: <strong>payment records</strong>, kept for as long as tax and accounting law requires (typically 7 years), and <strong>aggregate counts</strong> that contain nothing identifying you.</li>
+      <li>Backups age out on a rolling schedule; deleted data leaves backups as they cycle.</li>
     </ul>
 
-    <h2>3. Health Data</h2>
-    <p>Health data from Apple Health or Google Health Connect is:</p>
+    <h2>7. Your rights</h2>
+    <p>Wherever you live, we honour these on request — and where GDPR, UK GDPR, or CCPA/CPRA applies to you, they are your legal rights:</p>
     <ul>
-      <li>Only accessed with your explicit permission</li>
-      <li>Used solely to display health insights within the app</li>
-      <li>Shared only with your assigned coach (if applicable)</li>
-      <li>Never sold to third parties</li>
-      <li>Never used for advertising or marketing purposes</li>
+      <li><strong>Access</strong> — ask for a copy of the personal data we hold about you.</li>
+      <li><strong>Correction</strong> — fix inaccurate data (most of it you can edit directly in the app).</li>
+      <li><strong>Deletion</strong> — remove your account and data (self-serve, in the app).</li>
+      <li><strong>Portability</strong> — receive your data in a machine-readable format.</li>
+      <li><strong>Objection and restriction</strong> — object to specific processing.</li>
+      <li><strong>No discrimination</strong> — exercising these rights never degrades your service.</li>
+    </ul>
+    <p>Email <a href="mailto:support@getfitlink.com">support@getfitlink.com</a>. We verify that a request comes from the account holder before acting on it — that check protects you, so we will not skip it. We respond within 30 days. If you are in the EEA or UK, you also have the right to complain to your supervisory authority.</p>
+    <p><strong>We do not sell or share personal information</strong> as those terms are defined by the CCPA/CPRA, so there is no "Do Not Sell" opt-out — there is nothing to opt out of.</p>
+
+    <h2>8. Children</h2>
+    <p>FitLink is not directed at children under 16, and we do not knowingly collect their data. If you believe a child under 16 has created an account, contact us and we will delete it.</p>
+
+    <h2>9. Security</h2>
+    <ul>
+      <li>All traffic is encrypted in transit (TLS). Data is encrypted at rest by our storage providers.</li>
+      <li>Access to every record is enforced by database-level row security — the rule that decides who can read a row lives in the database itself, not only in the app's code.</li>
+      <li>Progress photos and message attachments live in private buckets reachable only through short-lived signed links.</li>
+      <li>Server-side functions verify the caller's identity before touching payment or account state, and rejected attempts are logged.</li>
+      <li>No system is unbreakable. If a breach affects your personal data, we will notify you and the relevant authorities as the law requires, and tell you plainly what happened and what we are doing about it.</li>
     </ul>
 
-    <h2>4. Data Sharing</h2>
-    <p>We share your data only in these limited circumstances:</p>
-    <ul>
-      <li><strong>With your coach:</strong> Workout data, health metrics, and messages are shared with your assigned fitness coach.</li>
-      <li><strong>Payment processing:</strong> Payment data is shared with Stripe for transaction processing.</li>
-      <li><strong>Push notifications:</strong> Device tokens are shared with Apple Push Notification Service (APNs) and Expo for notification delivery.</li>
-      <li><strong>Legal requirements:</strong> When required by law or to protect our legal rights.</li>
-    </ul>
-    <p>We do <strong>not</strong> sell, rent, or trade your personal information to third parties.</p>
-
-    <h2>5. Data Storage &amp; Security</h2>
-    <ul>
-      <li>Data is stored securely on Supabase cloud infrastructure</li>
-      <li>All data transmission is encrypted using TLS/SSL</li>
-      <li>Authentication tokens are stored in secure device storage</li>
-      <li>We implement industry-standard security measures to protect your data</li>
-    </ul>
-
-    <h2>6. Your Rights</h2>
-    <p>You have the right to:</p>
-    <ul>
-      <li><strong>Access:</strong> Request a copy of your personal data</li>
-      <li><strong>Correction:</strong> Update or correct inaccurate information</li>
-      <li><strong>Deletion:</strong> Request deletion of your account and associated data</li>
-      <li><strong>Portability:</strong> Request your data in a portable format</li>
-      <li><strong>Withdraw consent:</strong> Revoke health data access at any time through your device settings</li>
-    </ul>
-
-    <h2>7. Children's Privacy</h2>
-    <p>FitLink is not intended for children under 13. We do not knowingly collect data from children under 13. If you believe a child has provided us with personal information, please contact us.</p>
-
-    <h2>8. Changes to This Policy</h2>
-    <p>We may update this privacy policy from time to time. We will notify you of significant changes through the app or via email.</p>
-
-    <h2>9. Contact Us</h2>
-    <div class="card">
-      <p>If you have questions about this privacy policy or your data, contact us at:</p>
-      <p><strong>Email:</strong> <a href="mailto:privacy@getfitlink.com">privacy@getfitlink.com</a></p>
-      <p><strong>In-App:</strong> Settings &gt; Contact Support</p>
-    </div>
+    <h2>10. Changes to this policy</h2>
+    <p>When this policy changes in any way that matters — new data collected, a new category of recipient, a new use — we update the date at the top and tell you in the app before the change takes effect. If you do not accept a change, you can delete your account and nothing further is collected.</p>
 
     <div class="footer">
-      <p>&copy; 2026 FitLink. All rights reserved.</p>
+      <p>Questions? <a href="mailto:support@getfitlink.com">support@getfitlink.com</a> &middot; <a href="/delete-account">Delete your account</a></p>
     </div>
   </div>
 </body>

@@ -162,6 +162,74 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── The vision, told the way Apple tells one ─────── */}
+      {/* Not a feature list — the reasoning that shaped the product, one
+          decision per glass panel, floating over a lit background so the
+          blur has something real to refract. Apple sells the thinking and
+          lets the spec sheet come last; same play here. */}
+      <section className="fl-vision">
+        <div className="fl-vision-glow" aria-hidden="true" />
+        <div className="fl-vision-inner">
+          <p className="fl-kicker" data-reveal>05 — Why it looks like this</p>
+          <h2 className="fl-h2" data-reveal>We didn’t start with features.<br />We started with a rule.</h2>
+
+          <div className="fl-vision-cards">
+            <article className="fl-glass" data-reveal>
+              <p className="fl-glass-n">Rule one</p>
+              <h3>The relationship is the product</h3>
+              <p>
+                Every fitness app tracks sets. Almost none carry the conversation — the cue
+                from last week, the check-in in your own words, the reply from someone who
+                knows your name. So the thread sits inside the session, not in a separate tab
+                you forget to open.
+              </p>
+            </article>
+            <article className="fl-glass" data-reveal="2">
+              <p className="fl-glass-n">Rule two</p>
+              <h3>The money follows the work</h3>
+              <p>
+                Platforms that charge coaches monthly get paid whether the coach does or not.
+                We flipped the incentive: a flat 10% means FitLink earns only when a coach
+                earns, and a slow month costs nothing. Our side of the table is your side.
+              </p>
+            </article>
+            <article className="fl-glass" data-reveal="3">
+              <p className="fl-glass-n">Rule three</p>
+              <h3>Nothing you built gets held hostage</h3>
+              <p>
+                Your roster, your programmes, your library — they leave with you if you go.
+                That is enforced in the database, not promised in the terms, because a promise
+                you cannot verify is just a mood.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* ── The split — the two-panel contrast ad, as a section ─ */}
+      {/* The wallet-vs-keys construction: current pain on the dark half,
+          the offer on the lit half, one action bar under both. */}
+      <section className="fl-uber" aria-label="Coaching without FitLink versus with it">
+        <div className="fl-uber-panels">
+          <div className="fl-uber-dark">
+            <p className="fl-uber-line">
+              Spreadsheets,<br />screenshots<br />and chasing<br />invoices?
+            </p>
+            <p className="fl-uber-sub">The admin stack most coaches run today.</p>
+          </div>
+          <div className="fl-uber-light">
+            <p className="fl-uber-line">
+              One app that<br />runs the whole<br />book <span aria-hidden="true">→</span>
+            </p>
+            <p className="fl-uber-sub">Roster, seasons, check-ins and payouts.</p>
+          </div>
+        </div>
+        <a className="fl-uber-bar" href={NOTIFY_HREF}>
+          <span>Get launch news</span>
+          <span aria-hidden="true">›</span>
+        </a>
+      </section>
+
       {/* ── Close ────────────────────────────────────────────── */}
       <section className="fl-close">
         <h2 className="fl-display fl-display-close">This year.</h2>
