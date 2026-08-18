@@ -1,0 +1,277 @@
+/**
+ * Landing page styles.
+ *
+ * The palette, type and shapes are lifted from the app's own design system
+ * (constants/coachDesign.ts in fitlink-native) rather than invented for the
+ * web. A marketing site that looks like a different product than the one it
+ * sells is doing the opposite of its job — the first screenshot a visitor
+ * sees after downloading should feel like the page that sold it to them.
+ *
+ * Everything is namespaced under .fl so it cannot collide with the old app
+ * styles still living in index.css.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Epilogue:wght@400;500;600&display=swap');
+
+.fl {
+  /* Straight from the app. One accent, and it is used sparingly. */
+  --bg: #101210;
+  --surface: #181b17;
+  --border: #262a24;
+  --border-strong: #33382f;
+  --accent: #c6f24e;
+  --accent-soft: rgba(198, 242, 78, 0.12);
+  --text: #edefe8;
+  --text-2: #9ba095;
+  --text-3: #7d8477;
+  --on-accent: #101210;
+
+  --head: 'Space Grotesk', system-ui, sans-serif;
+  --body: 'Epilogue', system-ui, sans-serif;
+
+  --pad: clamp(20px, 5vw, 64px);
+  --max: 1120px;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.fl-body { background: #101210; margin: 0; }
+
+.fl *, .fl *::before, .fl *::after { box-sizing: border-box; }
+
+.fl-skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--accent); color: var(--on-accent);
+  padding: 12px 18px; border-radius: 0 0 12px 0; font-family: var(--body); z-index: 100;
+}
+.fl-skip:focus { left: 0; }
+
+.fl a { color: inherit; text-decoration: none; }
+.fl :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+/* ── Nav ──────────────────────────────────────────────────────── */
+.fl-nav {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: 24px;
+  padding: 14px var(--pad);
+  background: rgba(16, 18, 16, 0.78);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.fl-mark { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+.fl-mark-tile {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 9px;
+  background: var(--accent); color: var(--on-accent);
+  font-family: var(--head); font-weight: 700; font-size: 13px; letter-spacing: -0.5px;
+}
+.fl-mark-word { font-family: var(--head); font-weight: 600; font-size: 17px; letter-spacing: -0.3px; }
+
+.fl-nav-links { display: flex; gap: 26px; }
+.fl-nav-links a { color: var(--text-2); font-size: 14px; transition: color 0.18s; }
+.fl-nav-links a:hover { color: var(--text); }
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.fl-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent); color: var(--on-accent);
+  font-family: var(--body); font-weight: 600; font-size: 14px;
+  padding: 11px 20px; border-radius: 999px; border: 0; cursor: pointer;
+  transition: transform 0.18s, filter 0.18s;
+  white-space: nowrap;
+}
+.fl-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.fl-btn-sm { padding: 9px 16px; font-size: 13px; }
+.fl-btn-lg { padding: 15px 28px; font-size: 15px; }
+
+.fl-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-strong); color: var(--text);
+  border-radius: 999px; font-weight: 500; font-size: 15px;
+  padding: 15px 28px; transition: border-color 0.18s, background 0.18s;
+}
+.fl-btn-ghost:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+.fl-hero {
+  position: relative;
+  min-height: min(92vh, 860px);
+  display: grid; align-items: center;
+  padding: clamp(60px, 10vh, 120px) var(--pad);
+  overflow: hidden;
+}
+
+/* This gradient is not a placeholder — it is the hero on any device
+   without WebGL, and it has to stand on its own. */
+.fl-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(60% 60% at 70% 35%, rgba(198, 242, 78, 0.13), transparent 70%),
+    radial-gradient(50% 50% at 20% 80%, rgba(198, 242, 78, 0.06), transparent 70%);
+  pointer-events: none;
+}
+
+.fl-hero-scene { position: absolute; inset: 0; pointer-events: none; }
+.fl-hero-scene canvas { display: block; width: 100%; height: 100%; }
+
+/* Keeps the headline readable over whatever the scene is doing behind it.
+   Without this the 3D competes with the type and both lose. */
+.fl-hero-veil {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, rgba(16,18,16,0.94) 0%, rgba(16,18,16,0.74) 42%, rgba(16,18,16,0.2) 72%, transparent 100%);
+}
+
+.fl-hero-inner { position: relative; max-width: var(--max); margin: 0 auto; width: 100%; }
+
+.fl-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border-strong); border-radius: 999px;
+  padding: 6px 14px; font-size: 12px; color: var(--text-2);
+  margin: 0 0 26px;
+}
+.fl-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: fl-pulse 2.4s ease-in-out infinite;
+}
+@keyframes fl-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.28; } }
+
+.fl-h1 {
+  font-family: var(--head); font-weight: 700;
+  font-size: clamp(38px, 7vw, 76px);
+  line-height: 1.02; letter-spacing: -2px;
+  margin: 0 0 22px; max-width: 15ch;
+}
+.fl-accent { color: var(--accent); }
+
+.fl-lede {
+  font-size: clamp(16px, 2vw, 19px); line-height: 1.6;
+  color: var(--text-2); max-width: 54ch; margin: 0 0 34px;
+}
+
+.fl-hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 26px; }
+
+.fl-hero-note { font-size: 13px; color: var(--text-3); margin: 0; max-width: 60ch; }
+
+/* ── Sections ─────────────────────────────────────────────────── */
+.fl-section { padding: clamp(64px, 11vh, 128px) var(--pad); max-width: var(--max); margin: 0 auto; }
+.fl-section-alt { background: var(--surface); max-width: none; }
+.fl-section-alt > * { max-width: var(--max); margin-left: auto; margin-right: auto; }
+
+.fl-kicker {
+  font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 12px; font-weight: 600;
+}
+.fl-h2 {
+  font-family: var(--head); font-weight: 700;
+  font-size: clamp(27px, 4.2vw, 44px); line-height: 1.1; letter-spacing: -1.2px;
+  margin: 0 0 34px; max-width: 20ch;
+}
+.fl-body-wide {
+  font-size: 16px; line-height: 1.68; color: var(--text-2);
+  max-width: 66ch; margin: 0 0 18px;
+}
+
+/* Two up. The coaches section has four cards, and auto-fit gave it three
+   across with one orphaned on its own row — which reads as a mistake. */
+.fl-grid {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+}
+/* Three up, for sections that actually have three. */
+.fl-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+.fl-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 22px; padding: 26px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.fl-section-alt .fl-card { background: var(--bg); }
+.fl-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.fl-card h3 {
+  font-family: var(--head); font-weight: 600; font-size: 17px;
+  margin: 0 0 10px; letter-spacing: -0.3px;
+}
+.fl-card p { font-size: 14px; line-height: 1.62; color: var(--text-2); margin: 0; }
+
+/* ── Pricing ──────────────────────────────────────────────────── */
+.fl-price-row {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+.fl-price {
+  border: 1px solid var(--accent); border-radius: 26px;
+  padding: 30px; background: var(--bg);
+}
+.fl-price-quiet { border-color: var(--border); }
+.fl-price-name { font-size: 13px; color: var(--text-2); margin: 0 0 10px; }
+.fl-price-big {
+  font-family: var(--head); font-weight: 700; font-size: 52px;
+  line-height: 1; letter-spacing: -2px; margin: 0; color: var(--accent);
+}
+.fl-price-quiet .fl-price-big { color: var(--text); }
+.fl-price-sub { font-size: 13px; color: var(--text-3); margin: 8px 0 16px; }
+.fl-price-body { font-size: 14px; line-height: 1.62; color: var(--text-2); margin: 0; }
+.fl-fineprint { font-size: 13px; color: var(--text-3); margin: 22px 0 0; }
+
+/* ── FAQ ──────────────────────────────────────────────────────── */
+.fl-faq { border-top: 1px solid var(--border); }
+.fl-faq-item { border-bottom: 1px solid var(--border); }
+.fl-faq-q {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  background: none; border: 0; cursor: pointer;
+  padding: 22px 0; text-align: left;
+  font-family: var(--head); font-weight: 600; font-size: 16px; color: var(--text);
+}
+.fl-faq-sign { color: var(--accent); font-size: 22px; line-height: 1; flex: none; }
+.fl-faq-a {
+  font-size: 15px; line-height: 1.68; color: var(--text-2);
+  margin: 0; padding: 0 0 24px; max-width: 68ch;
+}
+
+/* ── Close + footer ───────────────────────────────────────────── */
+.fl-close {
+  padding: clamp(70px, 12vh, 140px) var(--pad);
+  text-align: center; border-top: 1px solid var(--border);
+}
+.fl-close .fl-h2 { max-width: none; margin-left: auto; margin-right: auto; }
+.fl-close .fl-body-wide { margin: 0 auto 28px; }
+
+.fl-footer {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+  padding: 30px var(--pad); border-top: 1px solid var(--border);
+}
+.fl-footer-mark {
+  display: flex; align-items: center; gap: 10px; margin-right: auto;
+  font-family: var(--head); font-weight: 600; font-size: 15px;
+}
+.fl-footer-links { display: flex; flex-wrap: wrap; gap: 22px; }
+.fl-footer-links a { font-size: 13px; color: var(--text-2); }
+.fl-footer-links a:hover { color: var(--accent); }
+.fl-footer-copy { font-size: 13px; color: var(--text-3); margin: 0; width: 100%; }
+
+/* ── Motion ───────────────────────────────────────────────────── */
+/* The three.js scene checks this itself and holds still; this covers the
+   CSS-only motion so the two agree. */
+@media (prefers-reduced-motion: reduce) {
+  .fl *, .fl *::before, .fl *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .fl-nav-links { display: none; }
+  /* The scene stays, but the veil goes near-opaque: on a phone the type
+     occupies the same space the 3D does, and the type wins. */
+  .fl-hero-veil {
+    background: linear-gradient(180deg, rgba(16,18,16,0.62) 0%, rgba(16,18,16,0.9) 55%, var(--bg) 100%);
+  }
+  .fl-hero-cta .fl-btn, .fl-hero-cta .fl-btn-ghost { flex: 1 1 100%; }
+}
