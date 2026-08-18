@@ -22,7 +22,7 @@ export default function AthletesPage() {
         <div className="fl-hero-veil fl-hero-veil-bottom" aria-hidden="true" />
         <div className="fl-hero-inner">
           <p className="fl-kicker">For athletes</p>
-          <h1 className="fl-h1 fl-h1-page">
+          <h1 className="fl-display fl-display-page">
             Your coach, between<br />
             <span className="fl-accent">the sessions.</span>
           </h1>

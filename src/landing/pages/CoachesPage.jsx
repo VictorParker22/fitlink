@@ -1,6 +1,7 @@
 import { useScene } from '../scenes/sceneKit.js';
 import { NOTIFY_HREF } from '../components/Shell.jsx';
 import Calculator from '../components/Calculator.jsx';
+import Ticker from '../components/Ticker.jsx';
 
 /**
  * Coaches — the longest page, because coaches are the buyer.
@@ -24,7 +25,7 @@ export default function CoachesPage() {
         <div className="fl-hero-veil fl-hero-veil-bottom" aria-hidden="true" />
         <div className="fl-hero-inner">
           <p className="fl-kicker">For coaches</p>
-          <h1 className="fl-h1 fl-h1-page">
+          <h1 className="fl-display fl-display-page">
             The business runs itself.<br />
             <span className="fl-accent">You run the athletes.</span>
           </h1>
@@ -40,6 +41,8 @@ export default function CoachesPage() {
         <h2 className="fl-h2">What does your book keep here?</h2>
         <Calculator />
       </section>
+
+      <Ticker words={['Seasons', 'Check-ins', 'Payouts', 'Library', 'Classes']} />
 
       <section className="fl-section fl-section-alt">
         <p className="fl-kicker">The work</p>

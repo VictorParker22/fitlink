@@ -39,7 +39,7 @@ export default function PricingPage() {
     <>
       <section className="fl-section fl-section-first">
         <p className="fl-kicker">Pricing</p>
-        <h1 className="fl-h1 fl-h1-page">
+        <h1 className="fl-display fl-display-page">
           One number, and it’s on<br />
           <span className="fl-accent">our side of the table.</span>
         </h1>

@@ -11,7 +11,7 @@
  * styles still living in index.css.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Epilogue:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Epilogue:wght@400;500;600&family=Anton&display=swap');
 
 .fl {
   /* Straight from the app. One accent, and it is used sparingly. */
@@ -421,4 +421,242 @@
   .fl-calc-bar-row { grid-template-columns: 1fr; gap: 4px; }
   .fl-calc-bar-num { text-align: left; }
   .fl-rule { grid-template-columns: 42px 1fr; }
+}
+
+/* ════ The athletic pass ══════════════════════════════════════════
+   After studying Equinox and Whoop: poster type, rhythm interruptions,
+   and the product visible on the page. Anton is the gym-poster voice —
+   one weight, all caps, zero apology — used for display moments only;
+   Space Grotesk keeps the h2/working tier so the page doesn't shout
+   every line. */
+
+.fl-display {
+  font-family: 'Anton', var(--head);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: clamp(54px, 10.5vw, 148px);
+  line-height: 0.94;
+  letter-spacing: 0.5px;
+  margin: 0 0 26px;
+  color: var(--text);
+}
+.fl-display-dim { color: var(--text-3); }
+.fl-display-close { font-size: clamp(48px, 8vw, 110px); margin-bottom: 18px; }
+.fl-display-page { font-size: clamp(42px, 7vw, 92px); margin-bottom: 22px; }
+
+/* ── Ticker ───────────────────────────────────────────────────── */
+.fl-ticker {
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  background: var(--bg);
+}
+.fl-ticker-track {
+  display: flex; width: max-content;
+  animation: fl-marquee 26s linear infinite;
+}
+.fl-ticker-rev .fl-ticker-track { animation-direction: reverse; }
+.fl-ticker-row { display: flex; flex: none; }
+.fl-ticker-word {
+  font-family: 'Anton', var(--head);
+  text-transform: uppercase;
+  font-size: clamp(20px, 3vw, 34px);
+  letter-spacing: 1px;
+  color: var(--text-3);
+  white-space: nowrap;
+  display: inline-flex; align-items: center;
+}
+.fl-ticker-dot { color: var(--accent); margin: 0 22px; }
+@keyframes fl-marquee { to { transform: translateX(-50%); } }
+/* Reduced motion: the strip becomes a static band — still texture,
+   no longer a conveyor. */
+@media (prefers-reduced-motion: reduce) {
+  .fl-ticker-track { animation: none; }
+}
+
+/* ── Split section (copy | phone) ─────────────────────────────── */
+.fl-split {
+  display: grid; gap: clamp(32px, 6vw, 80px);
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+@media (min-width: 900px) { .fl-split { grid-template-columns: 1.1fr 0.9fr; } }
+.fl-split-media { display: grid; justify-items: center; }
+
+/* ── Phone ────────────────────────────────────────────────────── */
+.fl-phone-wrap { display: grid; gap: 16px; justify-items: center; }
+.fl-phone {
+  position: relative;
+  width: min(310px, 82vw);
+  border-radius: 46px;
+  border: 1px solid var(--border-strong);
+  background: #0b0d0b;
+  padding: 12px;
+  box-shadow:
+    0 40px 80px -30px rgba(0, 0, 0, 0.8),
+    0 0 90px -40px rgba(198, 242, 78, 0.35);
+  transform: rotate(-2.2deg);
+}
+.fl-phone-notch {
+  position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+  width: 88px; height: 22px; border-radius: 12px; background: #0b0d0b; z-index: 2;
+}
+.fl-phone-screen {
+  border-radius: 36px; background: var(--bg); overflow: hidden;
+  padding: 54px 14px 18px; display: grid; gap: 12px;
+  min-height: 560px; align-content: start;
+}
+.fl-phone-caption { font-size: 12px; color: var(--text-3); text-align: center; max-width: 34ch; margin: 0; }
+
+.fl-ph-top { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px; }
+.fl-ph-timer { font-family: var(--head); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
+.fl-ph-session { font-size: 11px; color: var(--text-3); }
+
+.fl-ph-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 26px; padding: 16px; display: grid; gap: 8px;
+}
+.fl-ph-exhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+.fl-ph-extitle { font-family: var(--head); font-weight: 600; font-size: 17px; margin: 0; }
+.fl-ph-exmeta { font-size: 11px; color: var(--text-3); margin: 2px 0 0; }
+.fl-ph-muscle {
+  width: 38px; height: 48px; border-radius: 12px;
+  background: var(--accent-soft); display: grid; place-items: center;
+}
+
+.fl-ph-set {
+  border-radius: 16px; font-size: 12px;
+}
+.fl-ph-set-done {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--text-2); padding: 9px 12px;
+  background: rgba(198, 242, 78, 0.05);
+}
+.fl-ph-check { color: var(--accent); font-size: 13px; }
+
+.fl-ph-set-live {
+  border: 1px solid var(--accent); padding: 12px; display: grid; gap: 10px;
+  animation: fl-ph-live 9s infinite;
+}
+.fl-ph-set-row { display: flex; align-items: center; gap: 8px; }
+.fl-ph-setn { font-family: var(--head); font-weight: 600; font-size: 12px; margin-right: auto; }
+.fl-ph-stepper {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--bg); border-radius: 12px; padding: 6px 8px;
+}
+.fl-ph-stepbtn { color: var(--accent); font-size: 14px; width: 14px; text-align: center; }
+.fl-ph-stepval { font-family: var(--head); font-weight: 600; font-size: 14px; min-width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
+.fl-ph-reps::after { content: '8'; }
+.fl-ph-repup { animation: fl-ph-tap 9s infinite; }
+.fl-ph-logbtn {
+  background: var(--accent); color: var(--on-accent); border-radius: 999px;
+  text-align: center; padding: 9px; font-weight: 600; font-size: 12px;
+  animation: fl-ph-press 9s infinite;
+}
+
+.fl-ph-set2-done { animation: fl-ph-appear 9s infinite; }
+
+.fl-ph-rest {
+  display: flex; align-items: center; gap: 10px; padding: 4px 6px;
+  animation: fl-ph-appear 9s infinite;
+}
+.fl-ph-rest-label { font-size: 11px; color: var(--text-2); }
+.fl-ph-rest-track { flex: 1; height: 5px; border-radius: 3px; background: var(--bg); overflow: hidden; }
+.fl-ph-rest-fill {
+  height: 100%; border-radius: 3px; background: var(--accent);
+  animation: fl-ph-rest 9s infinite;
+}
+.fl-ph-rest-skip { font-size: 11px; color: var(--accent); }
+
+.fl-ph-set-next {
+  display: flex; justify-content: space-between; align-items: center;
+  border: 1px dashed var(--border-strong); padding: 10px 12px;
+  color: var(--text-3);
+  animation: fl-ph-next 9s infinite;
+}
+.fl-ph-nextlabel { font-size: 11px; }
+
+.fl-ph-msg {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 12px;
+}
+.fl-ph-msg-avatar {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  display: grid; place-items: center; font-family: var(--head); font-weight: 700; font-size: 12px;
+}
+.fl-ph-msg p { font-size: 12px; line-height: 1.5; color: var(--text-2); margin: 0; }
+
+/* The 9s choreography. One timeline, staged by percentage windows:
+   tap tap tap (0-28), log press (30), live card folds away (34-40),
+   summary line + rest appear (40), rest bar fills (42-86), next set
+   lights up (86-100), wrap. */
+@keyframes fl-ph-tap {
+  0%, 6%, 14%, 22%, 28%, 100% { transform: scale(1); }
+  3%, 11%, 19%, 25% { transform: scale(1.45); }
+}
+@keyframes fl-ph-press {
+  0%, 29%, 33%, 100% { filter: brightness(1); transform: scale(1); }
+  31% { filter: brightness(1.25); transform: scale(0.96); }
+}
+@keyframes fl-ph-live {
+  0%, 33% { opacity: 1; max-height: 120px; padding-top: 12px; padding-bottom: 12px; border-width: 1px; }
+  40%, 96% { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; border-width: 0; overflow: hidden; }
+  100% { opacity: 1; max-height: 120px; padding-top: 12px; padding-bottom: 12px; border-width: 1px; }
+}
+@keyframes fl-ph-appear {
+  0%, 38% { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+  44%, 96% { opacity: 1; max-height: 60px; }
+  100% { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
+}
+@keyframes fl-ph-rest {
+  0%, 42% { width: 0%; }
+  86%, 100% { width: 100%; }
+}
+@keyframes fl-ph-next {
+  0%, 84% { border-color: var(--border-strong); color: var(--text-3); }
+  90%, 96% { border-color: var(--accent); color: var(--text); }
+  100% { border-color: var(--border-strong); color: var(--text-3); }
+}
+/* A still of the app is still the app: freeze mid-scene, everything
+   in its resting (pre-log) state. */
+@media (prefers-reduced-motion: reduce) {
+  .fl-ph-repup, .fl-ph-logbtn, .fl-ph-set-live, .fl-ph-set2-done,
+  .fl-ph-rest, .fl-ph-rest-fill, .fl-ph-set-next { animation: none; }
+  .fl-ph-set2-done, .fl-ph-rest { display: none; }
+}
+
+/* ── Stat wall ────────────────────────────────────────────────── */
+/* Fixed 2x2 (4-across on wide) — auto-fit orphaned the fourth stat next
+   to an empty cell at tablet widths, which read as a rendering bug. */
+.fl-statwall {
+  display: grid; gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: 26px; overflow: hidden;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 1100px) { .fl-statwall { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 520px) { .fl-statwall { grid-template-columns: 1fr; } }
+.fl-stat { background: var(--bg); padding: clamp(24px, 4vw, 44px); }
+.fl-stat-n {
+  font-family: 'Anton', var(--head);
+  font-size: clamp(56px, 8vw, 110px);
+  line-height: 1; color: var(--accent); margin: 0 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+.fl-stat-unit { font-size: 0.5em; }
+.fl-stat-l { font-size: 13px; line-height: 1.5; color: var(--text-2); margin: 0; max-width: 24ch; }
+
+/* ── Reveal ───────────────────────────────────────────────────── */
+[data-reveal] {
+  opacity: 0; transform: translateY(26px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.65, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.65, 0.2, 1);
+}
+[data-reveal='2'] { transition-delay: 0.12s; }
+[data-reveal='3'] { transition-delay: 0.24s; }
+[data-reveal='4'] { transition-delay: 0.36s; }
+[data-reveal].fl-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
 }

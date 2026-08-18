@@ -2,15 +2,24 @@ import { Link } from 'react-router-dom';
 import { useScene } from '../scenes/sceneKit.js';
 import { NOTIFY_HREF } from '../components/Shell.jsx';
 import LiveEconomy from '../components/LiveEconomy.jsx';
+import PhoneDemo from '../components/PhoneDemo.jsx';
+import Ticker from '../components/Ticker.jsx';
+import { useReveal } from '../components/useReveal.js';
 
 /**
- * Home — the front door and the switchboard.
+ * Home — rebuilt after studying how athletic brands actually lay out.
  *
- * Its job changed when the site went multi-page: it no longer has to tell
- * every story, it has to tell ONE (coaching is a relationship; the money
- * proves we mean it) and route each audience to their own page. The three
- * doors are full cards, not nav duplicates — a visitor who ignores the top
- * nav still finds their path by scrolling.
+ * What Equinox and Whoop do that our first pass did not: enormous type used
+ * like a poster, the layout interrupting its own rhythm (tickers, stat
+ * walls, a phone breaking the column), and above all THE PRODUCT ON THE
+ * PAGE — Whoop floats its ring UI over photography; Equinox shows the
+ * clubs. Our first pass showed six identical text cards and no product,
+ * which is exactly why it read as template output.
+ *
+ * The order of sections is an argument, not a list:
+ *   poster hero → the product logging a set → the money moving →
+ *   the stat wall (terms as a poster) → the three doors → close.
+ * Concrete before abstract, product before pitch.
  */
 
 const loadCoachNetwork = () =>
@@ -18,10 +27,11 @@ const loadCoachNetwork = () =>
 
 export default function HomePage() {
   const heroRef = useScene(loadCoachNetwork);
+  useReveal();
 
   return (
     <>
-      {/* ── Hero ─────────────────────────────────────────────── */}
+      {/* ── Hero: the poster ─────────────────────────────────── */}
       <section className="fl-hero">
         <div className="fl-hero-scene" ref={heroRef} aria-hidden="true" />
         <div className="fl-hero-veil" aria-hidden="true" />
@@ -32,9 +42,9 @@ export default function HomePage() {
             In development · first release on iOS and Android
           </p>
 
-          <h1 className="fl-h1">
-            Coaching is a relationship.<br />
-            <span className="fl-accent">Run it like one.</span>
+          <h1 className="fl-display">
+            Train<span className="fl-display-dim">ers</span> keep<br />
+            <span className="fl-accent">90 percent.</span>
           </h1>
 
           <p className="fl-lede">
@@ -48,25 +58,79 @@ export default function HomePage() {
           </div>
 
           <p className="fl-hero-note">
-            You keep 90%. Payments go to your own Stripe account. Your athletes stay yours.
+            Flat 10% fee. Payments land in your own Stripe account. Your athletes stay yours.
           </p>
+        </div>
+      </section>
+
+      <Ticker words={['Train', 'Log', 'Check in', 'Get paid', 'Repeat']} />
+
+      {/* ── The product, up close ────────────────────────────── */}
+      <section className="fl-section fl-split">
+        <div className="fl-split-copy" data-reveal>
+          <p className="fl-kicker">01 — The session</p>
+          <h2 className="fl-h2">Mid-set is no place<br />for a keyboard.</h2>
+          <p className="fl-body-wide">
+            This is the screen an athlete actually lives on. Weight and reps move on steppers
+            built for a hand that just finished squatting; the finished set collapses to one
+            line; the rest timer runs — or gets skipped for the whole workout in one tap.
+          </p>
+          <p className="fl-body-wide">
+            And the coach is right there in the session, because the product is the
+            relationship, not the logbook.
+          </p>
+          <Link className="fl-btn-ghost" to="/athletes">The athlete side →</Link>
+        </div>
+        <div className="fl-split-media" data-reveal="2">
+          <PhoneDemo />
         </div>
       </section>
 
       {/* ── The economy, running ─────────────────────────────── */}
       <section className="fl-section fl-section-alt">
-        <p className="fl-kicker">The money, moving</p>
-        <h2 className="fl-h2">Watch what a 10% fee leaves on the table. Yours.</h2>
+        <div data-reveal>
+          <p className="fl-kicker">02 — The money</p>
+          <h2 className="fl-h2">Watch what a 10% fee leaves on the table. Yours.</h2>
+        </div>
         <LiveEconomy />
       </section>
 
-      {/* ── Three doors ──────────────────────────────────────── */}
+      <Ticker words={['Seasons', 'Passes', 'Payouts', 'Classes', 'Check-ins']} reverse />
+
+      {/* ── Stat wall: the terms, poster-sized ───────────────── */}
+      {/* Every number here is a published product term, not a metric we
+          invented. That is what lets them be this big. */}
       <section className="fl-section">
-        <p className="fl-kicker">Find your page</p>
-        <h2 className="fl-h2">Three ways into the same product.</h2>
+        <p className="fl-kicker" data-reveal>03 — The terms</p>
+        <div className="fl-statwall">
+          <div className="fl-stat" data-reveal>
+            <p className="fl-stat-n">90<span className="fl-stat-unit">%</span></p>
+            <p className="fl-stat-l">of athlete revenue stays with the coach</p>
+          </div>
+          <div className="fl-stat" data-reveal="2">
+            <p className="fl-stat-n">$0</p>
+            <p className="fl-stat-l">monthly fee — a slow month costs nothing</p>
+          </div>
+          <div className="fl-stat" data-reveal="3">
+            <p className="fl-stat-n">1</p>
+            <p className="fl-stat-l">tap to log a set, steppers not keyboards</p>
+          </div>
+          <div className="fl-stat" data-reveal="4">
+            <p className="fl-stat-n">100<span className="fl-stat-unit">%</span></p>
+            <p className="fl-stat-l">of your roster leaves with you if you go</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Three doors ──────────────────────────────────────── */}
+      <section className="fl-section fl-section-alt">
+        <div data-reveal>
+          <p className="fl-kicker">04 — Find your page</p>
+          <h2 className="fl-h2">Three ways into the same product.</h2>
+        </div>
 
         <div className="fl-doors">
-          <Link className="fl-door" to="/coaches">
+          <Link className="fl-door" to="/coaches" data-reveal>
             <p className="fl-door-kicker">For coaches</p>
             <h3 className="fl-door-title">Your whole business, one place</h3>
             <p className="fl-door-body">
@@ -76,7 +140,7 @@ export default function HomePage() {
             <span className="fl-door-go" aria-hidden="true">→</span>
           </Link>
 
-          <Link className="fl-door" to="/athletes">
+          <Link className="fl-door" to="/athletes" data-reveal="2">
             <p className="fl-door-kicker">For athletes</p>
             <h3 className="fl-door-title">A coach in your pocket</h3>
             <p className="fl-door-body">
@@ -86,7 +150,7 @@ export default function HomePage() {
             <span className="fl-door-go" aria-hidden="true">→</span>
           </Link>
 
-          <Link className="fl-door" to="/gyms">
+          <Link className="fl-door" to="/gyms" data-reveal="3">
             <p className="fl-door-kicker">For gyms</p>
             <h3 className="fl-door-title">Seats, rosters, revenue</h3>
             <p className="fl-door-body">
@@ -100,10 +164,11 @@ export default function HomePage() {
 
       {/* ── Close ────────────────────────────────────────────── */}
       <section className="fl-close">
-        <h2 className="fl-h2">FitLink launches this year.</h2>
+        <h2 className="fl-display fl-display-close">This year.</h2>
         <p className="fl-body-wide">
-          There is no waitlist form here because there is no waitlist system behind it yet.
-          Email us instead — it reaches a person.
+          FitLink launches on iOS and Android. No waitlist form — there is no waitlist system
+          behind it yet, and a form that eats addresses is worse than an email that reaches a
+          person.
         </p>
         <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Email us</a>
       </section>

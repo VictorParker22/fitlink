@@ -24,7 +24,7 @@ export default function GymsPage() {
         <div className="fl-hero-veil fl-hero-veil-bottom" aria-hidden="true" />
         <div className="fl-hero-inner">
           <p className="fl-kicker">For gyms</p>
-          <h1 className="fl-h1 fl-h1-page">
+          <h1 className="fl-display fl-display-page">
             Every coach on one roof.<br />
             <span className="fl-accent">None of them boxed in.</span>
           </h1>
