@@ -100,7 +100,7 @@ export default function PhoneDemo() {
       </div>
 
       <p className="fl-phone-caption">
-        The in-session screen. Steppers, not keyboards — typing is the fallback, not the flow.
+        The in-session screen. Steppers, not keyboards.
       </p>
     </div>
   );

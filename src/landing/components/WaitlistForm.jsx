@@ -126,7 +126,7 @@ export default function WaitlistForm({ source = 'home' }) {
         </button>
       </div>
       <p className="fl-wl-note">
-        One email at launch. Nothing else, ever — the privacy policy is two clicks away and it means it.
+        One email at launch. Nothing else, ever.
       </p>
     </form>
   );

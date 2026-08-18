@@ -50,7 +50,7 @@ export default function AthletesPage() {
             </p>
           </article>
           <article className="fl-card">
-            <h3>Rest timers that adapt</h3>
+            <h3>Rest, on your terms.</h3>
             <p>
               Structure when you want it. One tap to skip the lot when you don’t.
               It asks once.
@@ -63,14 +63,14 @@ export default function AthletesPage() {
             </p>
           </article>
           <article className="fl-card">
-            <h3>Check-ins in your own words</h3>
+            <h3>Say it your way.</h3>
             <p>
               No sliders. You say how the week went.
               A person answers.
             </p>
           </article>
           <article className="fl-card">
-            <h3>Your data is yours</h3>
+            <h3>Yours means yours.</h3>
             <p>
               Delete your account and everything goes. Your coach keeps
               their books — not your life.
@@ -82,8 +82,8 @@ export default function AthletesPage() {
       <section className="fl-close">
         <h2 className="fl-h2">Got an invite from your coach?</h2>
         <p className="fl-body-wide">
-          Then you’re most of the way in already. The app launches this year on iOS and
-          Android — your coach will send the link.
+          Then you’re most of the way in. Launching this year —
+          your coach sends the link.
         </p>
         <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
       </section>

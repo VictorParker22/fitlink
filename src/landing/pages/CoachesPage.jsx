@@ -56,7 +56,7 @@ export default function CoachesPage() {
             </p>
           </article>
           <article className="fl-card">
-            <h3>Check-ins that read like conversation</h3>
+            <h3>Check-ins that talk back.</h3>
             <p>
               Their own words, not a form. The week at a glance.
               Reply where the thread already is.
@@ -77,14 +77,14 @@ export default function CoachesPage() {
             </p>
           </article>
           <article className="fl-card">
-            <h3>A library that compounds</h3>
+            <h3>Build once. Coach forever.</h3>
             <p>
               Demos, muscle maps, honest macros. Built once.
               Reused on every athlete you ever take on.
             </p>
           </article>
           <article className="fl-card">
-            <h3>Live and on-demand classes</h3>
+            <h3>Teach one. Sell it twice.</h3>
             <p>
               Broadcast it live or sell the recording. Same rails,
               same flat 10%.

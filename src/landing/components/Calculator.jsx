@@ -48,7 +48,7 @@ export default function Calculator() {
       <div className="fl-calc-out">
         <div className="fl-calc-big-wrap">
           <p className="fl-calc-big">${Math.round(fitlinkKeep).toLocaleString()}</p>
-          <p className="fl-calc-big-sub">yours, every month on FitLink</p>
+          <p className="fl-calc-big-sub">Yours. Every month.</p>
         </div>
 
         <div className="fl-calc-bars" aria-hidden="true">
@@ -73,8 +73,8 @@ export default function Calculator() {
 
         <p className="fl-calc-note">
           {gross < crossover
-            ? `Under $${crossover.toLocaleString()}/month gross, a flat subscription costs you more than our 10% — this is exactly the coach FitLink is priced for.`
-            : `At your scale a flat fee wins on paper — and we still think you'll stay for what the 10% buys: payments, seasons, check-ins and the athlete app, with no bill in a slow month.`}
+            ? `Under $${crossover.toLocaleString()} a month, a flat subscription costs you more than our 10%. You’re exactly who this is priced for.`
+            : `At your scale, a flat fee wins on paper. We think you’ll stay for what the 10% buys — and a slow month still costs nothing.`}
         </p>
       </div>
     </div>

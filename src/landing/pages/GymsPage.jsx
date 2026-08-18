@@ -40,28 +40,28 @@ export default function GymsPage() {
         <h2 className="fl-h2">The business view. And only that.</h2>
         <div className="fl-grid">
           <article className="fl-card">
-            <h3>Seats and the roster</h3>
+            <h3>Who’s working. At a glance.</h3>
             <p>
               Who’s on a seat, who carries how many athletes, who worked when.
               Stamped by real work, not app-opens.
             </p>
           </article>
           <article className="fl-card">
-            <h3>Revenue this month</h3>
+            <h3>Real revenue. Real rows.</h3>
             <p>
               Summed from real payments, per coach. Unmeasured numbers say so —
               they don’t pose as zeros.
             </p>
           </article>
           <article className="fl-card">
-            <h3>Your share, in the open</h3>
+            <h3>Your cut, in daylight.</h3>
             <p>
               Your cut is a split your coaches can read — not a fee buried
               in terms. Every change is logged.
             </p>
           </article>
           <article className="fl-card">
-            <h3>Never the private half</h3>
+            <h3>The private half stays private.</h3>
             <p>
               No threads, no check-ins, no health data. There is no switch
               that reveals them. Not even for us.

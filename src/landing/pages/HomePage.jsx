@@ -60,7 +60,7 @@ export default function HomePage() {
           <WaitlistForm source="home-hero" />
 
           <p className="fl-hero-note">
-            Flat 10% fee. Payments land in your own Stripe account. Your athletes stay yours.
+            A flat 10%. Your own Stripe account. Your athletes, always yours.
           </p>
         </div>
       </section>
