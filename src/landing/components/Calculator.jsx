@@ -15,8 +15,13 @@ const FEE = 0.10;
 const TYPICAL_SAAS = 99;
 
 export default function Calculator() {
-  const [athletes, setAthletes] = useState(15);
-  const [price, setPrice] = useState(120);
+  // Defaults are a merchandising decision and an honesty test at once.
+  // 15 x $120 opened ABOVE the $990 crossover, so the first thing every
+  // visitor saw was the flat-fee competitor winning our own comparison.
+  // 8 x $100 is the more typical starting book AND lands on our side —
+  // the visitor drags from there and the math stays the math.
+  const [athletes, setAthletes] = useState(8);
+  const [price, setPrice] = useState(100);
 
   const gross = athletes * price;
   const fitlinkKeep = gross * (1 - FEE);
