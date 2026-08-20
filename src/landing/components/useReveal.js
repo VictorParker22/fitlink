@@ -21,7 +21,13 @@ export function useReveal() {
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting) {
+          // Reveal on intersection — or when the element is already ABOVE
+          // the viewport. An instant jump (anchor, restored scroll, a
+          // programmatic scrollTo) teleports PAST elements without ever
+          // intersecting them, and the observer's initial attach-time
+          // callback is the only chance to catch that state. Content that
+          // was scrolled past must never stay invisible.
+          if (e.isIntersecting || e.boundingClientRect.top < 0) {
             e.target.classList.add('fl-in');
             io.unobserve(e.target);
           }

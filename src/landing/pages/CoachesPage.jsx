@@ -1,4 +1,5 @@
 import { useScene } from '../scenes/sceneKit.js';
+import { useReveal } from '../components/useReveal.js';
 import { NOTIFY_HREF } from '../components/Shell.jsx';
 import Calculator from '../components/Calculator.jsx';
 import Ticker from '../components/Ticker.jsx';
@@ -18,6 +19,11 @@ const loadFlow = () => import('../scenes/FlowField.js');
 
 export default function CoachesPage() {
   const heroRef = useScene(loadFlow);
+  // data-reveal content starts at opacity 0 by CSS contract; this hook
+  // is what reveals it. Attributes without the hook = invisible sections
+  // (shipped once — the deepening pass added attributes to pages that
+  // never called it).
+  useReveal();
 
   return (
     <>
