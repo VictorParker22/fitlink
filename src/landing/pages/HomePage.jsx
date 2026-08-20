@@ -280,6 +280,12 @@ export default function HomePage() {
           here is a published product term, not a metric. */}
       <section className="fl-section fl-railed">
         <div className="fl-rail" aria-hidden="true"><span>The rules</span></div>
+        <div data-reveal>
+          <p className="fl-kicker">The rules</p>
+          {/* The rail vanishes under 900px, so without this heading the
+              mobile page opened on naked numbered rows — context-free. */}
+          <h2 className="fl-h2">Three things that can’t change.</h2>
+        </div>
         <div className="fl-edit-rows" data-reveal>
           <Link className="fl-edit-row" to="/coaches">
             <span className="fl-edit-row-n" aria-hidden="true">01</span>

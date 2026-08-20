@@ -540,7 +540,7 @@
   animation: fl-ph-live 9s infinite;
 }
 .fl-ph-set-row { display: flex; align-items: center; gap: 8px; }
-.fl-ph-setn { font-family: var(--head); font-weight: 600; font-size: 12px; margin-right: auto; }
+.fl-ph-setn { font-family: var(--head); font-weight: 600; font-size: 12px; margin-right: auto; white-space: nowrap; }
 .fl-ph-stepper {
   display: flex; align-items: center; gap: 7px;
   background: var(--bg); border-radius: 12px; padding: 6px 8px;
