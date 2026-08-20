@@ -949,3 +949,166 @@
 .fl-cp-tile-of { font-size: 16px; color: var(--text-3); }
 .fl-cp-tile-sub { font-size: 11px; color: var(--text-2); margin: 6px 0 0; }
 @media (max-width: 560px) { .fl-cp-tiles { grid-template-columns: 1fr; } }
+
+/* ════ The editorial pass (on.energy × Consensys) ═════════════════
+   Layout language studied from both sites live on 2026-08-20:
+   on.energy — line-masked hero reveals, vertical letter-rail section
+   labels, links woven INTO prose, editorial list rows, a two-sentence
+   contact band. Consensys — manifesto bands with a coined term,
+   product-stack storytelling, STATS AS TYPOGRAPHY. Their layouts, our
+   tokens: nothing here changes the palette or type families. */
+
+/* ── Line-mask reveals (the on.energy hero move) ─────────────────
+   Each .fl-mask wraps one line in an overflow-hidden sleeve; the inner
+   span rises into view. Stagger with --d. Reduced motion shows text
+   immediately — a masked line that never unmasks is a blank page. */
+.fl-mask { display: block; overflow: hidden; }
+.fl-mask > span {
+  display: block;
+  transform: translateY(110%);
+  animation: fl-unmask 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes fl-unmask { to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .fl-mask > span { transform: none; animation: none; }
+}
+
+/* ── Vertical letter rail (on.energy's section spine) ────────────── */
+.fl-railed { position: relative; }
+.fl-rail {
+  position: absolute; top: 0; bottom: 0; left: calc(-1 * var(--pad));
+  width: var(--pad); min-width: 44px;
+  display: flex; align-items: flex-start; justify-content: center;
+  pointer-events: none;
+}
+.fl-rail span {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-family: var(--head); font-weight: 600; font-size: 12px;
+  letter-spacing: 4px; text-transform: uppercase;
+  color: var(--text-3);
+}
+@media (max-width: 900px) { .fl-rail { display: none; } }
+
+/* ── Manifesto band (Consensys thesis section) ───────────────────── */
+.fl-manifesto {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.fl-manifesto-inner {
+  max-width: var(--max); margin: 0 auto;
+  padding: clamp(70px, 12vh, 140px) var(--pad);
+  display: grid; gap: 28px;
+}
+.fl-manifesto-claim {
+  font-family: var(--head); font-weight: 700;
+  font-size: clamp(30px, 4.6vw, 54px); line-height: 1.12; letter-spacing: -1.4px;
+  max-width: 24ch; margin: 0;
+}
+.fl-manifesto-prose {
+  font-size: clamp(16px, 1.8vw, 19px); line-height: 1.75;
+  color: var(--text-2); max-width: 62ch; margin: 0;
+}
+/* Links woven into prose — the on.energy move. Underline offset keeps
+   them legible as links without breaking the reading line. */
+.fl-manifesto-prose a, .fl-prose-link {
+  color: var(--accent); text-decoration: underline;
+  text-underline-offset: 4px; text-decoration-thickness: 1px;
+}
+.fl-manifesto-prose a:hover, .fl-prose-link:hover { color: var(--text); }
+.fl-manifesto-term { color: var(--text); font-weight: 600; }
+
+/* ── The stack blocks (Consensys product narrative) ──────────────── */
+.fl-stackrow {
+  display: grid; gap: clamp(24px, 4vw, 64px);
+  grid-template-columns: 1fr;
+  padding: clamp(48px, 8vh, 88px) 0;
+  border-bottom: 1px solid var(--border);
+}
+@media (min-width: 900px) { .fl-stackrow { grid-template-columns: 1.15fr 0.85fr; } }
+.fl-stackrow:last-of-type { border-bottom: 0; }
+.fl-stack-name {
+  font-family: var(--head); font-weight: 700;
+  font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.8px; margin: 0 0 14px;
+}
+.fl-stack-body { font-size: 16px; line-height: 1.7; color: var(--text-2); margin: 0 0 22px; max-width: 56ch; }
+/* Stats as typography — Consensys's USERS __M treatment. Only product
+   TERMS live here (90%, $0…): we print no user counts we do not have. */
+.fl-stack-stats { display: flex; gap: clamp(28px, 5vw, 64px); align-items: flex-start; }
+.fl-stack-stat { display: grid; gap: 6px; }
+.fl-stack-stat-label {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-3); font-weight: 600;
+}
+.fl-stack-stat-value {
+  font-family: 'Anton', var(--head);
+  font-size: clamp(48px, 6vw, 84px); line-height: 0.95;
+  color: var(--accent); font-variant-numeric: tabular-nums;
+}
+.fl-stack-stat-value small { font-size: 0.45em; color: var(--text-2); letter-spacing: 0; }
+
+/* ── Editorial rows (on.energy news-list anatomy) ────────────────── */
+.fl-edit-rows { border-top: 1px solid var(--border); }
+.fl-edit-row {
+  display: grid; grid-template-columns: 64px 1fr auto; gap: 20px; align-items: center;
+  padding: 26px 0; border-bottom: 1px solid var(--border);
+  transition: padding-left 0.25s;
+}
+a.fl-edit-row:hover { padding-left: 10px; }
+.fl-edit-row-n {
+  font-family: 'Anton', var(--head); font-size: 24px;
+  color: var(--accent); opacity: 0.8;
+}
+.fl-edit-row-title { font-family: var(--head); font-weight: 600; font-size: clamp(17px, 2vw, 21px); margin: 0 0 4px; letter-spacing: -0.3px; }
+.fl-edit-row-sub { font-size: 14px; color: var(--text-3); margin: 0; }
+.fl-edit-row-go { color: var(--accent); font-size: 20px; }
+@media (max-width: 640px) { .fl-edit-row { grid-template-columns: 44px 1fr auto; } }
+
+/* ── Hero featured card (on.energy's hero link chip) ─────────────── */
+.fl-featured {
+  display: inline-flex; align-items: center; gap: 14px;
+  margin-top: 26px;
+  background: rgba(24, 27, 23, 0.55);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  border: 1px solid rgba(237, 239, 232, 0.09);
+  border-radius: 16px;
+  padding: 14px 20px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.fl-featured:hover { border-color: var(--accent); transform: translateY(-2px); }
+.fl-featured-kicker { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--accent); font-weight: 600; margin: 0 0 3px; }
+.fl-featured-text { font-size: 13.5px; color: var(--text-2); margin: 0; }
+.fl-featured-go { color: var(--accent); font-size: 18px; }
+
+/* ── Contact band ("Energy is complicated. Reaching us isn't.") ──── */
+.fl-band {
+  border-top: 1px solid var(--border);
+  padding: clamp(70px, 12vh, 130px) var(--pad);
+}
+.fl-band-inner {
+  max-width: var(--max); margin: 0 auto;
+  display: grid; gap: 26px;
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+@media (min-width: 900px) { .fl-band-inner { grid-template-columns: 1.2fr 0.8fr; } }
+.fl-band-title {
+  font-family: var(--head); font-weight: 700;
+  font-size: clamp(26px, 3.6vw, 42px); letter-spacing: -1px; line-height: 1.15;
+  margin: 0; max-width: 18ch;
+}
+
+/* ── Footer, promoted to columns (both sites) ─────────────────────── */
+.fl-footer-cols {
+  display: grid; gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  width: 100%; padding-bottom: 8px;
+}
+.fl-footer-col { display: grid; gap: 10px; align-content: start; }
+.fl-footer-col-h {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-3); font-weight: 600; margin: 0 0 4px;
+}
+.fl-footer-col a { font-size: 14px; color: var(--text-2); }
+.fl-footer-col a:hover { color: var(--accent); }

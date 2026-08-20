@@ -25,17 +25,20 @@ export default function GymsPage() {
         <div className="fl-hero-inner">
           <p className="fl-kicker">For gyms</p>
           <h1 className="fl-display fl-display-page">
-            Every coach on one roof.<br />
-            <span className="fl-accent">None of them boxed in.</span>
+            <span className="fl-mask"><span style={{ '--d': '0.05s' }}>Every coach on one roof.</span></span>
+            <span className="fl-mask"><span style={{ '--d': '0.15s' }}><span className="fl-accent">None of them boxed in.</span></span></span>
           </h1>
           <p className="fl-lede">
-            Buy seats. See the business. Stay out of the coaching.
-            The boundary is built in — not written down.
+            <span className="fl-mask"><span style={{ '--d': '0.3s' }}>
+              Buy seats. See the business. Stay out of the coaching.
+              The boundary is built in — not written down.
+            </span></span>
           </p>
         </div>
       </section>
 
-      <section className="fl-section">
+      <section className="fl-section fl-railed">
+        <div className="fl-rail"><span>The business view</span></div>
         <p className="fl-kicker">What you see</p>
         <h2 className="fl-h2">The business view. And only that.</h2>
         <div className="fl-grid">
@@ -73,38 +76,52 @@ export default function GymsPage() {
       <section className="fl-section fl-section-alt">
         <p className="fl-kicker">The rules of power</p>
         <h2 className="fl-h2">Three things a gym cannot do here.</h2>
-        <div className="fl-rules">
-          <div className="fl-rule">
-            <span className="fl-rule-n">01</span>
-            <p>
-              <strong>A gym cannot add a coach to itself.</strong> It invites; the coach
-              accepts. Membership starts on the coach’s yes, never on an admin’s click.
-            </p>
+        <div className="fl-edit-rows">
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n">01</span>
+            <div>
+              <p className="fl-edit-row-title">A gym cannot add a coach to itself.</p>
+              <p className="fl-edit-row-sub">
+                It invites; the coach accepts. Membership starts on the coach’s yes,
+                never on an admin’s click.
+              </p>
+            </div>
           </div>
-          <div className="fl-rule">
-            <span className="fl-rule-n">02</span>
-            <p>
-              <strong>A gym cannot keep a leaving coach’s athletes.</strong> The roster belongs
-              to the coach. When they go, it goes with them — structurally, not contractually.
-            </p>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n">02</span>
+            <div>
+              <p className="fl-edit-row-title">A gym cannot keep a leaving coach’s athletes.</p>
+              <p className="fl-edit-row-sub">
+                The roster belongs to the coach. When they go, it goes with them —
+                structurally, not contractually.
+              </p>
+            </div>
           </div>
-          <div className="fl-rule">
-            <span className="fl-rule-n">03</span>
-            <p>
-              <strong>A billing problem cannot evict a working coach.</strong> If seats lapse,
-              the team is frozen at its current size — nobody new joins, nobody working is cut
-              off mid-month over an expired card.
-            </p>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n">03</span>
+            <div>
+              <p className="fl-edit-row-title">A billing problem cannot evict a working coach.</p>
+              <p className="fl-edit-row-sub">
+                If seats lapse, the team is frozen at its current size — nobody new joins,
+                nobody working is cut off mid-month over an expired card.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="fl-close">
-        <h2 className="fl-h2">Running coaches under one roof?</h2>
-        <p className="fl-body-wide">
-          Tell us how many coaches you run. We’ll quote it plainly.
-        </p>
-        <a className="fl-btn fl-btn-lg" href={GYM_MAIL}>Talk to us</a>
+      <section className="fl-band">
+        <div className="fl-band-inner">
+          <div>
+            <h2 className="fl-band-title">Running coaches under one roof?</h2>
+            <p className="fl-body-wide">
+              Tell us how many coaches you run. We’ll quote it plainly.
+            </p>
+          </div>
+          <div>
+            <a className="fl-btn fl-btn-lg" href={GYM_MAIL}>Talk to us</a>
+          </div>
+        </div>
       </section>
     </>
   );

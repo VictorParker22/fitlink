@@ -1,26 +1,29 @@
 import { Link } from 'react-router-dom';
 import { useScene } from '../scenes/sceneKit.js';
 import { NOTIFY_HREF } from '../components/Shell.jsx';
+import CoachPanel from '../components/CoachPanel.jsx';
 import LiveEconomy from '../components/LiveEconomy.jsx';
 import PhoneDemo from '../components/PhoneDemo.jsx';
+import PRShareCard from '../components/PRShareCard.jsx';
 import Ticker from '../components/Ticker.jsx';
 import { useReveal } from '../components/useReveal.js';
 import WaitlistForm from '../components/WaitlistForm.jsx';
 
 /**
- * Home — rebuilt after studying how athletic brands actually lay out.
+ * Home — the editorial pass, after studying on.energy and Consensys live.
  *
- * What Equinox and Whoop do that our first pass did not: enormous type used
- * like a poster, the layout interrupting its own rhythm (tickers, stat
- * walls, a phone breaking the column), and above all THE PRODUCT ON THE
- * PAGE — Whoop floats its ring UI over photography; Equinox shows the
- * clubs. Our first pass showed six identical text cards and no product,
- * which is exactly why it read as template output.
+ * What those two sites do that the athletic pass did not: the hero arrives
+ * line by line from behind a mask instead of all at once; sections carry a
+ * vertical letter rail instead of numbered kickers; the thesis gets its own
+ * manifesto band with links woven INTO the prose; the product is told as a
+ * stack of narrative rows with stats set as typography; and the page closes
+ * on a two-clause band, not a poster. Their layout language, our tokens —
+ * the palette, type and honesty fixtures (the economy model's disclosure,
+ * no invented user counts, no fake logos) all survive unchanged.
  *
- * The order of sections is an argument, not a list:
- *   poster hero → the product logging a set → the money moving →
- *   the stat wall (terms as a poster) → the three doors → close.
- * Concrete before abstract, product before pitch.
+ * The old stat wall is gone on purpose: its numbers now live inside the
+ * stack rows, next to the screens they describe, and printing them twice
+ * was clutter pretending to be emphasis.
  */
 
 const loadCoachNetwork = () =>
@@ -32,29 +35,37 @@ export default function HomePage() {
 
   return (
     <>
-      {/* ── Hero: the poster ─────────────────────────────────── */}
+      {/* ── Hero: the poster, unmasking line by line ─────────── */}
       <section className="fl-hero">
         <div className="fl-hero-scene" ref={heroRef} aria-hidden="true" />
         <div className="fl-hero-veil" aria-hidden="true" />
 
         <div className="fl-hero-inner">
-          {/* The identity anchor. The audit's finding: the hero hook told
-              you the terms before the page ever said what FitLink IS. This
-              line does that job in eight words; "launching this year" keeps
-              the honesty without leading with deflation. */}
           <p className="fl-eyebrow">
             <span className="fl-dot" aria-hidden="true" />
             FitLink — the app coaching businesses run on · launching this year
           </p>
 
           <h1 className="fl-display">
-            Train<span className="fl-display-dim">ers</span> keep<br />
-            <span className="fl-accent">90 percent.</span>
+            <span className="fl-mask">
+              <span style={{ '--d': '0.05s' }}>
+                Train<span className="fl-display-dim">ers</span> keep
+              </span>
+            </span>
+            <span className="fl-mask">
+              <span style={{ '--d': '0.15s' }} className="fl-accent">90 percent.</span>
+            </span>
           </h1>
 
           <p className="fl-lede">
-            The roster. The programming. The check-ins. The money. Handled.
-            All that’s left is the coaching.
+            <span className="fl-mask">
+              <span style={{ '--d': '0.3s' }}>
+                The roster. The programming. The check-ins. The money. Handled.
+              </span>
+            </span>
+            <span className="fl-mask">
+              <span style={{ '--d': '0.4s' }}>All that’s left is the coaching.</span>
+            </span>
           </p>
 
           <WaitlistForm source="home-hero" />
@@ -62,106 +73,142 @@ export default function HomePage() {
           <p className="fl-hero-note">
             A flat 10%. Your own Stripe account. Your athletes, always yours.
           </p>
+
+          {/* The on.energy hero chip: one featured door, for the visitor
+              who came to check the math before reading a word of pitch. */}
+          <Link className="fl-featured" to="/coaches">
+            <div>
+              <p className="fl-featured-kicker">The number you came for</p>
+              <p className="fl-featured-text">
+                The calculator that shows what your book keeps here
+              </p>
+            </div>
+            <span className="fl-featured-go" aria-hidden="true">→</span>
+          </Link>
         </div>
       </section>
 
       <Ticker words={['Train', 'Log', 'Check in', 'Get paid', 'Repeat']} />
 
-      {/* ── The product, up close ────────────────────────────── */}
-      <section className="fl-section fl-split">
-        <div className="fl-split-copy" data-reveal>
-          <p className="fl-kicker">01 — The session</p>
-          <h2 className="fl-h2">Mid-set is no place<br />for a keyboard.</h2>
-          <p className="fl-body-wide">
-            Steppers, not typing. Finished sets fold away. The rest timer runs itself —
-            or doesn’t. Your call, one tap.
+      {/* ── Manifesto: the thesis, in prose ──────────────────── */}
+      <section className="fl-manifesto">
+        <div className="fl-manifesto-inner" data-reveal>
+          <p className="fl-kicker">The coaching economy</p>
+          <p className="fl-manifesto-claim">
+            Software ate the gym. The relationship survived.
           </p>
-          <p className="fl-body-wide">
-            And your coach is right there in the session. Because the product is the
-            relationship, not the logbook.
+          <p className="fl-manifesto-prose">
+            Most coaching platforms charge rent. The monthly fee arrives whether
+            your book grew or shrank — a landlord’s income, collected from your
+            work either way. Software built on rent gets built for the landlord.
           </p>
-          <Link className="fl-btn-ghost" to="/athletes">The athlete side →</Link>
+          <p className="fl-manifesto-prose">
+            FitLink takes{' '}
+            <Link className="fl-prose-link" to="/pricing">a flat 10%</Link>{' '}
+            and nothing else, so the software’s income is the coach’s income.
+            We call that <strong className="fl-manifesto-term">aligned software</strong>:
+            the only way we grow is if{' '}
+            <Link className="fl-prose-link" to="/coaches">the whole business</Link>{' '}
+            — roster, seasons, check-ins, payouts — genuinely runs better here.
+            A slow month costs us both.
+          </p>
         </div>
-        <div className="fl-split-media" data-reveal="2">
-          <PhoneDemo />
+      </section>
+
+      {/* ── The stack: the product, told as three rows ───────── */}
+      <section className="fl-section fl-railed">
+        <div className="fl-rail" aria-hidden="true"><span>The stack</span></div>
+
+        {/* Row 1 — the athlete's set, logged */}
+        <div className="fl-stackrow">
+          <div data-reveal>
+            <h2 className="fl-stack-name">The session</h2>
+            <p className="fl-stack-body">
+              Steppers, not typing — finished sets fold away and the rest timer
+              runs itself, or doesn’t, on one tap. And the coach is right there
+              in the session, because the product is the relationship, not the
+              logbook.
+            </p>
+            <Link className="fl-btn-ghost" to="/athletes">The athlete side →</Link>
+            <div className="fl-stack-stats" style={{ marginTop: 28 }}>
+              <div className="fl-stack-stat">
+                <span className="fl-stack-stat-label">To log a set</span>
+                <span className="fl-stack-stat-value">1<small> tap</small></span>
+              </div>
+              <div className="fl-stack-stat">
+                <span className="fl-stack-stat-label">Keyboards mid-set</span>
+                <span className="fl-stack-stat-value">0</span>
+              </div>
+            </div>
+          </div>
+          <div data-reveal="2">
+            <PhoneDemo />
+          </div>
+        </div>
+
+        {/* Row 2 — the coach's book, run */}
+        <div className="fl-stackrow">
+          <div data-reveal>
+            <h2 className="fl-stack-name">The business</h2>
+            <p className="fl-stack-body">
+              The roster, the seasons, the day’s sessions and the athlete going
+              quiet — one screen, on the web too. The money lands in your own
+              Stripe account, minus a flat 10% and nothing else.
+            </p>
+            <Link className="fl-btn-ghost" to="/coaches">The coach side →</Link>
+            <div className="fl-stack-stats" style={{ marginTop: 28 }}>
+              <div className="fl-stack-stat">
+                <span className="fl-stack-stat-label">Stays with the coach</span>
+                <span className="fl-stack-stat-value">90<small>%</small></span>
+              </div>
+              <div className="fl-stack-stat">
+                <span className="fl-stack-stat-label">Monthly fee</span>
+                <span className="fl-stack-stat-value">$0</span>
+              </div>
+            </div>
+          </div>
+          <div data-reveal="2">
+            <CoachPanel />
+          </div>
+        </div>
+
+        {/* Row 3 — the PR, celebrated and carried out the door */}
+        <div className="fl-stackrow">
+          <div data-reveal>
+            <h2 className="fl-stack-name">The moment</h2>
+            <p className="fl-stack-body">
+              A personal record is detected the instant it’s logged, celebrated
+              in the session, and offered as a story-ready card. The athlete’s
+              number travels; the coach gets asked “what app is that”.
+            </p>
+            <Link className="fl-btn-ghost" to="/athletes">Where PRs live →</Link>
+            <div className="fl-stack-stats" style={{ marginTop: 28 }}>
+              <div className="fl-stack-stat">
+                <span className="fl-stack-stat-label">Your roster if you leave</span>
+                <span className="fl-stack-stat-value">100<small>%</small></span>
+              </div>
+              <div className="fl-stack-stat">
+                <span className="fl-stack-stat-label">Share formats</span>
+                <span className="fl-stack-stat-value">4:5</span>
+              </div>
+            </div>
+          </div>
+          <div data-reveal="2">
+            <PRShareCard />
+          </div>
         </div>
       </section>
 
       {/* ── The economy, running ─────────────────────────────── */}
       <section className="fl-section fl-section-alt">
         <div data-reveal className="fl-centered">
-          <p className="fl-kicker">02 — The money</p>
+          <p className="fl-kicker">The money</p>
           <h2 className="fl-h2">We take ten. You keep the&nbsp;rest.</h2>
         </div>
         <LiveEconomy />
       </section>
 
       <Ticker words={['Seasons', 'Passes', 'Payouts', 'Classes', 'Check-ins']} reverse />
-
-      {/* ── Stat wall: the terms, poster-sized ───────────────── */}
-      {/* Every number here is a published product term, not a metric we
-          invented. That is what lets them be this big. */}
-      <section className="fl-section">
-        <p className="fl-kicker" data-reveal>03 — The terms</p>
-        <div className="fl-statwall">
-          <div className="fl-stat" data-reveal>
-            <p className="fl-stat-n">90<span className="fl-stat-unit">%</span></p>
-            <p className="fl-stat-l">stays with the coach. Every month, every dollar.</p>
-          </div>
-          <div className="fl-stat" data-reveal="2">
-            <p className="fl-stat-n">$0</p>
-            <p className="fl-stat-l">monthly fee. A slow month costs exactly that.</p>
-          </div>
-          <div className="fl-stat" data-reveal="3">
-            <p className="fl-stat-n">1</p>
-            <p className="fl-stat-l">tap logs a set. Keyboards stay in the office.</p>
-          </div>
-          <div className="fl-stat" data-reveal="4">
-            <p className="fl-stat-n">100<span className="fl-stat-unit">%</span></p>
-            <p className="fl-stat-l">of your roster leaves with you. If you ever do.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Three doors ──────────────────────────────────────── */}
-      <section className="fl-section fl-section-alt">
-        <div data-reveal className="fl-centered">
-          <p className="fl-kicker">04 — Find your page</p>
-          <h2 className="fl-h2">Three doors. One product.</h2>
-        </div>
-
-        <div className="fl-doors">
-          <Link className="fl-door" to="/coaches" data-reveal>
-            <p className="fl-door-kicker">For coaches</p>
-            <h3 className="fl-door-title">Your whole business, one place</h3>
-            <p className="fl-door-body">
-              Seasons, check-ins, payments, roster. And a calculator that does
-              your math before you commit.
-            </p>
-            <span className="fl-door-go" aria-hidden="true">→</span>
-          </Link>
-
-          <Link className="fl-door" to="/athletes" data-reveal="2">
-            <p className="fl-door-kicker">For athletes</p>
-            <h3 className="fl-door-title">A coach in your pocket</h3>
-            <p className="fl-door-body">
-              One tap logs the set. The demo plays before you load the bar.
-              And a human knows your name.
-            </p>
-            <span className="fl-door-go" aria-hidden="true">→</span>
-          </Link>
-
-          <Link className="fl-door" to="/gyms" data-reveal="3">
-            <p className="fl-door-kicker">For gyms</p>
-            <h3 className="fl-door-title">Seats, rosters, revenue</h3>
-            <p className="fl-door-body">
-              Every coach under one roof. Everything a business needs to see.
-              Nothing said in private.
-            </p>
-            <span className="fl-door-go" aria-hidden="true">→</span>
-          </Link>
-        </div>
-      </section>
 
       {/* ── The vision, told the way Apple tells one ─────── */}
       {/* Not a feature list — the reasoning that shaped the product, one
@@ -171,7 +218,7 @@ export default function HomePage() {
       <section className="fl-vision">
         <div className="fl-vision-glow" aria-hidden="true" />
         <div className="fl-vision-inner">
-          <p className="fl-kicker" data-reveal>05 — Why it looks like this</p>
+          <p className="fl-kicker" data-reveal>Why it looks like this</p>
           <h2 className="fl-h2" data-reveal>We didn’t start with features.<br />We started with a rule.</h2>
 
           <div className="fl-vision-cards">
@@ -228,13 +275,55 @@ export default function HomePage() {
         </a>
       </section>
 
-      {/* ── Close ────────────────────────────────────────────── */}
-      <section className="fl-close">
-        <h2 className="fl-display fl-display-close">This year.</h2>
-        <p className="fl-body-wide">
-          iOS and Android. Coaches on the list get in first.
-        </p>
-        <div className="fl-close-form"><WaitlistForm source="home-close" /></div>
+      {/* ── The rules: the terms as editorial rows ───────────── */}
+      {/* Each row is a promise with the page that proves it. Every line
+          here is a published product term, not a metric. */}
+      <section className="fl-section fl-railed">
+        <div className="fl-rail" aria-hidden="true"><span>The rules</span></div>
+        <div className="fl-edit-rows" data-reveal>
+          <Link className="fl-edit-row" to="/coaches">
+            <span className="fl-edit-row-n" aria-hidden="true">01</span>
+            <div>
+              <p className="fl-edit-row-title">Your athletes are yours</p>
+              <p className="fl-edit-row-sub">
+                Leave and the roster leaves with you — enforced in the database
+              </p>
+            </div>
+            <span className="fl-edit-row-go" aria-hidden="true">→</span>
+          </Link>
+          <Link className="fl-edit-row" to="/gyms">
+            <span className="fl-edit-row-n" aria-hidden="true">02</span>
+            <div>
+              <p className="fl-edit-row-title">A gym never reads the thread</p>
+              <p className="fl-edit-row-sub">
+                Business figures only; there is no switch that reveals coaching
+              </p>
+            </div>
+            <span className="fl-edit-row-go" aria-hidden="true">→</span>
+          </Link>
+          <Link className="fl-edit-row" to="/pricing">
+            <span className="fl-edit-row-n" aria-hidden="true">03</span>
+            <div>
+              <p className="fl-edit-row-title">We earn when you earn</p>
+              <p className="fl-edit-row-sub">
+                A flat 10% and nothing else — a slow month costs nothing
+              </p>
+            </div>
+            <span className="fl-edit-row-go" aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Close: the two-clause band ───────────────────────── */}
+      <section className="fl-band">
+        <div className="fl-band-inner">
+          <h2 className="fl-band-title" data-reveal>
+            Coaching is complicated. Starting isn’t.
+          </h2>
+          <div data-reveal="2">
+            <WaitlistForm source="home-band" />
+          </div>
+        </div>
       </section>
     </>
   );

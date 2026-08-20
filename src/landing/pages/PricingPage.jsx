@@ -40,8 +40,8 @@ export default function PricingPage() {
       <section className="fl-section fl-section-first">
         <p className="fl-kicker">Pricing</p>
         <h1 className="fl-display fl-display-page">
-          Ten percent.<br />
-          <span className="fl-accent">That’s the whole story.</span>
+          <span className="fl-mask"><span style={{ '--d': '0.05s' }}>Ten percent.</span></span>
+          <span className="fl-mask"><span style={{ '--d': '0.15s' }}><span className="fl-accent">That’s the whole story.</span></span></span>
         </h1>
 
         <div className="fl-price-row">
@@ -78,7 +78,8 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="fl-section fl-section-alt">
+      <section className="fl-section fl-section-alt fl-railed">
+        <div className="fl-rail"><span>Questions</span></div>
         <p className="fl-kicker">Questions</p>
         <h2 className="fl-h2">Asked. Answered.</h2>
 
@@ -100,12 +101,18 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="fl-close">
-        <h2 className="fl-h2">Still weighing it?</h2>
-        <p className="fl-body-wide">
-          The calculator on the coaches page runs your exact numbers.
-        </p>
-        <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
+      <section className="fl-band">
+        <div className="fl-band-inner">
+          <div>
+            <h2 className="fl-band-title">Still weighing it?</h2>
+            <p className="fl-body-wide">
+              The calculator on the coaches page runs your exact numbers.
+            </p>
+          </div>
+          <div>
+            <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
+          </div>
+        </div>
       </section>
     </>
   );

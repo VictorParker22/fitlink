@@ -23,17 +23,20 @@ export default function AthletesPage() {
         <div className="fl-hero-inner">
           <p className="fl-kicker">For athletes</p>
           <h1 className="fl-display fl-display-page">
-            Your coach, between<br />
-            <span className="fl-accent">the sessions.</span>
+            <span className="fl-mask"><span style={{ '--d': '0.05s' }}>Your coach, between</span></span>
+            <span className="fl-mask"><span style={{ '--d': '0.15s' }}><span className="fl-accent">the sessions.</span></span></span>
           </h1>
           <p className="fl-lede">
-            The programme, the food, the check-in, the conversation.
-            Same pocket as your music.
+            <span className="fl-mask"><span style={{ '--d': '0.3s' }}>
+              The programme, the food, the check-in, the conversation.
+              Same pocket as your music.
+            </span></span>
           </p>
         </div>
       </section>
 
-      <section className="fl-section">
+      <section className="fl-section fl-railed">
+        <div className="fl-rail"><span>In your pocket</span></div>
         <div className="fl-grid fl-grid-3">
           <article className="fl-card">
             <h3>One tap. Set logged.</h3>
@@ -79,13 +82,19 @@ export default function AthletesPage() {
         </div>
       </section>
 
-      <section className="fl-close">
-        <h2 className="fl-h2">Got an invite from your coach?</h2>
-        <p className="fl-body-wide">
-          Then you’re most of the way in. Launching this year —
-          your coach sends the link.
-        </p>
-        <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
+      <section className="fl-band">
+        <div className="fl-band-inner">
+          <div>
+            <h2 className="fl-band-title">Got an invite from your coach?</h2>
+            <p className="fl-body-wide">
+              Then you’re most of the way in. Launching this year —
+              your coach sends the link.
+            </p>
+          </div>
+          <div>
+            <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
+          </div>
+        </div>
       </section>
     </>
   );

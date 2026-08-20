@@ -27,12 +27,14 @@ export default function CoachesPage() {
         <div className="fl-hero-inner">
           <p className="fl-kicker">For coaches</p>
           <h1 className="fl-display fl-display-page">
-            The business runs itself.<br />
-            <span className="fl-accent">You run the athletes.</span>
+            <span className="fl-mask"><span style={{ '--d': '0.05s' }}>The business runs itself.</span></span>
+            <span className="fl-mask"><span style={{ '--d': '0.15s' }}><span className="fl-accent">You run the athletes.</span></span></span>
           </h1>
           <p className="fl-lede">
-            One programme. Every athlete on their own clock. That’s a season —
-            and it’s the spine everything else hangs off.
+            <span className="fl-mask"><span style={{ '--d': '0.3s' }}>
+              One programme. Every athlete on their own clock. That’s a season —
+              and it’s the spine everything else hangs off.
+            </span></span>
           </p>
         </div>
       </section>
@@ -53,7 +55,8 @@ export default function CoachesPage() {
 
       <Ticker words={['Seasons', 'Check-ins', 'Payouts', 'Library', 'Classes']} />
 
-      <section className="fl-section fl-section-alt">
+      <section className="fl-section fl-section-alt fl-railed">
+        <div className="fl-rail"><span>The work</span></div>
         <p className="fl-kicker">The work</p>
         <h2 className="fl-h2">Coaching stays. Admin goes.</h2>
         <div className="fl-grid">
@@ -102,13 +105,19 @@ export default function CoachesPage() {
         </div>
       </section>
 
-      <section className="fl-close">
-        <h2 className="fl-h2">Bring one athlete. See if it fits.</h2>
-        <p className="fl-body-wide">
-          Most coaches start with someone they already train.
-          We send the invite.
-        </p>
-        <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
+      <section className="fl-band">
+        <div className="fl-band-inner">
+          <div>
+            <h2 className="fl-band-title">Bring one athlete. See if it fits.</h2>
+            <p className="fl-body-wide">
+              Most coaches start with someone they already train.
+              We send the invite.
+            </p>
+          </div>
+          <div>
+            <a className="fl-btn fl-btn-lg" href={NOTIFY_HREF}>Tell me when it launches</a>
+          </div>
+        </div>
       </section>
     </>
   );

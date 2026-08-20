@@ -73,15 +73,25 @@ export default function Shell() {
           <span className="fl-mark-tile" aria-hidden="true">FL</span>
           <span>FitLink</span>
         </div>
-        <nav className="fl-footer-links" aria-label="Legal and support">
-          <Link to="/coaches">Coaches</Link>
-          <Link to="/athletes">Athletes</Link>
-          <Link to="/gyms">Gyms</Link>
-          <Link to="/pricing">Pricing</Link>
-          {/* Static files served by vercel rewrites, outside the SPA. */}
-          <a href="/privacy">Privacy</a>
-          <a href="/delete-account">Delete your account</a>
-          <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a>
+        <nav className="fl-footer-cols" aria-label="Footer">
+          <div className="fl-footer-col">
+            <p className="fl-footer-col-h">Product</p>
+            <Link to="/coaches">Coaches</Link>
+            <Link to="/athletes">Athletes</Link>
+            <Link to="/gyms">Gyms</Link>
+            <Link to="/pricing">Pricing</Link>
+          </div>
+          <div className="fl-footer-col">
+            <p className="fl-footer-col-h">Company</p>
+            <a href="https://app.fitlink.coach">Sign in</a>
+            <a href={`mailto:${SUPPORT}`}>{SUPPORT}</a>
+          </div>
+          <div className="fl-footer-col">
+            <p className="fl-footer-col-h">Legal</p>
+            {/* Static files served by vercel rewrites, outside the SPA. */}
+            <a href="/privacy">Privacy</a>
+            <a href="/delete-account">Delete your account</a>
+          </div>
         </nav>
         <p className="fl-footer-copy">© {new Date().getFullYear()} FitLink</p>
       </footer>
