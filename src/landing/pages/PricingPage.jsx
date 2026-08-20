@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { NOTIFY_HREF, SUPPORT } from '../components/Shell.jsx';
 
 /**
@@ -76,6 +77,15 @@ export default function PricingPage() {
             </p>
           </article>
         </div>
+
+        <p className="fl-manifesto-prose">
+          The percentage is the whole business model: when a platform’s income
+          is a slice of the coach’s, the platform only wins by making coaches
+          win. We wrote it down as{' '}
+          <strong className="fl-manifesto-term">aligned software</strong> — the
+          long version lives on{' '}
+          <Link className="fl-prose-link" to="/">the front page</Link>.
+        </p>
       </section>
 
       <section className="fl-section fl-section-alt fl-railed">

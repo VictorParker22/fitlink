@@ -37,48 +37,84 @@ export default function AthletesPage() {
 
       <section className="fl-section fl-railed">
         <div className="fl-rail"><span>In your pocket</span></div>
-        <div className="fl-grid fl-grid-3">
-          <article className="fl-card">
-            <h3>One tap. Set logged.</h3>
-            <p>
-              Steppers, not keyboards. Typing’s there if you want it.
-              You won’t.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>See it. Then lift it.</h3>
-            <p>
-              Every exercise ships with a demo and a muscle map.
-              Know before you load.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Rest, on your terms.</h3>
-            <p>
-              Structure when you want it. One tap to skip the lot when you don’t.
-              It asks once.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Food that bends. Macros that don’t.</h3>
-            <p>
-              Swap any meal when life happens. The numbers stay honest.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Say it your way.</h3>
-            <p>
-              No sliders. You say how the week went.
-              A person answers.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Yours means yours.</h3>
-            <p>
-              Delete your account and everything goes. Your coach keeps
-              their books — not your life.
-            </p>
-          </article>
+        <div className="fl-edit-rows" data-reveal>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">01</span>
+            <div>
+              <p className="fl-edit-row-title">One tap. Set logged.</p>
+              <p className="fl-edit-row-sub">
+                Steppers, not keyboards. Typing’s there if you want it.
+                You won’t.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">02</span>
+            <div>
+              <p className="fl-edit-row-title">See it. Then lift it.</p>
+              <p className="fl-edit-row-sub">
+                Every exercise ships with a demo and a muscle map.
+                Know before you load.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">03</span>
+            <div>
+              <p className="fl-edit-row-title">Rest, on your terms.</p>
+              <p className="fl-edit-row-sub">
+                Structure when you want it. One tap to skip the lot when you don’t.
+                It asks once.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">04</span>
+            <div>
+              <p className="fl-edit-row-title">Food that bends. Macros that don’t.</p>
+              <p className="fl-edit-row-sub">
+                Swap any meal when life happens. The numbers stay honest.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">05</span>
+            <div>
+              <p className="fl-edit-row-title">Say it your way.</p>
+              <p className="fl-edit-row-sub">
+                No sliders. You say how the week went.
+                A person answers.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">06</span>
+            <div>
+              <p className="fl-edit-row-title">Yours means yours.</p>
+              <p className="fl-edit-row-sub">
+                Delete your account and everything goes. Your coach keeps
+                their books — not your life.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="fl-section fl-railed">
+        <div className="fl-rail" aria-hidden="true"><span>The feel</span></div>
+        <div className="fl-stack-stats" data-reveal>
+          <div className="fl-stack-stat">
+            <span className="fl-stack-stat-label">To log a set</span>
+            <span className="fl-stack-stat-value">1<small> tap</small></span>
+          </div>
+          <div className="fl-stack-stat">
+            <span className="fl-stack-stat-label">Forms per check-in</span>
+            <span className="fl-stack-stat-value">0</span>
+          </div>
+          <div className="fl-stack-stat">
+            <span className="fl-stack-stat-label">Humans reading it</span>
+            <span className="fl-stack-stat-value">1</span>
+          </div>
         </div>
       </section>
 

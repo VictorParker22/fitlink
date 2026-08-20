@@ -42,7 +42,30 @@ export default function CoachesPage() {
       <section className="fl-section">
         <p className="fl-kicker">The number you came for</p>
         <h2 className="fl-h2">Your book. Your math.</h2>
+        <p className="fl-manifesto-prose">
+          Every number below is arithmetic on the published fee — drag it to
+          your real book. When a flat-fee platform beats us on paper, the
+          calculator says so.
+        </p>
         <Calculator />
+      </section>
+
+      <section className="fl-section fl-railed">
+        <div className="fl-rail" aria-hidden="true"><span>The terms</span></div>
+        <div className="fl-stack-stats" data-reveal>
+          <div className="fl-stack-stat">
+            <span className="fl-stack-stat-label">Of every dollar</span>
+            <span className="fl-stack-stat-value">90<small>%</small></span>
+          </div>
+          <div className="fl-stack-stat">
+            <span className="fl-stack-stat-label">In a dead month</span>
+            <span className="fl-stack-stat-value">$0</span>
+          </div>
+          <div className="fl-stack-stat">
+            <span className="fl-stack-stat-label">Contracts locking you in</span>
+            <span className="fl-stack-stat-value">0</span>
+          </div>
+        </div>
       </section>
 
       {/* The buyer's own screen. The athlete demo lives on home; this page
@@ -59,49 +82,67 @@ export default function CoachesPage() {
         <div className="fl-rail"><span>The work</span></div>
         <p className="fl-kicker">The work</p>
         <h2 className="fl-h2">Coaching stays. Admin goes.</h2>
-        <div className="fl-grid">
-          <article className="fl-card">
-            <h3>Seasons that survive contact</h3>
-            <p>
-              Build once, assign to everyone. Edit mid-season and FitLink shows
-              who it touches before it touches them.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Check-ins that talk back.</h3>
-            <p>
-              Their own words, not a form. The week at a glance.
-              Reply where the thread already is.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Money without the admin</h3>
-            <p>
-              Passes, subscriptions, sessions — all on Stripe. Payouts land in
-              your account. Never ours, never held.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Your athletes, not the platform’s</h3>
-            <p>
-              Leave a gym — or leave us — and your roster goes with you.
-              Built in, not written down.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Build once. Coach forever.</h3>
-            <p>
-              Demos, muscle maps, honest macros. Built once.
-              Reused on every athlete you ever take on.
-            </p>
-          </article>
-          <article className="fl-card">
-            <h3>Teach one. Sell it twice.</h3>
-            <p>
-              Broadcast it live or sell the recording. Same rails,
-              same flat 10%.
-            </p>
-          </article>
+        <div className="fl-edit-rows" data-reveal>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">01</span>
+            <div>
+              <p className="fl-edit-row-title">Seasons that survive contact</p>
+              <p className="fl-edit-row-sub">
+                Build once, assign to everyone. Edit mid-season and FitLink shows
+                who it touches before it touches them.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">02</span>
+            <div>
+              <p className="fl-edit-row-title">Check-ins that talk back.</p>
+              <p className="fl-edit-row-sub">
+                Their own words, not a form. The week at a glance.
+                Reply where the thread already is.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">03</span>
+            <div>
+              <p className="fl-edit-row-title">Money without the admin</p>
+              <p className="fl-edit-row-sub">
+                Passes, subscriptions, sessions — all on Stripe. Payouts land in
+                your account. Never ours, never held.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">04</span>
+            <div>
+              <p className="fl-edit-row-title">Your athletes, not the platform’s</p>
+              <p className="fl-edit-row-sub">
+                Leave a gym — or leave us — and your roster goes with you.
+                Built in, not written down.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">05</span>
+            <div>
+              <p className="fl-edit-row-title">Build once. Coach forever.</p>
+              <p className="fl-edit-row-sub">
+                Demos, muscle maps, honest macros. Built once.
+                Reused on every athlete you ever take on.
+              </p>
+            </div>
+          </div>
+          <div className="fl-edit-row">
+            <span className="fl-edit-row-n" aria-hidden="true">06</span>
+            <div>
+              <p className="fl-edit-row-title">Teach one. Sell it twice.</p>
+              <p className="fl-edit-row-sub">
+                Broadcast it live or sell the recording. Same rails,
+                same flat 10%.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
