@@ -42,7 +42,7 @@ export default function Shell() {
 
       <header className="fl-nav">
         <Link className="fl-mark" to="/" aria-label="FitLink home">
-          <span className="fl-mark-tile" aria-hidden="true">FL</span>
+          <img className="fl-mark-tile" src="/icon-192.png" alt="" aria-hidden="true" />
           <span className="fl-mark-word">FitLink</span>
         </Link>
         <nav className="fl-nav-links" aria-label="Sections">
@@ -70,7 +70,7 @@ export default function Shell() {
 
       <footer className="fl-footer">
         <div className="fl-footer-mark">
-          <span className="fl-mark-tile" aria-hidden="true">FL</span>
+          <img className="fl-mark-tile" src="/icon-192.png" alt="" aria-hidden="true" />
           <span>FitLink</span>
         </div>
         <nav className="fl-footer-cols" aria-label="Footer">

@@ -36,10 +36,8 @@ export default function PRShareCard() {
         }
         .fl-prcard-head { display: flex; align-items: center; gap: 9px; }
         .fl-prcard-tile {
-          display: grid; place-items: center;
-          width: 24px; height: 24px; border-radius: 7px;
-          background: var(--accent); color: var(--on-accent);
-          font-family: var(--head); font-weight: 700; font-size: 11px;
+          display: block;
+          width: 24px; height: 24px;
         }
         .fl-prcard-word { font-family: var(--head); font-weight: 600; font-size: 13px; }
         .fl-prcard-pill {
@@ -73,7 +71,7 @@ export default function PRShareCard() {
         aria-label="A FitLink personal-record share card: new personal record, 205 pounds, back squat, 20 August 2026"
       >
         <div className="fl-prcard-head" aria-hidden="true">
-          <span className="fl-prcard-tile">FL</span>
+          <img className="fl-prcard-tile" src="/icon-192.png" alt="" />
           <span className="fl-prcard-word">FitLink</span>
         </div>
 

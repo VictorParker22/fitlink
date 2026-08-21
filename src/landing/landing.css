@@ -64,10 +64,10 @@
 }
 .fl-mark { display: flex; align-items: center; gap: 10px; margin-right: auto; }
 .fl-mark-tile {
-  display: grid; place-items: center;
-  width: 30px; height: 30px; border-radius: 9px;
-  background: var(--accent); color: var(--on-accent);
-  font-family: var(--head); font-weight: 700; font-size: 13px; letter-spacing: -0.5px;
+  /* The real app icon (rounded corners baked into the PNG) — the nav wears
+     the same mark the home screen does. */
+  display: block;
+  width: 30px; height: 30px;
 }
 .fl-mark-word { font-family: var(--head); font-weight: 600; font-size: 17px; letter-spacing: -0.3px; }
 
