@@ -35,7 +35,7 @@
     <a href="/" class="back-link">&larr; Back to FitLink</a>
 
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Applies to the FitLink app (com.fitlink.app) for iOS and Android, and to fitlink.coach. Last updated: 18 August 2026.</p>
+    <p class="subtitle">Applies to the FitLink app (com.fitlink.app) for iOS and Android, and to fitlink.coach. Last updated: 2 September 2026.</p>
 
     <div class="card">
       <span class="badge">The short version</span>
@@ -59,11 +59,15 @@
       <li>Meal plans, food logs, and nutrition targets.</li>
       <li>Check-ins and habit tracking you complete for your coach.</li>
       <li>Progress photos you upload. These are stored in private storage and served only through short-lived signed links — they are never publicly addressable.</li>
-      <li>With your explicit device-level permission only: data from Apple Health or Google Health Connect (such as steps, heart rate, sleep, and active energy). You can revoke this in your device settings at any time, and revoking it does not break the rest of the app.</li>
+      <li>With your explicit device-level permission only: data from Apple Health or Google Health Connect (such as steps, heart rate, sleep, and active energy). You can revoke this in your device settings at any time, and revoking it does not break the rest of the app. This data is stored on our servers and made visible to your coach only while health sharing is switched on in your profile. Turning it off stops new data being stored and removes what was previously shared. It is never used for advertising, never sold, and never shared with any party other than the coach you chose, except your step count, which may be included in AI Corner requests as described under "AI features" below.</li>
     </ul>
     <h3>Messages</h3>
     <ul>
       <li>Messages and attachments exchanged between you and your coach inside the app. These exist so your coaching thread works across your devices. Our staff do not read them except where strictly necessary to investigate abuse, fraud, or a legal demand — and access of that kind is logged internally.</li>
+    </ul>
+    <h3>AI features</h3>
+    <ul>
+      <li>FitLink includes AI coaching features: the Corner (for athletes training solo) and the coaching assistant (for coaches). When you use one, the message you send and a small amount of relevant training context are transmitted to Google's Gemini API to generate a reply. Your first name is included so the reply reads naturally. If you have enabled health sharing, your daily step count may be included. Your email address, phone number, payment details, progress photos and coach-to-athlete messages are never sent to any AI provider. Conversations with the Corner are private to you; your coach cannot read them.</li>
     </ul>
     <h3>Payment data</h3>
     <ul>
@@ -74,7 +78,7 @@
     <h3>Technical data</h3>
     <ul>
       <li>Push notification tokens, so your device can receive messages and session reminders.</li>
-      <li>Basic product analytics — which screens are used and how often — tied to your account id, so we can tell what is working. We do not use advertising trackers and there are no third-party ad SDKs in the app.</li>
+      <li>Product analytics, meaning which screens are used and how often, recorded against your account id so we can tell what is working and support you when something breaks. We do not use advertising trackers, we do not collect your device advertising identifier (IDFA), and there are no third-party ad SDKs in the app.</li>
       <li>Security logs: failed and rejected requests are recorded (who, what, when) to detect attacks. This is a protection for you, not surveillance of you.</li>
     </ul>
 
@@ -124,9 +128,12 @@
       <tr><td>Expo</td><td>Push notification delivery</td><td>Push tokens and notification payloads</td></tr>
       <tr><td>Mux</td><td>Live and on-demand class video</td><td>Video streams coaches publish</td></tr>
       <tr><td>Spoonacular</td><td>Food and recipe data</td><td>Food search queries (not tied to your identity by them)</td></tr>
-      <tr><td>Layers</td><td>Product analytics</td><td>Screen and feature usage tied to account id</td></tr>
+      <tr><td>Layers</td><td>Product analytics</td><td>Your account id and role, plus which screens and features you use</td></tr>
+      <tr><td>Google (Gemini API)</td><td>AI coaching assistant and plan generation</td><td>Your first name, your question, the recent conversation, and the training context shown in the app (today's session, streak, last check-in, and, only if you have enabled health sharing, your daily step count). For coaches: the client's name, goals, recent sessions, and latest logged weight and body-fat percentage. Prompts are sent for a single response and are not used to train Google's models.</td></tr>
+      <tr><td>ElevenLabs</td><td>Spoken exercise instructions</td><td>The text of the exercise instruction being read aloud. No account or identity data is sent.</td></tr>
+      <tr><td>Spotify</td><td>Optional music integration</td><td>If you connect Spotify, we read what you are currently playing so it can be shown during a session. We never post, modify your library, or store your listening history. You can disconnect at any time.</td></tr>
     </table>
-    <p>Each provider is bound by its own data processing terms. We will not add a provider that would receive health data without updating this table first.</p>
+    <p>Each provider is bound by its own data processing terms. Any provider that receives health data is listed in this table before it receives any.</p>
 
     <h2>6. Where your data lives, and for how long</h2>
     <ul>
@@ -135,6 +142,7 @@
       <li><strong>Delete your account</strong> (Profile → Delete account, or the process on the <a href="/delete-account">delete-account page</a>) and your profile, logs, messages, photos, measurements, and enrolments are permanently removed, immediately.</li>
       <li>Two things survive deletion: <strong>payment records</strong>, kept for as long as tax and accounting law requires (typically 7 years), and <strong>aggregate counts</strong> that contain nothing identifying you.</li>
       <li>Backups age out on a rolling schedule; deleted data leaves backups as they cycle.</li>
+      <li>Rate-limiting counters for AI features, tied to your user id, are retained for up to 24 hours and then deleted automatically. They are removed immediately when your account is deleted.</li>
     </ul>
 
     <h2>7. Your rights</h2>
@@ -146,12 +154,13 @@
       <li><strong>Portability</strong> — receive your data in a machine-readable format.</li>
       <li><strong>Objection and restriction</strong> — object to specific processing.</li>
       <li><strong>No discrimination</strong> — exercising these rights never degrades your service.</li>
+      <li><strong>Withdrawal of consent</strong> — where we rely on your consent (health data sharing, Spotify), you can withdraw it at any time in the app, and we delete the data collected under it.</li>
     </ul>
     <p>Email <a href="mailto:support@getfitlink.com">support@getfitlink.com</a>. We verify that a request comes from the account holder before acting on it — that check protects you, so we will not skip it. We respond within 30 days. If you are in the EEA or UK, you also have the right to complain to your supervisory authority.</p>
     <p><strong>We do not sell or share personal information</strong> as those terms are defined by the CCPA/CPRA, so there is no "Do Not Sell" opt-out — there is nothing to opt out of.</p>
 
     <h2>8. Children</h2>
-    <p>FitLink is not directed at children under 16, and we do not knowingly collect their data. If you believe a child under 16 has created an account, contact us and we will delete it.</p>
+    <p>FitLink is not directed at children under 16. We ask for your date of birth at signup and do not permit accounts for anyone under 16. If you believe a child under 16 has created an account, contact <a href="mailto:support@getfitlink.com">support@getfitlink.com</a> and we will delete it.</p>
 
     <h2>9. Security</h2>
     <ul>
@@ -166,7 +175,7 @@
     <p>When this policy changes in any way that matters — new data collected, a new category of recipient, a new use — we update the date at the top and tell you in the app before the change takes effect. If you do not accept a change, you can delete your account and nothing further is collected.</p>
 
     <div class="footer">
-      <p>Questions? <a href="mailto:support@getfitlink.com">support@getfitlink.com</a> &middot; <a href="/delete-account">Delete your account</a></p>
+      <p>Questions? <a href="mailto:support@getfitlink.com">support@getfitlink.com</a> &middot; <a href="/terms">Terms of use</a> &middot; <a href="/delete-account">Delete your account</a></p>
     </div>
   </div>
 </body>

@@ -5,11 +5,15 @@
       "destination": "/delete-account.html"
     },
     {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy.html"
     },
     {
-      "source": "/((?!privacy\\.html$|delete-account\\.html$).*)",
+      "source": "/((?!privacy\\.html$|terms\\.html$|delete-account\\.html$).*)",
       "destination": "/index.html"
     }
   ]
