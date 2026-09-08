@@ -303,3 +303,16 @@ npm run preview
 5. **Revenue chart is synthetic** — Extrapolates from current month using `totalMonthlyRevenue * 0.62/0.69/.../1.0` multipliers
 6. **Google OAuth** — Configured in AuthContext but needs Google provider enabled in Supabase Dashboard → Auth → Providers
 7. **Client signup flow** — Client enters trainer's referral code → signs up → auto-linked via email match to existing client record
+
+## Deploying (2026-09-08)
+
+- Vercel project `fitlink` (team victorparkerr-4350). A push to `master` builds a **Preview**
+  deployment only; the project's production branch is not `master`. Promote after every push:
+  `npx vercel promote <preview-url> --yes` (or `npx vercel --prod` from the repo). Production
+  serves fitlink.coach; check `curl -s https://fitlink.coach/ | grep -o 'assets/index-[^"]*'`
+  changes after a promote.
+- Invitation pages: `/i/:code` (coach invite) and `/live/:code` (live class, hls.js loaded on
+  demand). Both read ONLY the Supabase edge function `invite-info` (POST {code}) with the anon
+  key from `.env`; the function answers OPTIONS, 404 for unknown codes, and marks the invite
+  opened. Codes are 6 characters from ABCDEFGHJKMNPQRSTUVWXYZ23456789. The app deep link is
+  `fitlink://invite/CODE`; universal links await an AASA file + a native build.
