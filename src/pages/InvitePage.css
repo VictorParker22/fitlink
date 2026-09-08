@@ -1,0 +1,127 @@
+/**
+ * Invite pages (/i/:code and /live/:code).
+ *
+ * Every value here is lifted from landing.css — the tokens come from the
+ * .fl scope the page is wrapped in, the wordmark matches .fl-mark, the
+ * kicker/card/button classes are the site's own with only the sizes the
+ * boards ask for (56px primary, 48px secondary) layered on top. The one
+ * addition is a mono stack for the link and the code: the site loads no
+ * mono face, and a system mono is more honest than a fourth webfont for
+ * two strings.
+ */
+
+.inv {
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.inv-wrap {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 20px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Bar: wordmark left, the link itself right ────────────────── */
+.inv-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px 0 10px;
+}
+.inv-mark { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.inv-mark-tile { display: block; width: 26px; height: 26px; }
+.inv-mark-word { font-family: var(--head); font-weight: 600; font-size: 17px; letter-spacing: -0.3px; }
+.inv-link {
+  font-family: var(--mono); font-size: 12px; color: var(--text-3);
+  letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ── Hero: avatar, eyebrow, headline, bio ─────────────────────── */
+.inv-hero {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 14px; padding: 18px 0 4px;
+}
+.inv-hero-short { padding-top: 48px; }
+
+.inv-avatar {
+  border-radius: 50%; object-fit: cover; flex: none;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+}
+.inv-monogram {
+  display: grid; place-items: center;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--head); font-weight: 700; letter-spacing: -1px;
+  line-height: 1;
+}
+
+.inv-eyebrow { margin: 6px 0 0; }
+.inv-hero .fl-kicker { margin-bottom: 0; }
+
+.inv-title {
+  font-family: var(--head); font-weight: 700;
+  font-size: clamp(26px, 7.4vw, 32px); line-height: 1.1; letter-spacing: -1px;
+  margin: 0; max-width: 18ch;
+}
+.inv-bio {
+  font-size: 15px; line-height: 1.6; color: var(--text-2);
+  margin: 2px 0 0; max-width: 36ch;
+}
+.inv-spec { font-size: 13px; color: var(--text-3); letter-spacing: 0.2px; margin: 0; }
+
+/* ── The card ─────────────────────────────────────────────────── */
+.inv-card { padding: 22px 22px 20px; }
+.inv-card:hover { transform: none; }
+.inv-card-kicker { margin-bottom: 14px; }
+.inv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.inv-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  font-size: 15px; line-height: 1.5; color: var(--text);
+}
+.inv-check {
+  flex: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent);
+  display: grid; place-items: center; margin-top: 1px;
+}
+
+/* ── Actions ──────────────────────────────────────────────────── */
+.inv-actions { display: grid; gap: 10px; }
+.inv-btn { width: 100%; }
+.inv-btn-primary { height: 56px; padding: 0 24px; font-size: 16px; }
+.inv-btn-secondary { height: 48px; padding: 0 22px; font-size: 15px; }
+
+.inv-code {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px 12px;
+  margin: 8px 0 0; font-size: 13px; color: var(--text-2);
+}
+.inv-code-value {
+  font-family: var(--mono); font-size: 15px; letter-spacing: 3px; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: 12px; padding: 8px 12px 8px 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-foot {
+  font-size: 13px; line-height: 1.6; color: var(--text-3);
+  text-align: center; margin: 4px auto 0; max-width: 40ch;
+}
+
+/* ── Skeleton: the shapes of the page, breathing, no spinner ──── */
+.inv-sk {
+  background: rgba(237, 239, 232, 0.06);
+  border-radius: 12px;
+  animation: inv-breathe 2.2s ease-in-out infinite;
+}
+.inv-sk-avatar { width: 96px; height: 96px; border-radius: 50%; }
+.inv-sk-line { height: 12px; }
+.inv-sk-title { height: 26px; width: 100%; max-width: 320px; }
+.inv-sk-card { height: 150px; width: 100%; border-radius: 22px; margin-top: 8px; }
+.inv-sk-btn { height: 56px; width: 100%; border-radius: 999px; margin-top: 6px; }
+.inv-sk-btn-ghost { height: 48px; opacity: 0.6; margin-top: 0; }
+@keyframes inv-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }

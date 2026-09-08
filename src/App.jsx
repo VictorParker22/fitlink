@@ -23,12 +23,21 @@ const AthletesPage = lazy(() => import('./landing/pages/AthletesPage.jsx'));
 const GymsPage = lazy(() => import('./landing/pages/GymsPage.jsx'));
 const PricingPage = lazy(() => import('./landing/pages/PricingPage.jsx'));
 
+// Invite landings (/i/:code from a coach, /live/:code for a live class).
+// They sit beside the Shell, not inside it: an invite is one decision, and
+// the nav and footer are exits from it. They carry their own chrome in the
+// same .fl token scope, so they still look like the rest of the site.
+const InvitePage = lazy(() => import('./pages/InvitePage.jsx'));
+const LiveInvitePage = lazy(() => import('./pages/LiveInvitePage.jsx'));
+
 const Calm = () => <div style={{ minHeight: '100vh', background: '#101210' }} />;
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="i/:code" element={<Suspense fallback={<Calm />}><InvitePage /></Suspense>} />
+        <Route path="live/:code" element={<Suspense fallback={<Calm />}><LiveInvitePage /></Suspense>} />
         <Route element={<Shell />}>
           <Route index element={<Suspense fallback={<Calm />}><HomePage /></Suspense>} />
           <Route path="coaches" element={<Suspense fallback={<Calm />}><CoachesPage /></Suspense>} />
