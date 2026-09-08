@@ -13,8 +13,23 @@
       "destination": "/privacy.html"
     },
     {
-      "source": "/((?!privacy\\.html$|terms\\.html$|delete-account\\.html$).*)",
+      "source": "/((?!\\.well-known/.*|privacy\\.html$|terms\\.html$|delete-account\\.html$).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
     }
   ]
 }
