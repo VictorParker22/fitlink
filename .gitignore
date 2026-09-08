@@ -27,3 +27,6 @@ dist-ssr
 
 # Supabase CLI local state — machine-specific, never publish
 supabase/.temp/
+
+.vercel
+.env*

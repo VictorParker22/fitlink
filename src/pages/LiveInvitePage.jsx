@@ -26,9 +26,11 @@ import './LiveInvitePage.css';
  */
 
 const POLL_MS = 30_000;
-const MUX = (playbackId) => `https://stream.mux.com/${playbackId}.m3u8`;
+// Signed playback: the id alone plays nothing; invite-info hands a guest a
+// two-hour token with the card and refreshes it on every poll.
+const MUX = (playbackId, token) => `https://stream.mux.com/${playbackId}.m3u8${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
-function LivePlayer({ playbackId, coachFirst }) {
+function LivePlayer({ playbackId, playbackToken, coachFirst }) {
   const videoRef = useRef(null);
   const [muted, setMuted] = useState(true);
   const [trouble, setTrouble] = useState(null); // null | 'unsupported' | 'dropped'
@@ -37,7 +39,7 @@ function LivePlayer({ playbackId, coachFirst }) {
     const video = videoRef.current;
     if (!video || !playbackId) return undefined;
 
-    const src = MUX(playbackId);
+    const src = MUX(playbackId, playbackToken);
     let hls = null;
     let cancelled = false;
     let retryTimer;
@@ -185,13 +187,13 @@ export default function LiveInvitePage() {
   }
 
   const ended = Boolean(info && (info.expired || (live && (live.status === 'ended' || live.status === 'cancelled'))));
-  const playing = Boolean(!ended && live && live.status === 'live' && live.playback_id);
+  const playing = Boolean(!ended && live && live.status === 'live' && live.playback_id && live.playback_token);
   const title = live && String(live.title || '').trim();
 
   let frame = null;
   if (status === 'ready') {
     if (playing) {
-      frame = <LivePlayer playbackId={live.playback_id} coachFirst={first} />;
+      frame = <LivePlayer playbackId={live.playback_id} playbackToken={live.playback_token} coachFirst={first} />;
     } else if (ended) {
       frame = <IdleFrame title="Not live right now" sub="This class has ended. Replays live in the app." />;
     } else if (live && live.status === 'live') {
