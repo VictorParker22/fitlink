@@ -51,6 +51,9 @@
 .fl-skip:focus { left: 0; }
 
 .fl a { color: inherit; text-decoration: none; }
+/* Links styled as the lime button must not inherit the page's light text:
+   `.fl a` (0,1,1) outranks `.fl-btn` (0,1,0), which painted off-white on lime. */
+.fl a.fl-btn, .fl a.fl-btn:hover, .fl a.fl-btn:visited { color: var(--on-accent); }
 .fl :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 
 /* ── Nav ──────────────────────────────────────────────────────── */
