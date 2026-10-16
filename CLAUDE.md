@@ -1,6 +1,6 @@
 # CLAUDE.md — FitLink Project Memory
 
-> **Last updated**: 2026-05-06
+> **Last updated**: 2026-10-16
 > **Project**: FitLink — Gym Trainer Referral & Client Management Platform
 > **Location**: `c:\projects\fitlink`
 > **Dev server**: `npm run dev` → http://localhost:5173 (or next available port)
@@ -12,6 +12,53 @@
 A **mobile-first PWA** for gym trainers to manage clients, send referral invites, track subscriptions, schedule sessions, build workouts, and message clients — all from one premium dark dashboard. Clients get their own portal to view workouts, log exercises, and chat with their trainer.
 
 The project idea came from a conversation with a real gym trainer who wanted a referral/subscription system for their business.
+
+---
+
+## Coach-led web pages (2026-10-16) — `src/web/`, `public/`, `vercel.json`
+
+Besides the landing page the site carries a coach's public page with web checkout
+(`/i/:code`, `/live/:code` → `src/web/CoachPublicPage.jsx` + `Checkout.jsx`), the coach's
+season editor (`/coach/*` → `CoachWeb.jsx` + `SeasonEditor.jsx`, pure track maths in
+`passTrack.js`) and the static legal pages. Routes live in `src/main.jsx`; the legacy app stays
+behind `*`. `src/web/api.js` wraps the edge functions and RPCs; a page only ever sends ids
+(invite code, plan id, client id), never a price or a payee: the server computes money from `plans`.
+
+- **Universal links.** `public/.well-known/apple-app-site-association` (JSON, no extension, no
+  comments) lists `applinks` for `SCJ422P9KZ.fitlink.app` with components `/i/*` and `/live/*`,
+  plus `webcredentials`. `vercel.json` gives it `Content-Type: application/json` and
+  `Cache-Control: public, max-age=3600`, and the SPA catch-all rewrite excludes it explicitly.
+  The iOS build needs the `applinks:fitlink.coach` + `webcredentials:fitlink.coach`
+  associated-domains entitlement; Apple's CDN fetches the file
+  (`https://app-site-association.cdn-apple.com/a/v1/fitlink.coach`), so a change can take a
+  day to reach phones.
+- **Static pages are rewrites, not routes.** `/privacy`, `/terms`, `/delete-account` →
+  `public/*.html` through `vercel.json`. Every new one goes in three places: the rewrites, the
+  catch-all's negative lookahead, and `navigateFallbackDenylist` in `vite.config.js` — the PWA
+  service worker's default `navigateFallback` is `index.html`, which would hand a returning
+  visitor the landing page for `/terms`. `public/terms.html` is the Terms of Service the app's
+  Elite paywall and the web checkout link to; two bracketed placeholders (legal entity in §1,
+  governing law and venue in §15) are the founder's to fill. `public/privacy.html` is kept in
+  step with fitlink-ios `docs/SUBMISSION.md` (App Privacy table): no Apple Health / Health
+  Connect, 16+, and Stripe / Apple + RevenueCat / Google Gemini (the coach's assistant, after
+  consent) / Supabase / APNs + Expo as the processors. Change the table, change the page.
+- **Plans for sale are `archived_at is null`** (`api.js plansFor`). An archived pass stays with
+  its holders and in the coach's editor list (tagged "archived"); `create-subscription`
+  refuses it on the server as well. The `42703` fallback in `plansFor` exists for a deploy that
+  lands ahead of the `plans.archived_at` migration and can go once it is applied.
+- **Publish carries the version.** The editor loads `plans.track_version` with the plan and
+  passes it as `p_expected_version` to `publish_plan_track`; a `stale_version` error shows
+  "This season changed on another device. Reload to see the latest before publishing." with
+  Reload (the latest season replaces the screen) or Keep editing (the edits stay and the
+  baseline becomes the latest track, so the next review lists everything a publish would
+  change). Never publish without the version; never drop the coach's edits silently. The
+  `PGRST202` retry with the three-argument RPC covers a deploy ahead of the migration.
+- **Lint.** `npm run lint` fails on pre-existing errors in the legacy app (`src/pages`,
+  `src/components`, `src/context`, `src/App.jsx`); the web pages are kept clean with
+  `npx eslint src/web src/main.jsx vite.config.js`.
+- fitlink.coach is not reachable from the build container. After a deploy check
+  `curl -sI https://fitlink.coach/.well-known/apple-app-site-association` (application/json),
+  `curl -sI https://fitlink.coach/terms` (200, text/html) and Apple's CDN copy above.
 
 ---
 
