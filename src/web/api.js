@@ -22,11 +22,20 @@ export async function inviteInfo(code) {
   return res.json();
 }
 
-/** A coach's passes, cheapest first. Readable by anyone (plans_select). */
+/** A coach's passes for sale, cheapest first. Readable by anyone (plans_select).
+ *  An archived pass (`archived_at` set) stays with its holders but is never
+ *  offered to a buyer; create-subscription refuses it on the server as well. */
 export async function plansFor(trainerId) {
-  const { data, error } = await supabase.from('plans').select('*').eq('trainer_id', trainerId).order('price');
-  if (error) throw error;
-  return data ?? [];
+  const live = await supabase.from('plans').select('*').eq('trainer_id', trainerId).is('archived_at', null).order('price');
+  if (live.error?.code === '42703') {
+    // The column is not there yet (this build deployed ahead of the
+    // plans.archived_at migration): nothing can be archived, so every pass is for sale.
+    const all = await supabase.from('plans').select('*').eq('trainer_id', trainerId).order('price');
+    if (all.error) throw all.error;
+    return all.data ?? [];
+  }
+  if (live.error) throw live.error;
+  return live.data ?? [];
 }
 
 let configCache;
