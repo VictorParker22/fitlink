@@ -91,9 +91,9 @@ export default function Checkout({ plan, coach, code, onClose }) {
           setBusy(false);
           return;
         }
-        if (text.includes('trainer_cannot_accept')) throw new Error('This email belongs to a coach account. Athletes need their own account; use another email.');
-        if (text.includes('invite_expired')) throw new Error('This link has expired. Ask the coach for a fresh one.');
-        throw new Error('Couldn’t join the coach. Reload and try again.');
+        if (text.includes('trainer_cannot_accept')) throw new Error('This email belongs to a coach account. Athletes need their own account; use another email.', { cause: err });
+        if (text.includes('invite_expired')) throw new Error('This link has expired. Ask the coach for a fresh one.', { cause: err });
+        throw new Error('Couldn’t join the coach. Reload and try again.', { cause: err });
       }
       const me = await myClient();
       if (!me) throw new Error('Your athlete record isn’t ready yet. Reload and try again.');
