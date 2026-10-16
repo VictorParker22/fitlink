@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["SCJ422P9KZ.fitlink.app"],
+        "components": [
+          { "/": "/i/*" },
+          { "/": "/live/*" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["SCJ422P9KZ.fitlink.app"]
+  }
+}
