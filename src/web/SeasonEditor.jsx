@@ -5,7 +5,10 @@
 // every season sharing it sees, the same as the app's builder). Nothing on
 // the season saves by itself: Publish reviews the changes against who is
 // inside the season, then writes the pass and every holder's snapshot in
-// one transaction (publish_plan_track), a started week kept as it was.
+// one transaction (publish_plan_track), a started week kept as it was. The
+// call carries the plan's track_version the editor loaded; a pass published
+// elsewhere since answers stale_version, and the coach chooses between the
+// latest season and the edits on screen (never a silent overwrite).
 //
 // Not drawn: the assistant's "Suggested Week 4" card (no server support)
 // and templates (no rows).
@@ -40,6 +43,7 @@ export default function SeasonEditor({ session }) {
   const [review, setReview] = useState(false);
   const [preview, setPreview] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [stale, setStale] = useState(false); // publish answered stale_version
   const [picker, setPicker] = useState(null); // { dayIndex, workoutId } exercise picker
   const [chooser, setChooser] = useState(null); // rail item awaiting a day
   const toastTimer = useRef();
@@ -66,9 +70,12 @@ export default function SeasonEditor({ session }) {
       const enrollments = ids.length > 0
         ? (await supabase.from('client_plan_enrollments').select('*').in('plan_id', ids)).data ?? []
         : [];
-      setData({ plans: plans.data ?? [], workouts: workouts.data ?? [], enrollments, clients: clients.data ?? [], loaded: true, error: null });
+      const next = { plans: plans.data ?? [], workouts: workouts.data ?? [], enrollments, clients: clients.data ?? [], loaded: true, error: null };
+      setData(next);
+      return next.plans;
     } catch (e) {
       setData((d) => ({ ...d, loaded: true, error: e.message || 'Couldn’t load your seasons.' }));
+      return null;
     }
   }, [uid]);
 
@@ -145,13 +152,22 @@ export default function SeasonEditor({ session }) {
         id: h.enrollment.id,
         track_snapshot: buildProtectedSnapshot(h.snapshot, newTrack, h.enrollment.track_position, removedKeys, plan.duration_weeks),
       }));
-      // Version history is best effort: the pass and the snapshots are what matter.
+      // The version the editor loaded: the server refuses the publish when the
+      // pass moved on since (stale_version), so nobody's edits are overwritten blind.
+      const args = { p_plan_id: plan.id, p_track: newTrack, p_snapshots: snapshots, p_expected_version: plan.track_version ?? null };
+      let { data: moved, error } = await supabase.rpc('publish_plan_track', args);
+      if (error?.code === 'PGRST202') {
+        // The server still has the three-argument publish_plan_track (deployed
+        // ahead of the track_version migration): publish without the check.
+        ({ data: moved, error } = await supabase.rpc('publish_plan_track', { p_plan_id: plan.id, p_track: newTrack, p_snapshots: snapshots }));
+      }
+      if (error) throw error;
+      // Version history is best effort, written only for a publish that landed:
+      // the pass and the snapshots are what matter.
       try {
         const { data: v } = await supabase.from('plan_versions').select('version').eq('plan_id', plan.id).order('version', { ascending: false }).limit(1);
         await supabase.from('plan_versions').insert({ plan_id: plan.id, version: ((v?.[0]?.version) ?? 0) + 1, track: baseline, summary: describeChanges(changes, labelOf) || 'Layout' });
       } catch { /* optional table */ }
-      const { data: moved, error } = await supabase.rpc('publish_plan_track', { p_plan_id: plan.id, p_track: newTrack, p_snapshots: snapshots });
-      if (error) throw error;
       if (plan.duration_weeks && plan.duration_weeks !== weeks.length) {
         await supabase.from('plans').update({ duration_weeks: weeks.length }).eq('id', plan.id);
       }
@@ -162,10 +178,34 @@ export default function SeasonEditor({ session }) {
       seededFor.current = null;
       await load();
     } catch (e) {
-      say(e.message?.includes('permission') ? 'Not allowed: this pass isn’t yours.' : 'Couldn’t publish. Check your connection and try again.');
+      const text = String(e?.message ?? '');
+      if (text.includes('stale_version')) {
+        // The coach's edits stay in `weeks`; the stale sheet offers Reload or Keep editing.
+        setReview(false);
+        setStale(true);
+        return;
+      }
+      say(text.includes('permission') ? 'Not allowed: this pass isn’t yours.' : 'Couldn’t publish. Check your connection and try again.');
     } finally {
       setPublishing(false);
     }
+  }
+
+  // After stale_version. Reload: the latest season replaces what is on
+  // screen (the coach chose to drop the edits). Keep editing: the edits stay,
+  // and the baseline becomes the latest track, so the next review lists every
+  // difference, including what a publish would undo. Both re-read track_version.
+  async function reloadLatest() {
+    setStale(false);
+    seededFor.current = null;
+    await load();
+    say('Showing the latest season');
+  }
+  async function keepEditing() {
+    setStale(false);
+    const plans = await load();
+    const latest = plans?.find((p) => p.id === plan.id);
+    if (latest) setBaseline([...(latest.track ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
   }
 
   const labelOf = (n) => (n.type === 'workout' ? (workoutsById[n.id]?.name ?? 'a workout') : (n.label ?? n.type));
@@ -193,7 +233,7 @@ export default function SeasonEditor({ session }) {
             const n = data.enrollments.filter((e) => e.plan_id === p.id && e.status === 'active').length;
             return (
               <button key={p.id} type="button" className="fl-side-row" aria-current={p.id === plan.id ? 'page' : undefined} onClick={() => { if (changes.length > 0 && !window.confirm('Leave without publishing? Your changes to this season are lost.')) return; navigate(`/coach/seasons/${p.id}`); }}>
-                {p.name} <small>{n > 0 ? `${n} on it` : (p.duration_weeks ? `${p.duration_weeks} weeks` : dollars(p.price))}</small>
+                {p.name} <small>{n > 0 ? `${n} on it` : (p.duration_weeks ? `${p.duration_weeks} weeks` : dollars(p.price))}{p.archived_at ? ' · archived' : ''}</small>
               </button>
             );
           })}
@@ -358,6 +398,15 @@ export default function SeasonEditor({ session }) {
           </ul>
           <p className="fl-note">The pass and every athlete's copy update together. A week an athlete has started keeps what it had.</p>
           <button type="button" className="fl-btn accent lg" disabled={publishing} onClick={publish}>{publishing ? 'Publishing…' : 'Publish changes'}</button>
+        </Sheet>
+      )}
+
+      {stale && (
+        <Sheet title="Season changed" onClose={keepEditing}>
+          <p style={{ fontSize: 16 }}>This season changed on another device. Reload to see the latest before publishing.</p>
+          <p className="fl-note">Reload replaces what is on screen with the latest season; the edits you made here are dropped. Keep editing keeps them, and the next review compares them against the latest version so you can see what publishing would change.</p>
+          <button type="button" className="fl-btn accent lg" onClick={reloadLatest}>Reload</button>
+          <button type="button" className="fl-btn quiet" onClick={keepEditing}>Keep editing</button>
         </Sheet>
       )}
 
