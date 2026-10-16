@@ -18,7 +18,11 @@
       "destination": "/privacy.html"
     },
     {
-      "source": "/((?!privacy\\.html$|delete-account\\.html$|\\.well-known/apple-app-site-association$).*)",
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/((?!privacy\\.html$|delete-account\\.html$|terms\\.html$|\\.well-known/apple-app-site-association$).*)",
       "destination": "/index.html"
     }
   ]

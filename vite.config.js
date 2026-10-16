@@ -39,6 +39,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // The legal pages and the AASA file are static files, not the SPA: a
+        // browser that has this service worker must fetch them, never be
+        // handed the precached index.html (the default navigateFallback).
+        navigateFallbackDenylist: [/^\/privacy/, /^\/terms/, /^\/delete-account/, /^\/\.well-known\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
