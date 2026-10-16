@@ -10,19 +10,7 @@
   ],
   "rewrites": [
     {
-      "source": "/delete-account",
-      "destination": "/delete-account.html"
-    },
-    {
-      "source": "/privacy",
-      "destination": "/privacy.html"
-    },
-    {
-      "source": "/terms",
-      "destination": "/terms.html"
-    },
-    {
-      "source": "/((?!privacy\\.html$|delete-account\\.html$|terms\\.html$|\\.well-known/apple-app-site-association$).*)",
+      "source": "/((?!\\.well-known/apple-app-site-association$).*)",
       "destination": "/index.html"
     }
   ]

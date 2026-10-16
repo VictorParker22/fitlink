@@ -83,15 +83,90 @@ export async function confirmSubscription(clientId) {
   return data;
 }
 
-async function functionErrorMessage(error) {
+/**
+ * An edge function's refusal as `{ status, code, message }`. supabase-js wraps
+ * a non-2xx answer in a FunctionsHttpError whose `context` is the Response;
+ * the body is our `{ error, code? }` shape, and a 429 from guardRate has no
+ * body worth showing.
+ */
+export async function functionError(error) {
+  const status = Number(error?.context?.status) || 0;
+  let code = null;
+  let message = null;
   try {
     const ctx = error?.context;
     if (ctx && typeof ctx.json === 'function') {
       const body = await ctx.json();
-      if (body?.error) return String(body.error);
+      if (body?.error) message = String(body.error);
+      if (body?.code) code = String(body.code);
     }
   } catch { /* fall through */ }
-  return error?.message || 'Something went wrong.';
+  return { status, code, message: message || error?.message || 'Something went wrong.' };
+}
+
+async function functionErrorMessage(error) {
+  return (await functionError(error)).message;
+}
+
+/** coach | athlete | none for the signed-in user; null when signed out. */
+export async function myRole() {
+  const s = await session();
+  if (!s) return null;
+  const { data: t } = await supabase.from('trainers').select('id').eq('id', s.user.id).limit(1);
+  if (t?.length) return 'coach';
+  const { data: c } = await supabase.from('clients').select('id').eq('auth_user_id', s.user.id).limit(1);
+  return c?.length ? 'athlete' : 'none';
+}
+
+function refusal(e) {
+  return Object.assign(new Error(e.message), { status: e.status, code: e.code });
+}
+
+/**
+ * delete-trainer-account {preview: true}: `{ athletes, placeholders,
+ * subscriptions, refunds: [{clientId, passName, cents}], refundCentsTotal,
+ * currency, refundsAlreadyIssued }`. Reads only; 3 per hour per coach.
+ */
+export async function departurePreview() {
+  const { data, error } = await supabase.functions.invoke('delete-trainer-account', { body: { preview: true } });
+  if (error) throw refusal(await functionError(error));
+  return data ?? {};
+}
+
+/**
+ * delete-trainer-account: refunds undelivered prepaid time from the coach's
+ * balance, cancels the subscriptions, detaches the athletes, deletes the
+ * coach and the auth user. Resolves only when the server said `success` AND
+ * the auth user is gone; the local session is dropped afterwards.
+ */
+export async function deleteCoachAccount() {
+  const { data, error } = await supabase.functions.invoke('delete-trainer-account', { body: {} });
+  if (error) throw refusal(await functionError(error));
+  if (!data?.success) throw new Error('The server did not confirm the deletion. Nothing was changed; try again or write to support.');
+  const { data: who, error: userErr } = await supabase.auth.getUser();
+  if (!userErr && who?.user) throw new Error('The server did not delete the account. Try again or write to support.');
+  await signOutLocal();
+  return data;
+}
+
+/**
+ * The athlete's own deletion: files first (delete-account-media, best effort
+ * and reported), then the delete_client_account RPC, which removes the
+ * clients row (its children cascade) and the auth user.
+ */
+export async function deleteAthleteAccount() {
+  const mediaIncomplete = await supabase.functions.invoke('delete-account-media', { body: {} })
+    .then(({ data, error }) => Boolean(error) || data?.success === false)
+    .catch(() => true);
+  const { error } = await supabase.rpc('delete_client_account');
+  if (error) throw new Error(error.message || 'Couldn’t delete the account.');
+  await signOutLocal();
+  return { mediaIncomplete };
+}
+
+/** Drops the browser's session without calling the server (the user may already be gone). */
+export async function signOutLocal() {
+  try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* the session is gone either way */ }
 }
 
 /** The coach's standing invite (created once, reused): the public page URL. */
