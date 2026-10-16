@@ -68,7 +68,7 @@ export default function TermsBody() {
         </ul>
         <h3>Refunds</h3>
         <ul>
-          <li>Refunds are at the coach’s discretion and are issued through the app. If you want a refund, ask your coach. When a refund is issued the pass ends.</li>
+          <li>Refunds are at the coach’s discretion and are issued through the app, within 90 days of the payment. If you want a refund, ask your coach. The coach refunds the full payment or half of it, and either ends the pass that day or lets it run to the end of the period you paid for. The notice you receive says which.</li>
           <li>FitLink may also refund a payment where the law, Stripe’s rules or the card network’s rules require it, or where a coach’s account has been closed before a paid period was delivered.</li>
           <li>Nothing in this section limits rights you have as a consumer under the law where you live.</li>
         </ul>
@@ -153,7 +153,7 @@ export default function TermsBody() {
         <ul>
           <li><strong>You can leave at any time.</strong> Delete your account from Profile in the app, or <Link to="/delete-account">on the web</Link>. Deletion is immediate and permanent; what is deleted and what we must keep for tax and accounting law is described there.</li>
           <li>Deleting your FitLink account does <strong>not</strong> cancel a Coach Elite subscription bought through Apple. Cancel it in your Apple Account first.</li>
-          <li><strong>Coaches.</strong> If you close your account, your athletes’ accounts are not deleted; their passes with you end. If athletes have paid for time you have not yet delivered, you remain responsible for refunding them.</li>
+          <li><strong>Coaches.</strong> If you close your account, your athletes’ accounts are not deleted; their passes with you end. Time your athletes paid for and you have not yet delivered is refunded to them automatically from your Stripe balance when you close the account. If Stripe cannot issue one of those refunds, you remain responsible for it.</li>
           <li><strong>We may suspend or close an account</strong> that breaks these terms, is used for fraud or abusive chargebacks, puts other people at risk, or where the law requires it. Where it is practical and lawful we tell you first and give you a chance to put things right.</li>
           <li>Sections that by their nature should survive the end of an account (content licences for data we must keep, payment obligations, disclaimers, limitation of liability, indemnity, governing law) survive it.</li>
         </ul>
