@@ -17,31 +17,77 @@ The project idea came from a conversation with a real gym trainer who wanted a r
 
 ## Coach-led web pages (2026-10-16) — `src/web/`, `public/`, `vercel.json`
 
-Besides the landing page the site carries a coach's public page with web checkout
-(`/i/:code`, `/live/:code` → `src/web/CoachPublicPage.jsx` + `Checkout.jsx`), the coach's
-season editor (`/coach/*` → `CoachWeb.jsx` + `SeasonEditor.jsx`, pure track maths in
-`passTrack.js`) and the static legal pages. Routes live in `src/main.jsx`; the legacy app stays
-behind `*`. `src/web/api.js` wraps the edge functions and RPCs; a page only ever sends ids
-(invite code, plan id, client id), never a price or a payee: the server computes money from `plans`.
+The site is React routes in `src/main.jsx`: the marketing and policy pages under one shell
+(`src/web/site/`), a coach's public page with web checkout (`/i/:code`, `/live/:code` →
+`src/web/CoachPublicPage.jsx` + `Checkout.jsx`), the coach's season editor (`/coach/*` →
+`CoachWeb.jsx` + `SeasonEditor.jsx`, pure track maths in `passTrack.js`) and a 404 for
+everything else. `src/web/api.js` wraps the edge functions and RPCs; a page only ever sends
+ids (invite code, plan id, client id), never a price or a payee: the server computes money
+from `plans`.
 
+- **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
+  is the layout route (glass header with the F mark + Home / Pricing / For athletes / Help,
+  Sign in → `/coach`, Get the app → the App Store; footer with Help · Privacy · Terms ·
+  Delete account · support@fitlink.coach; scroll-to-top; a `body` class so overscroll is
+  cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
+  `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,
+  titles and section lists in `legalMeta.js`), `DeleteAccount.jsx`, `NotFound.jsx`.
+  `site.css` is scoped under `.fl-site`; the root also carries `.fl`, so tokens, `.fl-btn`,
+  `.fl-field`, `.fl-error` and the glass pill come from `web.css`. The Web-Home-Mobile
+  artboard is the same page at 390 px: one column, the header pill becomes a box with the
+  nav on its own row (`@media (max-width: 720px)`); keep every new section
+  `minmax(min(Npx, 100%), 1fr)` so it collapses without horizontal scroll.
+- **Numbers come from `src/web/site/pricing.js`, nowhere else.** `STANDARD_FEE_PERCENT` 10,
+  `ELITE_FEE_PERCENT` 5 and `FREE_ROSTER_CAP` 5 are what the server enforces
+  (`platform_config.platform_fee_bps` 1000, `payment_split_for_trainer()` 500 bps on
+  Elite, `enforce_roster_cap`); `ELITE_MONTHLY_USD` 29.99 / `ELITE_YEARLY_USD` 249 are the
+  figures in fitlink-app `lib/revenuecat.ts` and App Store Connect is the truth: confirm
+  before launch. In a dev build every rendered figure carries a red `[confirm]` marker
+  (`NEEDS_CONFIRM = import.meta.env.DEV`); production never shows it. Quotes stay dashed
+  placeholders and the footer says `[Legal entity name]` until the founder fills them.
+  Illustrations (phone mocks, the money card) are `aria-hidden` and compute their sample
+  arithmetic from the same constants.
+- **Support answers must be true for the shipped product**: iPhone only, no Android app,
+  card checkout by Stripe (no Apple Pay claim), no Apple Health, the assistant is Coach
+  Elite and the coach sends every message, refunds through the app within 90 days of the
+  payment, a coach who leaves refunds undelivered time automatically, one role per account
+  (change `Support.jsx` "Can I also train with a coach?" and Terms §3 together when the
+  two-mode account ships). The contact form composes a `mailto:` to `SUPPORT_EMAIL`; there
+  is no ticket backend. The search filters the page's own questions.
+- **Delete account is a real flow** (`DeleteAccount.jsx`, helpers in `api.js`): email →
+  `signInWithOtp({ shouldCreateUser: false })` → code → `myRole()` (a `trainers` row →
+  coach, a `clients` row → athlete) → coach: `departurePreview()` =
+  `delete-trainer-account {preview: true}` (athletes, refund total; 3/hour, a 429 or a
+  Stripe 502 is shown in words and the policy sentence stays) → checkbox → coach
+  `deleteCoachAccount()` (the function, then `auth.getUser()` must fail before the page says
+  Deleted; 2/day) or athlete `deleteAthleteAccount()` (`delete-account-media` best effort,
+  then RPC `delete_client_account`) → local sign-out → Deleted. Never say "deleted"
+  before the server answered. A session already in the browser skips the code.
+- **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
+  (it never mounted the trainer/client PWA under `src/pages` — nothing imports
+  `src/context`), so nothing was reachable there except that page, which `/` replaces.
+  `vite.config.js` keeps the PWA plugin (manifest, service worker); `index.html` carries the
+  home title and description, and each page sets its own through `usePageMeta` (`meta.js`).
 - **Universal links.** `public/.well-known/apple-app-site-association` (JSON, no extension, no
   comments) lists `applinks` for `SCJ422P9KZ.fitlink.app` with components `/i/*` and `/live/*`,
   plus `webcredentials`. `vercel.json` gives it `Content-Type: application/json` and
-  `Cache-Control: public, max-age=3600`, and the SPA catch-all rewrite excludes it explicitly.
-  The iOS build needs the `applinks:fitlink.coach` + `webcredentials:fitlink.coach`
-  associated-domains entitlement; Apple's CDN fetches the file
+  `Cache-Control: public, max-age=3600`, and the SPA catch-all rewrite excludes it explicitly;
+  `navigateFallbackDenylist` in `vite.config.js` holds `/^\/\.well-known\//` for the same
+  reason (the service worker's default `navigateFallback` is `index.html`). The iOS build
+  needs the `applinks:fitlink.coach` + `webcredentials:fitlink.coach` associated-domains
+  entitlement; Apple's CDN fetches the file
   (`https://app-site-association.cdn-apple.com/a/v1/fitlink.coach`), so a change can take a
   day to reach phones.
-- **Static pages are rewrites, not routes.** `/privacy`, `/terms`, `/delete-account` →
-  `public/*.html` through `vercel.json`. Every new one goes in three places: the rewrites, the
-  catch-all's negative lookahead, and `navigateFallbackDenylist` in `vite.config.js` — the PWA
-  service worker's default `navigateFallback` is `index.html`, which would hand a returning
-  visitor the landing page for `/terms`. `public/terms.html` is the Terms of Service the app's
-  Elite paywall and the web checkout link to; two bracketed placeholders (legal entity in §1,
-  governing law and venue in §15) are the founder's to fill. `public/privacy.html` is kept in
-  step with fitlink-ios `docs/SUBMISSION.md` (App Privacy table): no Apple Health / Health
-  Connect, 16+, and Stripe / Apple + RevenueCat / Google Gemini (the coach's assistant, after
-  consent) / Supabase / APNs + Expo as the processors. Change the table, change the page.
+- **Legal pages are routes, not files** (since 2026-10-16 evening; `public/terms.html`,
+  `privacy.html`, `delete-account.html` and their rewrites are gone). `/terms` is the Terms
+  of Service the app's Elite paywall and the web checkout link to; two bracketed founder
+  placeholders (legal entity in §1, governing law and venue in §15) are highlighted with
+  `<mark class="s-fill">`. `/privacy` is kept in step with fitlink-ios `docs/SUBMISSION.md`
+  (App Privacy table): no Apple Health / Health Connect, 16+, and Stripe / Apple + RevenueCat /
+  Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo as the
+  processors. Change the table, change `privacyContent.jsx`. Every address on the site is
+  `support@fitlink.coach` (the iOS submission pack's mailbox); the getfitlink.com addresses
+  are gone.
 - **Plans for sale are `archived_at is null`** (`api.js plansFor`). An archived pass stays with
   its holders and in the coach's editor list (tagged "archived"); `create-subscription`
   refuses it on the server as well. The `42703` fallback in `plansFor` exists for a deploy that
@@ -55,10 +101,20 @@ behind `*`. `src/web/api.js` wraps the edge functions and RPCs; a page only ever
   `PGRST202` retry with the three-argument RPC covers a deploy ahead of the migration.
 - **Lint.** `npm run lint` fails on pre-existing errors in the legacy app (`src/pages`,
   `src/components`, `src/context`, `src/App.jsx`); the web pages are kept clean with
-  `npx eslint src/web src/main.jsx vite.config.js`.
+  `npx eslint src/web src/main.jsx vite.config.js`. The react-refresh rule wants a `.jsx`
+  file to export only components: constants and hooks go in `.js` modules (`pricing.js`,
+  `meta.js`, `legalMeta.js`).
+- **Checking a build without the network.** `npm run build && npx vite preview --port 4173`,
+  then headless Chromium through the globally installed Playwright (`createRequire` from the
+  repo's package.json) renders every route; Google Fonts fail in the container (two console
+  errors per page), everything else must be clean and `scrollWidth` must equal the viewport
+  at 390 px. The delete flow can be driven with `page.route` stubs for `/auth/v1/*`,
+  `/rest/v1/*` and `/functions/v1/*`.
 - fitlink.coach is not reachable from the build container. After a deploy check
   `curl -sI https://fitlink.coach/.well-known/apple-app-site-association` (application/json),
-  `curl -sI https://fitlink.coach/terms` (200, text/html) and Apple's CDN copy above.
+  every route answers 200 with `text/html` (`/`, `/pricing`, `/athletes`, `/support`,
+  `/privacy`, `/terms`, `/delete-account`, an unknown path → the 404 page), `/privacy` and
+  `/terms` render their text, and the delete flow against a throwaway account.
 
 ---
 
