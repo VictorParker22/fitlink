@@ -1,6 +1,6 @@
 // The Privacy Policy, moved out of public/privacy.html on 2026-10-16 (the only
 // copy). Kept in step with fitlink-ios docs/SUBMISSION.md (App Privacy table):
-// no Apple Health / Health Connect, 16+, and Stripe / Apple + RevenueCat /
+// Apple Health only by choice (no Health Connect), 16+, and Stripe / Apple + RevenueCat /
 // Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo
 // as the processors. Change the table, change this file. The title, date and
 // section list live in legalMeta.js.
@@ -54,11 +54,12 @@ export default function PrivacyBody() {
         <h2 id="health-h">3. Fitness and health data</h2>
         <p>The training data FitLink holds is what you or your coach type into FitLink:</p>
         <ul>
-          <li>The current FitLink app does <strong>not</strong> connect to Apple Health or Google Health Connect, and does not read data from any health app or wearable</li>
+          <li><strong>Apple Health is optional and off by default.</strong> If you turn it on in the app, FitLink can save the workouts you finish to Apple Health, and read your resting heart rate and sleep from it. Each of the three is a separate switch; iOS asks your permission before anything is read or written</li>
+          <li>Resting heart rate and sleep are shown to you next to your check-ins. Your coach sees them <strong>only</strong> if you also turn on “Share with your coach”, and stops seeing them the moment you turn it off. FitLink does not use Google Health Connect and reads nothing from any other health app or wearable</li>
           <li>Logged sets, sessions, body weight and check-ins are used solely to run your coaching: they are shown to you and to the coach you train with</li>
           <li>Never sold to third parties</li>
           <li>Never used for advertising or marketing purposes</li>
-          <li>If a future version connects to a health platform, it will ask your permission first, and this policy will be updated before it does</li>
+          <li>Health data is never used to decide prices, fees or what you are offered</li>
         </ul>
       </section>
 

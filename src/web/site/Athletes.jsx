@@ -1,7 +1,7 @@
 // /athletes (Web-Athletes): for the person who got a coach's link. Four
 // steps, the "no link yet" callout, the athlete questions. Every answer is
 // what the shipped app does today (iPhone only, card checkout by Stripe, no
-// Apple Health, the coach reads and sends every message).
+// Apple Health only by choice, the coach reads and sends every message).
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
@@ -31,7 +31,7 @@ function PlanScreen() {
 
 const FAQ = [
   { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. You keep training until the end of what you’ve paid for. A season pass ends on its own when the season ends.' },
-  { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and anything you send in the chat. FitLink does not read Apple Health or any other health app.' },
+  { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and anything you send in the chat. Apple Health is optional and off by default: if you turn it on in the app, FitLink can save finished workouts to Apple Health and read resting heart rate and sleep, and your coach sees those two numbers only if you also turn on sharing.' },
   { q: 'Is my coach’s reply written by AI?', a: 'Coaches can use an assistant that drafts a reply from your check-in and your log. Your coach reads, edits and sends every message; nothing is sent on its own.' },
   { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are at the coach’s discretion and are issued through the app, back to the card you paid with. If a coach closes their account, time you prepaid and have not had is refunded automatically.' },
   { q: 'My payment failed. What now?', a: 'Your pass is on hold until a payment goes through; your coach can see that. Stripe emails you a link to update the card.' },

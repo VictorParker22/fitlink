@@ -40,7 +40,7 @@ export default function TermsBody() {
         <h2 id="s3-h">3. Your account</h2>
         <ul>
           <li><strong>Age.</strong> You must be at least 16 years old to create an account. We ask for your date of birth when you sign up. If we learn that an account holder is under 16 we close the account.</li>
-          <li><strong>One role per account.</strong> An account is either a coach account or an athlete account. The same email address or Apple ID cannot hold both. If you coach and also want to train with a coach, use a separate email address or Apple ID for the athlete account.</li>
+          <li><strong>Two modes, one account.</strong> An account starts as a coach account or an athlete account. A coach can also turn on training from Profile and train with another coach; the account then has a Coaching mode and a Training mode, each with its own Home, messages and notifications. A coach’s athletes never see the coach’s own training, and nobody can coach themselves.</li>
           <li><strong>Signing in.</strong> You sign in with a six-digit code sent to your email, or with Sign in with Apple. There is no password. You are responsible for keeping your email inbox and your device secure. Tell us at once if you believe someone else has used your account.</li>
           <li><strong>Accuracy.</strong> Give us accurate information and keep it current. An account is for one person; do not share it or let someone else use it.</li>
           <li><strong>Joining a roster takes an action by the athlete.</strong> An athlete joins a coach’s roster only by accepting that coach’s invitation, by sending a request that the coach accepts, or by buying that coach’s pass. Coaches may not add people who have not done one of these things.</li>

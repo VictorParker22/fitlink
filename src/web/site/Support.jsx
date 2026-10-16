@@ -3,7 +3,7 @@
 // email to the support mailbox (there is no ticket backend). Every answer is
 // true for the shipped product: coach-led passes, invites, Stripe payouts,
 // Elite through Apple, refunds at the coach's discretion through the app, one
-// role per account.
+// two modes on one account (coaching and training).
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
@@ -54,7 +54,7 @@ const GROUPS = [
     id: 'coach-account', audience: 'For coaches', title: 'Your account',
     items: [
       { q: 'How do I sign in?', a: 'With Sign in with Apple or a six-digit code sent to your email. There are no passwords. The season editor on the web signs in with the same email code.' },
-      { q: 'Can I also train with a coach?', a: 'One role per account. A coach account cannot hold a pass; to train with another coach, use a separate email address or Apple ID for an athlete account.' },
+      { q: 'Can I also train with a coach?', a: 'Yes. From Profile, a coach can turn on training and open another coach’s link or enter their code. The account then has two modes, Coaching and Training, each with its own Home, messages and notifications; your athletes never see your own training, and you cannot coach yourself.' },
       { q: 'How old do I have to be?', a: 'FitLink is for people aged 16 and over. We ask for your date of birth at sign-up.' },
     ],
   },
@@ -87,7 +87,7 @@ const GROUPS = [
   {
     id: 'athlete-privacy', audience: 'For athletes', title: 'Privacy and your account',
     items: [
-      { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and what you send in the chat. FitLink does not read Apple Health or any other health app.' },
+      { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and what you send in the chat. Apple Health is optional and off by default: if you turn it on, FitLink can save finished workouts to Apple Health and read resting heart rate and sleep, and your coach sees those two numbers only if you also turn on sharing.' },
       { q: 'Is my coach’s reply written by AI?', a: 'Coaches can use an assistant that drafts a reply. Your coach reads, edits and sends every message.' },
       { q: 'How do I delete my account?', a: (<p>From Profile in the app, or <Link to="/delete-account">on the web</Link>. It is immediate and cannot be undone; payment records are kept where the law requires it.</p>) },
     ],
