@@ -1,12 +1,16 @@
 // /delete-account (Web-Delete): the real flow, not instructions.
 //   email → six-digit code (existing accounts only) → the page reads the
-//   session's role (a trainers row → coach; a clients row → athlete) →
-//   coach: the server's departure preview (athletes, refund total, the
-//   coach's own passes that end) with the policy sentence; athlete:
-//   athlete-exit's preview (every pass that ends today, in the server's own
-//   sentences, and who is told) → one explicit confirm →
-//   delete-trainer-account or athlete-exit {action: 'delete_account',
-//   confirm: true} → Deleted, signed out.
+//   session's role (a trainers row → coach; a clients row → athlete; neither
+//   → a plain account, which athlete-exit deletes too) → coach: the server's
+//   departure preview (athletes, refund total, the coach's own passes that
+//   end) with the policy sentence; otherwise athlete-exit's preview (every
+//   pass that ends today, in the server's own sentences, and who is told) →
+//   one explicit confirm → delete-trainer-account or athlete-exit {action:
+//   'delete_account', confirm: true} → Deleted, signed out.
+// No commit without the server's preview on screen: both deletions end
+// passes with no refund (an athlete's own; a coach's own passes with other
+// coaches), and each preview has its own rate limit, so it can fail while the
+// commit would still work. A role read that fails is said so, never "no profile".
 // An athlete's passes end at Stripe before the account goes (no refund, open
 // invoices forgiven; operator decision 2026-10-17); if one cannot be ended,
 // nothing is deleted and the server's sentence says what did end.
@@ -46,6 +50,13 @@ function unknownOutcome(err) {
  */
 function athletePreviewNote(err) {
   return err?.message ? `We couldn’t list your passes. ${err.message}` : 'We couldn’t list your passes right now.';
+}
+
+/** Why the coach's departure preview is missing, in words; the policy sentence follows it. */
+function coachPreviewNote(err) {
+  if (err?.status === 429) return 'We couldn’t fetch the numbers: too many previews in the last hour. Check again later.';
+  if (err?.code === 'stripe_error' || err?.status === 502) return 'We couldn’t reach our payment processor to work out what your athletes are owed. Check again in a moment.';
+  return 'We couldn’t fetch what your athletes are owed right now. Check again in a moment.';
 }
 
 function money(cents, currency) {
@@ -89,24 +100,40 @@ export default function DeleteAccount() {
     setPreview(null);
     setPreviewNote(null);
     setAgreed(false);
-    const r = await myRole();
-    setRole(r);
-    if (r === 'coach') {
-      try {
-        const p = await departurePreview();
-        setPreview(p);
-      } catch (err) {
-        if (err.code === 'unauthorized') { await sessionExpired(err.message); return; }
-        // The policy still applies; the page says what it could not fetch.
-        if (err.status === 429) setPreviewNote('We couldn’t fetch the numbers: too many previews in the last hour. The policy below still applies.');
-        else if (err.code === 'stripe_error' || err.status === 502) setPreviewNote('We couldn’t reach our payment processor to work out what your athletes are owed, so the numbers aren’t shown. Deleting will still refund them before your account goes; if Stripe can’t be reached then either, nothing is deleted.');
-        else setPreviewNote('We couldn’t fetch what your athletes are owed right now. The policy below still applies.');
-      }
-    } else if (r === 'athlete') {
-      const err = await loadAthletePreview();
-      if (err?.code === 'unauthorized') { await sessionExpired(err.message); return; }
+    let r;
+    try {
+      r = await myRole();
+    } catch (err) {
+      if (err.code === 'unauthorized') { await sessionExpired(err.message); return; }
+      // Not "no profile": the read did not answer. Nothing can be deleted until it does.
+      setRole('unknown');
+      setPreviewNote(err.message);
+      setStep(STEP.confirm);
+      return;
     }
+    setRole(r);
+    // A coach leaves through delete-trainer-account; anyone else (an athlete, or a plain
+    // account with neither row) through athlete-exit, which deletes both.
+    const err = r === 'coach' ? await loadCoachPreview() : r ? await loadAthletePreview() : null;
+    if (err?.code === 'unauthorized') { await sessionExpired(err.message); return; }
     setStep(STEP.confirm);
+  }
+
+  /**
+   * delete-trainer-account's preview: athletes, refunds and the coach's own
+   * passes that end. Changes nothing. Resolves the refusal when there is one.
+   */
+  async function loadCoachPreview() {
+    try {
+      const p = await departurePreview();
+      setPreview(p);
+      setPreviewNote(null);
+      return null;
+    } catch (err) {
+      setPreview(null);
+      setPreviewNote(coachPreviewNote(err));
+      return err;
+    }
   }
 
   /**
@@ -126,9 +153,9 @@ export default function DeleteAccount() {
     }
   }
 
-  async function retryAthletePreview() {
+  async function retryPreview() {
     setBusy(true);
-    const err = await loadAthletePreview();
+    const err = role === 'coach' ? await loadCoachPreview() : await loadAthletePreview();
     setBusy(false);
     if (err?.code === 'unauthorized') await sessionExpired(err.message);
   }
@@ -206,16 +233,16 @@ export default function DeleteAccount() {
       if (err.status === 429) message = 'Too many deletion attempts today. Nothing was deleted; try again tomorrow or write to support.';
       else if (err.outcomeUnknown) message = unknownOutcome(err);
       else message = err.message || 'Couldn’t delete the account. Nothing was changed; try again.';
-      if (role === 'athlete' && err.code === 'coach_account') {
+      if (role !== 'coach' && err.code === 'coach_account') {
         // The account also coaches: its exit is the coach departure. Read the role again.
         await prepare();
         setError(message);
         return;
       }
-      if (role === 'athlete' && err.code === 'needs_confirmation' && Array.isArray(err.body?.passesEnding)) {
+      if (role !== 'coach' && err.code === 'needs_confirmation' && Array.isArray(err.body?.passesEnding)) {
         setPreview(err.body);
         setPreviewNote(null);
-      } else if (role === 'athlete' && Number(err.body?.passesEnded) > 0) {
+      } else if (role !== 'coach' && Number(err.body?.passesEnded) > 0) {
         // Something already ended: the list on screen is out of date.
         await loadAthletePreview();
       }
@@ -239,12 +266,15 @@ export default function DeleteAccount() {
   const intro = role === 'coach'
     ? 'This deletes your profile and your page, ends every pass and refunds what your athletes have not had yet. It can’t be undone.'
     : 'This deletes your profile, messages, check-ins and logged workouts, and ends any pass you hold today. Time already paid isn’t refunded. It can’t be undone.';
-  const athleteEnding = role === 'athlete' && Array.isArray(preview?.passesEnding)
+  // athlete-exit's deletion: an athlete, or a plain account with neither row.
+  const exitsAsAthlete = role === 'athlete' || role === 'none';
+  const athleteEnding = exitsAsAthlete && Array.isArray(preview?.passesEnding)
     ? preview.passesEnding.filter((p) => p && typeof p.line === 'string' && p.line)
     : [];
-  // An athlete confirms only what the server listed: no preview on screen, no commit
-  // (the preview and the deletion have separate rate limits, so one can fail while the other works).
-  const athleteUnlisted = role === 'athlete' && preview == null;
+  // Confirm only what the server listed: no preview on screen, no commit (the preview and
+  // the deletion have separate rate limits, so one can fail while the other works).
+  const canDelete = role === 'coach' || exitsAsAthlete;
+  const unlisted = canDelete && preview == null;
   const ownEnding = role === 'coach' && Array.isArray(preview?.ownPassesEnding)
     ? preview.ownPassesEnding.filter((p) => p && typeof p.line === 'string' && p.line)
     : [];
@@ -288,10 +318,11 @@ export default function DeleteAccount() {
             <button type="button" onClick={notMe} disabled={busy}>Not you? Sign out</button>
           </div>
 
-          {role === 'none' && (
-            <>
-              <p className="s-copy">This account has no coach or athlete profile left to delete. Write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from this address and we’ll remove the sign-in itself.</p>
-            </>
+          {role === 'unknown' && (
+            <div className="s-preview">
+              <span>{previewNote}</span>
+              <button type="button" className="fl-btn sm" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={prepare}>Check again</button>
+            </div>
           )}
 
           {role === 'coach' && (
@@ -307,7 +338,10 @@ export default function DeleteAccount() {
                     </span>
                   </>
                 ) : (
-                  <span>{previewNote}</span>
+                  <>
+                    <span>{previewNote}</span>
+                    <button type="button" className="fl-btn sm" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={retryPreview}>Check again</button>
+                  </>
                 )}
                 <span>{COACH_POLICY}</span>
               </div>
@@ -326,7 +360,7 @@ export default function DeleteAccount() {
             </>
           )}
 
-          {role === 'athlete' && (
+          {exitsAsAthlete && (
             <>
               <div className="s-preview">
                 {preview ? (
@@ -345,7 +379,7 @@ export default function DeleteAccount() {
                   <>
                     <span>{previewNote}</span>
                     <span>{ATHLETE_POLICY}</span>
-                    <button type="button" className="fl-btn sm" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={retryAthletePreview}>Check again</button>
+                    <button type="button" className="fl-btn sm" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={retryPreview}>Check again</button>
                   </>
                 )}
               </div>
@@ -358,15 +392,19 @@ export default function DeleteAccount() {
             </>
           )}
 
-          {role && role !== 'none' && (
+          {canDelete && (
             <>
               <label className="s-checkrow">
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} disabled={busy} />
                 <span>I understand this deletes my account now and cannot be undone.</span>
               </label>
               {error && <div className="fl-error" role="alert">{error}</div>}
-              {athleteUnlisted && <p className="s-small" id="d-unlisted">Your passes have to be listed before you can delete the account. Use Check again above.</p>}
-              <button type="button" className="fl-btn danger lg" disabled={busy || !agreed || athleteUnlisted} aria-describedby={athleteUnlisted ? 'd-unlisted' : undefined} onClick={confirmDelete}>
+              {unlisted && (
+                <p className="s-small" id="d-unlisted">
+                  {role === 'coach' ? 'What deleting ends has to be listed before you can delete the account.' : 'Your passes have to be listed before you can delete the account.'} Use Check again above.
+                </p>
+              )}
+              <button type="button" className="fl-btn danger lg" disabled={busy || !agreed || unlisted} aria-describedby={unlisted ? 'd-unlisted' : undefined} onClick={confirmDelete}>
                 {step === STEP.deleting ? (role === 'coach' ? 'Refunding and deleting…' : 'Deleting…') : 'Delete my account'}
               </button>
               <Link className="fl-btn quiet" to="/" aria-disabled={busy}>Keep my account</Link>

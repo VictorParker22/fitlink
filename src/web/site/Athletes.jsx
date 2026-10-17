@@ -30,7 +30,7 @@ function PlanScreen() {
 }
 
 const FAQ = [
-  { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. You keep training until the end of what you’ve paid for. A season pass ends on its own when the season ends.' },
+  { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. You keep training until the end of what you’ve paid for. A season pass renews like any other pass until you cancel it.' },
   { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and anything you send in the chat. Apple Health is optional and off by default: if you turn it on in the app, FitLink can save finished workouts to Apple Health and read resting heart rate and sleep, and your coach sees those two numbers only if you also turn on sharing.' },
   { q: 'Is my coach’s reply written by AI?', a: 'Coaches can use an assistant that drafts a reply from your check-in and your log. Your coach reads, edits and sends every message; nothing is sent on its own.' },
   { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are at the coach’s discretion and are issued through the app, back to the card you paid with. If a coach closes their account, time you prepaid and have not had is refunded automatically. If you switch coaches or delete your account, your pass ends that day and time already paid isn’t refunded, so ask your coach before you switch.' },

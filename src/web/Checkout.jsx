@@ -19,13 +19,16 @@
 // stays the authority; what only it can know (live_subscription on a second
 // pass, stripe_error, db_error) can still refuse after a confirmed switch,
 // and the sheet then says the old pass ended.
+//
+// create-subscription bills every pass, a season included, as a subscription
+// that renews every month (or year) until it is cancelled; the sheet says so.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase, APP_SCHEME } from './supabase';
 import {
   acceptInvite, appConfig, coachTakesCards, confirmSubscription, createSubscription, dollars, firstName,
-  myClient, planIsPriced, previewInvite, session, signOutLocal,
+  functionError, myClient, planIsPriced, previewInvite, session, signOutLocal,
 } from './api';
 import { SUPPORT_EMAIL } from './site/pricing';
 
@@ -95,6 +98,8 @@ export default function Checkout({ plan, coach, code, onClose }) {
   const started = useRef(false);
   /** The Stripe publishable key, read before anything can end a pass. */
   const stripeKey = useRef(null);
+  /** A switch confirm whose answer was lost: what it was asked to do, until a preview shows where things stand. */
+  const lostSwitch = useRef(null);
 
   // Whether the page can sell this pass at all, before asking for an email;
   // a session that already exists (the person bought before, or opened the
@@ -175,7 +180,14 @@ export default function Checkout({ plan, coach, code, onClose }) {
     if (!planIsPriced(plan)) {
       throw stop(`This pass has no price set, so it can’t be bought yet. Ask ${first} to set one. Nothing was changed.`, 'plan_unpriced');
     }
-    const cfg = await appConfig().catch(() => ({}));
+    let cfg;
+    try {
+      cfg = await appConfig();
+    } catch (error) {
+      // No answer, or app-config refused: say that, not "not set up".
+      const e = await functionError(error);
+      throw stop(`${e.message} Nothing was changed.`);
+    }
     const pk = cfg?.stripePublishableKey;
     if (!pk || !String(pk).startsWith('pk_')) throw stop('Payments aren’t set up on this page yet. Buy the pass in the FitLink app instead. Nothing was changed.');
     stripeKey.current = String(pk);
@@ -212,6 +224,18 @@ export default function Checkout({ plan, coach, code, onClose }) {
       setEmail(s.user.email ?? '');
       setCheckingNote('Checking your passes…');
       const v = await previewInvite(code);
+      const lost = lostSwitch.current;
+      lostSwitch.current = null;
+      if (lost && v?.currentCoach?.id && v.currentCoach.id === v?.newCoach?.id) {
+        // The lost confirm went through: this coach is the athlete's coach now. athlete-exit
+        // runs accept_invite only after every pass it was ending has ended at Stripe.
+        setJoined((prev) => ({
+          ...(prev ?? {}),
+          switched: prev?.switched === true || lost.needsSwitch,
+          settled: true,
+          listedEnded: lost.listed,
+        }));
+      }
       if (v?.needsConfirmation) {
         setView(v);
         setStep(STEP.switch);
@@ -253,7 +277,11 @@ export default function Checkout({ plan, coach, code, onClose }) {
         return;
       }
       // A confirm can end a pass before its answer is lost: never call that "try again".
-      if (confirm && err?.outcomeUnknown) throw unknownSwitch(err);
+      if (confirm && err?.outcomeUnknown) {
+        const listed = Array.isArray(view?.passesEnding) ? view.passesEnding.filter((p) => p && typeof p.line === 'string' && p.line).length : 0;
+        lostSwitch.current = { needsSwitch: view?.needsSwitch === true, listed };
+        throw unknownSwitch(err);
+      }
       throw err;
     }
     // What the server confirmed in this sheet adds up across tries (a second
@@ -262,6 +290,8 @@ export default function Checkout({ plan, coach, code, onClose }) {
       ...accepted,
       switched: prev?.switched === true || accepted?.switched === true,
       passesEnded: (Number(prev?.passesEnded) || 0) + (Number(accepted?.passesEnded) || 0),
+      settled: prev?.settled === true,
+      listedEnded: Number(prev?.listedEnded) || 0,
     }));
     setView(null);
     await checkout(accepted?.clientId ?? null);
@@ -296,9 +326,11 @@ export default function Checkout({ plan, coach, code, onClose }) {
 
   /**
    * confirm-subscription starts the pass without waiting for the webhook; the
-   * sheet says only what it answered. Asked again only when no decided answer
-   * came back (no answer, a 5xx); a refusal (400, 401, 403, 404, 429) is
-   * final for this tap and its sentence is shown.
+   * sheet says only what it answered. Asked again (three tries, 1.5 s apart)
+   * when no decided answer came back (no answer, a 5xx without a code) or the
+   * answer was `active: false` without a code (the payment may not have
+   * landed yet); a refusal (400, 401, 403, 404, 429, a coded 5xx) and
+   * `roster_full` are final for this tap and their sentence is shown.
    */
   async function paid() {
     let answer = null;
@@ -343,19 +375,25 @@ export default function Checkout({ plan, coach, code, onClose }) {
     },
   }) : null, [clientSecret]);
 
-  const price = plan.duration_weeks ? `${dollars(plan.price)} once` : `${dollars(plan.price)} / ${plan.period === 'year' ? 'year' : 'month'}`;
+  // create-subscription's interval (rules.ts planInterval), for a season too.
+  const period = plan.period === 'year' ? 'year' : 'month';
+  const price = `${dollars(plan.price)} / ${period}`;
   const owing = purchase?.payingOpenInvoice === true;
   const payLabel = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : price.split(' ')[0];
   const ending = Array.isArray(view?.passesEnding) ? view.passesEnding.filter((p) => p && typeof p.line === 'string' && p.line) : [];
   const currentName = view?.currentCoach?.name || null;
   const passEnded = Number(joined?.passesEnded) > 0;
   const switched = joined?.switched === true;
+  // A confirm whose answer was lost, then a preview that shows this coach as the athlete's own.
+  const settled = joined?.settled === true;
+  const listedEnded = Number(joined?.listedEnded) || 0;
 
   // What the server confirmed about the join, kept on screen through payment.
-  const joinedNote = (passEnded || switched) ? (
+  const joinedNote = (passEnded || switched || settled) ? (
     <p className="fl-done-note" role="status">
       {switched ? `You’ve switched to ${first}.` : `You’ve joined ${first}.`}
       {passEnded ? ` ${Number(joined.passesEnded) === 1 ? 'Your previous pass has ended' : `${joined.passesEnded} previous passes have ended`} and won’t renew.` : ''}
+      {!passEnded && settled && listedEnded > 0 ? ` ${listedEnded === 1 ? 'The pass listed before you confirmed has' : 'The passes listed before you confirmed have'} ended and won’t renew. Time already paid isn’t refunded.` : ''}
     </p>
   ) : null;
 
@@ -429,7 +467,7 @@ export default function Checkout({ plan, coach, code, onClose }) {
               </p>
             )}
             <Elements stripe={stripePromise} options={elementsOptions}>
-              <PayForm payLabel={payLabel} owing={owing} onPaid={paid} />
+              <PayForm payLabel={payLabel} owing={owing} period={period} onPaid={paid} />
             </Elements>
           </>
         )}
@@ -476,7 +514,7 @@ export default function Checkout({ plan, coach, code, onClose }) {
   );
 }
 
-function PayForm({ payLabel, owing, onPaid }) {
+function PayForm({ payLabel, owing, period, onPaid }) {
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
@@ -507,7 +545,7 @@ function PayForm({ payLabel, owing, onPaid }) {
       {error && <div className="fl-error" role="alert">{error}</div>}
       <button type="submit" className="fl-btn accent lg" disabled={!stripe || busy}>{busy ? 'Paying…' : `Pay ${payLabel}`}</button>
       <p className="fl-note">
-        {owing ? 'Charged today. ' : 'Charged today, then as the pass says. '}
+        {owing ? 'Charged today. ' : `Charged today, then every ${period} until you cancel. `}
         Cancel any time from the app. Card details go to Stripe, never to FitLink.
       </p>
     </form>

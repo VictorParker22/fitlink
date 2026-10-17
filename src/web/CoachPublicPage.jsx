@@ -16,10 +16,15 @@ const Check = ({ dark }) => (
   </svg>
 );
 
+/** As create-subscription bills it: every pass, a season included, renews monthly (or yearly) until cancelled. */
 function priceParts(plan) {
-  const d = dollars(plan.price);
-  if (plan.duration_weeks) return { amount: d, unit: `once · ${plan.duration_weeks} weeks` };
-  return { amount: d, unit: `/ ${plan.period === 'year' ? 'year' : 'month'}` };
+  return { amount: dollars(plan.price), unit: `/ ${plan.period === 'year' ? 'year' : 'month'}` };
+}
+
+function seasonLine(plan) {
+  const weeks = Number(plan.duration_weeks);
+  if (!Number.isInteger(weeks) || weeks <= 0) return null;
+  return `${weeks}-week season, billed every ${plan.period === 'year' ? 'year' : 'month'} until you cancel`;
 }
 
 function startsLine(plan) {
@@ -114,7 +119,7 @@ export default function CoachPublicPage() {
           <a className="fl-brand" href="#top">{brand}</a>
           <div className="fl-nav">
             <a href={appLink}>I already train with {first}</a>
-            {plans.length > 0 && <a className="fl-btn accent" href="#passes">Choose a pass</a>}
+            {forSale.length > 0 && <a className="fl-btn accent" href="#passes">Choose a pass</a>}
           </div>
         </div>
       </header>
@@ -125,7 +130,7 @@ export default function CoachPublicPage() {
           <h1 className="fl-display">{coach.name || 'Your coach'}</h1>
           {coach.bio && <p className="fl-lede">{coach.bio}</p>}
           <div className="fl-actions">
-            {plans.length > 0 && <a className="fl-btn accent lg" href="#passes">Choose a pass</a>}
+            {forSale.length > 0 && <a className="fl-btn accent lg" href="#passes">Choose a pass</a>}
             <a className="fl-btn lg" style={{ background: '#E7E3DB' }} href="#how">How it works</a>
           </div>
         </div>
@@ -136,11 +141,13 @@ export default function CoachPublicPage() {
 
       <section id="passes" aria-labelledby="passes-h" className="fl-section">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <h2 id="passes-h" className="fl-h2">{plans.length > 0 ? 'Pick a pass. Start this week.' : 'No pass yet.'}</h2>
+          <h2 id="passes-h" className="fl-h2">{forSale.length > 0 ? 'Pick a pass. Start this week.' : plans.length > 0 ? 'No pass for sale yet.' : 'No pass yet.'}</h2>
           <p className="fl-sub">
-            {plans.length > 0
+            {forSale.length > 0
               ? `Pay here — no app needed to buy. Your first week comes from ${first} once you’re in, and the app is waiting when you want it.`
-              : `${first} hasn’t published a pass. Ask them, or check back soon.`}
+              : plans.length > 0
+                ? `${first} hasn’t set a price on a pass yet. Ask them, or check back soon.`
+                : `${first} hasn’t published a pass. Ask them, or check back soon.`}
           </p>
         </div>
         {plans.length > 0 && (
@@ -152,6 +159,8 @@ export default function CoachPublicPage() {
               const { amount, unit } = priceParts(plan);
               const lines = [startsLine(plan), ...(Array.isArray(plan.features) ? plan.features : [])].filter(Boolean);
               if (lines.length === 0 && plan.description) lines.push(plan.description);
+              const season = priced ? seasonLine(plan) : null;
+              if (season) lines.unshift(season);
               return (
                 <article key={plan.id} className={`fl-pass${dark ? ' ink' : ''}`}>
                   <div className="fl-pass-head">
@@ -189,7 +198,7 @@ export default function CoachPublicPage() {
         <div className="fl-cta">
           <div className="fl-cta-row">
             <h2>Start Monday.</h2>
-            {plans.length > 0 && <a className="fl-btn accent xl" href="#passes">Choose a pass</a>}
+            {forSale.length > 0 && <a className="fl-btn accent xl" href="#passes">Choose a pass</a>}
           </div>
           <div className="fl-cta-foot">
             <span>Payments, plans and messages run on FitLink.</span>

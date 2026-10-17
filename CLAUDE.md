@@ -48,9 +48,11 @@ from `plans`.
   Illustrations (phone mocks, the money card) are `aria-hidden` and compute their sample
   arithmetic from the same constants.
 - **Support answers must be true for the shipped product**: iPhone only, no Android app,
-  card checkout by Stripe (no Apple Pay claim), no Apple Health, the assistant is Coach
-  Elite and the coach sends every message, refunds through the app within 90 days of the
-  payment, a coach who leaves refunds undelivered time automatically, and an athlete who
+  card checkout by Stripe (no Apple Pay claim), Apple Health optional and off by default (the
+  coach sees resting HR and sleep only when the athlete also turns on sharing; no Health
+  Connect), the assistant is Coach Elite and the coach sends every message, refunds through
+  the app within 90 days of the payment, a coach who leaves refunds undelivered time
+  automatically, and an athlete who
   switches coach or deletes their account ends the old pass that day with no refund of time
   already paid ("ask your coach before you switch"; operator decision 2026-10-17). A coach
   can also train (two modes); `Support.jsx` says so, but the Terms' "In plain words" still
@@ -59,13 +61,19 @@ from `plans`.
   filters the page's own questions.
 - **Delete account is a real flow** (`DeleteAccount.jsx`, helpers in `api.js`): email →
   `signInWithOtp({ shouldCreateUser: false })` → code → `myRole()` (a `trainers` row →
-  coach, a `clients` row → athlete). A session already in the browser skips the code.
+  coach, a `clients` row → athlete, neither → `none`; a read that fails throws and the page
+  says it couldn't check, with Check again, never "no profile"). A session already in the
+  browser skips the code.
   - Coach: `departurePreview()` = `delete-trainer-account {preview: true}` (athletes, refund
     total, and `ownPassesEnding[].line`: the coach's own passes with other coaches and their
-    placeholders', listed verbatim under "Also ending today"; 3/hour, a 429 or a Stripe 502
-    is shown in words and the policy sentence stays) → checkbox → `deleteCoachAccount()` (the
-    function, then `auth.getUser()` must fail before the page says Deleted; 2/day).
-  - Athlete (fitlink-app 2026-10-17, athlete-exit is the athletes' one exit; no app calls
+    placeholders', listed verbatim under "Also ending today"; 3/hour; a 429 or a Stripe 502
+    is shown in words with Check again) → checkbox → `deleteCoachAccount()` (the function,
+    then `auth.getUser()` must fail before the page says Deleted; 2/day). The Delete button
+    stays disabled until the preview is on screen: step 0 ends the coach's own passes with
+    other coaches, no refund, and the preview is the only place they are listed.
+  - Athlete, and a `none` account (athlete-exit deletes an account with neither row too; a
+    deleted account's stale session gets its 401 and goes back to the email step)
+    (fitlink-app 2026-10-17, athlete-exit is the athletes' one exit; no app calls
     `delete-account-media` or `delete_client_account` any more): `previewAthleteDeletion()` =
     `athlete-exit {action: 'delete_account', preview: true}` → each `passesEnding[].line` and
     `coachNotice` verbatim → checkbox → `deleteAthleteAccount()` = `{action:
@@ -82,21 +90,31 @@ from `plans`.
 - **Checkout joins through athlete-exit, then buys** (`Checkout.jsx`): the sheet first checks
   what the page can see would make create-subscription refuse (`planIsPriced`, the server's
   `planAmountCents` rule; `coachTakesCards` = `trainers_public.stripe_charges_enabled`; the
-  Stripe key from `app-config`) and stops with "Nothing was changed" (`CoachPublicPage` never
-  offers Buy on an unpriced pass) → email code → `previewInvite` = `athlete-exit
+  Stripe key from `app-config`; an `app-config` call that fails says so in its own words,
+  only a 2xx without a `pk_` key is "not set up") and stops with "Nothing was changed"
+  (`CoachPublicPage` never offers Buy on an unpriced pass, and with no priced pass it shows
+  no "Choose a pass" prompt) → email code → `previewInvite` = `athlete-exit
   {action: 'accept_invite', code, preview: true}` → when `needsConfirmation`, the
   `passesEnding[].line` list and "this happens as soon as you confirm, before the card form"
   → `acceptInvite(code, {confirm: true})`, which ends those passes at Stripe NOW (no refund,
   open invoices forgiven) and moves the athlete → `create-subscription {planId, clientId}`
   (`alreadyActive` is a success; `payingOpenInvoice` + `amountDueCents` is "pay what you owe")
-  → Stripe PaymentElement → `confirm-subscription {clientId, subscriptionId}` (asked again only
-  on no answer / 5xx; a 4xx shows its sentence; `{active: false, code: 'roster_full', error}`
+  → Stripe PaymentElement → `confirm-subscription {clientId, subscriptionId}` (three tries,
+  1.5 s apart, on no answer, a 5xx without a code, or `active: false` without a code; a 4xx
+  or coded 5xx shows its sentence at once; `{active: false, code: 'roster_full', error}`
   shows `error`) → "You're in" only on `active: true`. "Switched" and "your previous pass has
   ended" come only from the confirm's own `switched` / `passesEnded`. A confirm whose answer is
-  lost says nobody can tell whether the pass ended (Check again re-runs the preview); a 401
-  offers Sign in again. What only the server can know can still refuse after a confirmed
-  switch (`live_subscription` on a second pass with the new coach, `stripe_error`, `db_error`),
-  and the sheet then keeps saying the old pass ended.
+  lost says nobody can tell whether the pass ended (Check again re-runs the preview; when it
+  shows this coach as the athlete's own, the sheet says the switch went through and the
+  listed passes ended before the card form); a 401 offers Sign in again. What only the server
+  can know can still refuse after a confirmed switch (`live_subscription` on a second pass with
+  the new coach, `stripe_error`, `db_error`), and the sheet then keeps saying the old pass
+  ended.
+- **Every pass renews, a season included.** `create-subscription` prices every plan as a
+  Stripe subscription every month (`period: 'year'` → every year) and nothing ends a season's
+  subscription after `duration_weeks`, so the public page, the checkout and the Terms §4 / Help
+  answers show a season as "$X / month … until you cancel", never "once". Change them
+  together if the server starts ending seasons.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.
@@ -117,8 +135,8 @@ from `plans`.
   of Service the app's Elite paywall and the web checkout link to; two bracketed founder
   placeholders (legal entity in §1, governing law and venue in §15) are highlighted with
   `<mark class="s-fill">`. `/privacy` is kept in step with fitlink-ios `docs/SUBMISSION.md`
-  (App Privacy table): no Apple Health / Health Connect, 16+, and Stripe / Apple + RevenueCat /
-  Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo as the
+  (App Privacy table): Apple Health only by choice, no Health Connect, 16+, and Stripe /
+  Apple + RevenueCat / Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo as the
   processors. Change the table, change `privacyContent.jsx`. Every address on the site is
   `support@fitlink.coach` (the iOS submission pack's mailbox); the getfitlink.com addresses
   are gone. **Open, founder decision before the next Vercel deploy:** `TERMS_UPDATED`

@@ -218,14 +218,30 @@ export async function functionError(error) {
   return { status, code, message, body, fromServer, outcomeUnknown };
 }
 
-/** coach | athlete | none for the signed-in user; null when signed out. */
+/**
+ * coach | athlete | none for the signed-in user; null when signed out. A read
+ * that did not answer is never taken for "no profile": it throws `{ status,
+ * code, message }` (code `unauthorized` on a 401).
+ */
 export async function myRole() {
   const s = await session();
   if (!s) return null;
-  const { data: t } = await supabase.from('trainers').select('id').eq('id', s.user.id).limit(1);
-  if (t?.length) return 'coach';
-  const { data: c } = await supabase.from('clients').select('id').eq('auth_user_id', s.user.id).limit(1);
-  return c?.length ? 'athlete' : 'none';
+  const t = await supabase.from('trainers').select('id').eq('id', s.user.id).limit(1);
+  if (t.error) throw roleReadError(t.status);
+  if (t.data?.length) return 'coach';
+  const c = await supabase.from('clients').select('id').eq('auth_user_id', s.user.id).limit(1);
+  if (c.error) throw roleReadError(c.status);
+  return c.data?.length ? 'athlete' : 'none';
+}
+
+function roleReadError(httpStatus) {
+  const status = Number(httpStatus) || 0;
+  const message = status === 401
+    ? SIGNED_OUT_SENTENCE
+    : status === 0
+      ? 'We couldn’t reach FitLink to check your account. Check your connection, then check again.'
+      : 'We couldn’t check your account right now. Check again in a moment.';
+  return Object.assign(new Error(message), { status, code: status === 401 ? 'unauthorized' : null });
 }
 
 function refusal(e) {

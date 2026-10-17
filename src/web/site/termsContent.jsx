@@ -51,10 +51,10 @@ export default function TermsBody() {
       <section id="s4" aria-labelledby="s4-h">
         <h2 id="s4-h">4. Passes and subscriptions (athletes)</h2>
         <ul>
-          <li><strong>What a pass is.</strong> A pass is what the coach describes on it: a monthly or yearly subscription, or a one-time season of a fixed number of weeks. The price shown at checkout is the price you pay, plus any tax that applies where you live.</li>
+          <li><strong>What a pass is.</strong> A pass is what the coach describes on it: a monthly or yearly subscription, or a season of a fixed number of weeks. Every pass, a season included, is a subscription: it charges the price shown every month, or every year for a yearly pass. The price shown at checkout is the price you pay, plus any tax that applies where you live.</li>
           <li><strong>Buying a pass joins the coach.</strong> When you buy a pass you join that coach’s roster, and the coach can see your training data, logged sets, check-ins and messages for as long as you are on it. If you were training with a different coach, buying a pass from a new one moves you to the new coach; your history stays in the previous coach’s records, and your pass with them ends as described in section 3 (no refund of time already paid).</li>
-          <li><strong>Renewal.</strong> A subscription pass renews automatically at the end of each period, at the price shown, until you cancel it. A season pass ends when the season ends and does not renew.</li>
-          <li><strong>Cancelling.</strong> You can cancel a subscription pass from the app at any time. Cancelling stops the next renewal; you keep access until the end of the period you have already paid for. A price change never applies to a period you have already paid for.</li>
+          <li><strong>Renewal.</strong> Every pass renews automatically at the end of each period, at the price shown, until you cancel it. A season pass renews too: it does not stop by itself when the season’s weeks are over.</li>
+          <li><strong>Cancelling.</strong> You can cancel a pass from the app at any time. Cancelling stops the next renewal; you keep access until the end of the period you have already paid for. A price change never applies to a period you have already paid for.</li>
           <li><strong>Failed payments.</strong> If a renewal payment fails, the pass goes on hold until payment succeeds. Your coach can see that it is on hold.</li>
           <li><strong>A coach may end a pass.</strong> A coach may stop selling a pass or remove you from their roster. If that happens before the end of a period you have paid for, see refunds below.</li>
         </ul>
