@@ -1,6 +1,9 @@
 // Title, meta description, date and the "On this page" list for each legal
 // document. The text itself is privacyContent.jsx / termsContent.jsx.
 export const LEGAL_UPDATED = '16 October 2026';
+// The Terms changed on 17 October 2026: switching coaches or deleting an
+// account ends the pass that day, with no refund of time already paid.
+export const TERMS_UPDATED = '17 October 2026';
 
 const PRIVACY_SECTIONS = [
   { id: 'plain', label: 'In plain words' },
@@ -46,7 +49,7 @@ export const LEGAL_DOCS = {
   terms: {
     title: 'Terms of Service',
     description: 'The terms for using FitLink: coaches sell training passes, athletes buy them, payments run through Stripe, Coach Elite is sold through Apple.',
-    updated: LEGAL_UPDATED,
+    updated: TERMS_UPDATED,
     sections: TERMS_SECTIONS,
   },
 };

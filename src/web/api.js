@@ -38,6 +38,31 @@ export async function plansFor(trainerId) {
   return live.data ?? [];
 }
 
+/**
+ * Whether a pass has a price create-subscription can charge: its own rule
+ * (rules.ts planAmountCents), at least one cent after rounding. A pass
+ * without one is refused 409 plan_unpriced, so no page offers to buy it.
+ */
+export function planIsPriced(plan) {
+  const n = Math.round(Number(plan?.price) * 100);
+  return Number.isFinite(n) && n > 0;
+}
+
+/**
+ * Whether the pass's coach can take a card now: trainers_public
+ * .stripe_charges_enabled (written by sync_trainer_public; SELECT for anon
+ * and authenticated). create-subscription refuses 400 payouts_not_ready
+ * without it. `null` when the coach has no public row (gone from FitLink);
+ * a failed read throws. The server stays the authority: this only keeps a
+ * page from ending a pass for a purchase it can already see will be refused.
+ */
+export async function coachTakesCards(trainerId) {
+  const { data, error } = await supabase.from('trainers_public').select('stripe_charges_enabled').eq('id', trainerId).limit(1);
+  if (error) throw error;
+  if (!data?.length) return null;
+  return data[0].stripe_charges_enabled === true;
+}
+
 let configCache;
 /** Public config: the Stripe publishable key. Cached for the page's life. */
 export async function appConfig() {
@@ -61,51 +86,136 @@ export async function myClient() {
   return data?.[0] ?? null;
 }
 
-export async function acceptInvite(code, confirmSwitch = false) {
-  const { data, error } = await supabase.rpc('accept_invite', { p_code: code, p_confirm_switch: confirmSwitch });
-  if (error) throw error;
-  return data;
-}
-
-/** create-subscription: `{ clientSecret, customerId }` or `{ alreadyActive: true }`. */
-export async function createSubscription(planId, clientId) {
-  const { data, error } = await supabase.functions.invoke('create-subscription', { body: { planId, clientId } });
-  if (error) {
-    const msg = await functionErrorMessage(error);
-    throw new Error(msg);
-  }
-  return data;
-}
-
-export async function confirmSubscription(clientId) {
-  const { data, error } = await supabase.functions.invoke('confirm-subscription', { body: { clientId } });
-  if (error) throw new Error(await functionErrorMessage(error));
-  return data;
+/**
+ * athlete-exit, the athletes' one exit (fitlink-app, 2026-10-17): deleting an
+ * athlete account and joining a coach both go through it, preview first, then
+ * confirm. The body names an action and an invite code, never a person, a
+ * subscription or an amount; the caller is the session's JWT. A refusal
+ * throws `{ status, code, message, body }` with the server's sentence.
+ */
+async function athleteExit(body) {
+  const { data, error } = await supabase.functions.invoke('athlete-exit', { body });
+  if (error) throw refusal(await functionError(error));
+  return data ?? {};
 }
 
 /**
- * An edge function's refusal as `{ status, code, message }`. supabase-js wraps
- * a non-2xx answer in a FunctionsHttpError whose `context` is the Response;
- * the body is our `{ error, code? }` shape, and a 429 from guardRate has no
- * body worth showing.
+ * What joining this coach would end, changing nothing: `{ preview: true,
+ * kind, newCoach: {id, name}, currentCoach: {id, name} | null, needsSwitch,
+ * needsConfirmation, passesEnding: [{ line, … }], refund: 'none' }`.
+ */
+export function previewInvite(code) {
+  return athleteExit({ action: 'accept_invite', code, preview: true });
+}
+
+/**
+ * Join the coach. `confirm` only after the person saw the preview's lines:
+ * the server then ends every pass that would not pay the new coach (cancel
+ * now at Stripe, no refund, open invoices forgiven) and only after that runs
+ * accept_invite. Answers `{ accepted: true, kind, trainerId, clientId,
+ * liveClassId, switched, passesEnded }`. Without `confirm`, a join that
+ * needs one is refused 409 `needs_confirmation` with the same view as the
+ * preview in the body.
+ */
+export function acceptInvite(code, { confirm = false } = {}) {
+  return athleteExit({ action: 'accept_invite', code, ...(confirm ? { confirm: true } : {}) });
+}
+
+/**
+ * create-subscription. 200 answers: `{ clientSecret, customerId,
+ * subscriptionId }` (a payment to confirm), `{ alreadyActive: true,
+ * subscriptionId, customerId }`, or the same pass owed: `{ clientSecret, …,
+ * payingOpenInvoice: true, amountDueCents }`. A refusal throws `{ status,
+ * code, message }`: 400 bad_request / payouts_not_ready, 403 athlete_only,
+ * 404 plan_not_found / coach_not_found, 409 plan_archived / plan_unpriced /
+ * cannot_coach_yourself / live_subscription / roster_full /
+ * payment_processing, 502 stripe_error, 500 db_error.
+ */
+export async function createSubscription(planId, clientId) {
+  const { data, error } = await supabase.functions.invoke('create-subscription', { body: { planId, clientId } });
+  if (error) throw refusal(await functionError(error));
+  return data ?? {};
+}
+
+const SUBSCRIPTION_ID = /^sub_[A-Za-z0-9]{1,250}$/;
+
+/**
+ * confirm-subscription: `{ active, planId, subscriptionId, results, code?,
+ * error? }`. `subscriptionId` (what create-subscription returned) narrows the
+ * check to the subscription just paid; anything that is not a Stripe id is
+ * left out (the server answers 400 for it). `active: false` with `code:
+ * 'roster_full'` carries the server's sentence in `error`.
+ */
+export async function confirmSubscription(clientId, subscriptionId = null) {
+  const body = { clientId, ...(SUBSCRIPTION_ID.test(String(subscriptionId ?? '')) ? { subscriptionId } : {}) };
+  const { data, error } = await supabase.functions.invoke('confirm-subscription', { body });
+  if (error) throw refusal(await functionError(error));
+  return data ?? {};
+}
+
+/** Shown when a call never reached the server, or its answer never came back. */
+export const NETWORK_SENTENCE = 'We couldn’t reach FitLink. Check your connection and try again.';
+/** Shown when an answer came back with no sentence in it (a gateway's HTML page, a timeout). */
+export const NO_ANSWER_SENTENCE = 'FitLink didn’t send a readable answer. Try again in a moment.';
+const SIGNED_OUT_SENTENCE = 'Your sign-in has expired. Sign in again to continue.';
+
+/**
+ * An edge function's refusal as `{ status, code, message, body, fromServer,
+ * outcomeUnknown }`. supabase-js wraps a non-2xx answer in a
+ * FunctionsHttpError whose `context` is the Response (read once, here).
+ * Bodies: ours `{ error: <sentence>, code }` (a decided refusal, whatever its
+ * status); internalError's `{ error: <sentence> }` (500, no code: the
+ * function threw part-way); guardRate's `{ error: <code>, message:
+ * <sentence> }` (refused before the function did anything); the auth check's
+ * `{ error }`; the gateway's `{ code: 401, message }` or `{ code:
+ * 'WORKER_LIMIT', message }`; a gateway timeout's HTML page (no body). A
+ * network failure has status 0.
+ *
+ * `fromServer`: `message` is FitLink's own sentence. `outcomeUnknown`: the
+ * call may have done something nobody heard about (no answer at all, or a
+ * 5xx that is not one of our decided refusals). A page that sent a commit
+ * (a switch, a deletion) says so in place of a plain "try again".
  */
 export async function functionError(error) {
   const status = Number(error?.context?.status) || 0;
   let code = null;
   let message = null;
+  let body = null;
+  let fromServer = false;
+  let decided = false;
   try {
     const ctx = error?.context;
     if (ctx && typeof ctx.json === 'function') {
-      const body = await ctx.json();
-      if (body?.error) message = String(body.error);
-      if (body?.code) code = String(body.code);
+      const parsed = await ctx.json();
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) body = parsed;
     }
-  } catch { /* fall through */ }
-  return { status, code, message: message || error?.message || 'Something went wrong.' };
-}
-
-async function functionErrorMessage(error) {
-  return (await functionError(error)).message;
+  } catch { /* no readable body */ }
+  if (body) {
+    if (typeof body.error === 'string' && typeof body.message === 'string' && body.message && body.code === undefined) {
+      code = body.error;
+      message = body.message;
+      fromServer = true;
+      decided = true;
+    } else {
+      if (typeof body.error === 'string' && body.error) {
+        message = body.error;
+        fromServer = true;
+      }
+      if (typeof body.code === 'string' && body.code) code = body.code;
+      decided = fromServer && code !== null;
+    }
+  }
+  if (status === 401) {
+    message = SIGNED_OUT_SENTENCE;
+    code = code ?? 'unauthorized';
+    fromServer = false;
+    decided = true;
+  }
+  // No sentence of ours: the gateway's own words when it gave some, else say plainly that none came.
+  if (!message && typeof body?.message === 'string' && body.message) message = body.message;
+  if (!message) message = status === 0 ? NETWORK_SENTENCE : NO_ANSWER_SENTENCE;
+  const outcomeUnknown = status === 0 || (status >= 500 && !decided);
+  return { status, code, message, body, fromServer, outcomeUnknown };
 }
 
 /** coach | athlete | none for the signed-in user; null when signed out. */
@@ -119,13 +229,22 @@ export async function myRole() {
 }
 
 function refusal(e) {
-  return Object.assign(new Error(e.message), { status: e.status, code: e.code });
+  return Object.assign(new Error(e.message), {
+    status: e.status,
+    code: e.code,
+    body: e.body ?? null,
+    fromServer: e.fromServer === true,
+    outcomeUnknown: e.outcomeUnknown === true,
+  });
 }
 
 /**
  * delete-trainer-account {preview: true}: `{ athletes, placeholders,
  * subscriptions, refunds: [{clientId, passName, cents}], refundCentsTotal,
- * currency, refundsAlreadyIssued }`. Reads only; 3 per hour per coach.
+ * currency, refundsAlreadyIssued, ownPassesEnding: [{ line, whose, … }] }`
+ * (`ownPassesEnding`: passes on the coach's own training rows and on the
+ * placeholders they typed, which end with the account, no refund). Reads
+ * only; 3 per hour per coach.
  */
 export async function departurePreview() {
   const { data, error } = await supabase.functions.invoke('delete-trainer-account', { body: { preview: true } });
@@ -150,18 +269,25 @@ export async function deleteCoachAccount() {
 }
 
 /**
- * The athlete's own deletion: files first (delete-account-media, best effort
- * and reported), then the delete_client_account RPC, which removes the
- * clients row (its children cascade) and the auth user.
+ * What deleting this athlete account would end, changing nothing:
+ * `{ preview: true, passesEnding: [{ line, … }], refund: 'none', coachNotice }`.
+ */
+export function previewAthleteDeletion() {
+  return athleteExit({ action: 'delete_account', preview: true });
+}
+
+/**
+ * The athlete's own deletion, through athlete-exit: every pass the account
+ * still pays ends at Stripe (no refund, open invoices forgiven), then the
+ * account is deleted, then the files. Resolves only on the server's
+ * `deleted: true`; the browser's session is dropped only then. Answers
+ * `{ passesEnded, mediaIncomplete }`.
  */
 export async function deleteAthleteAccount() {
-  const mediaIncomplete = await supabase.functions.invoke('delete-account-media', { body: {} })
-    .then(({ data, error }) => Boolean(error) || data?.success === false)
-    .catch(() => true);
-  const { error } = await supabase.rpc('delete_client_account');
-  if (error) throw new Error(error.message || 'Couldn’t delete the account.');
+  const data = await athleteExit({ action: 'delete_account', confirm: true });
+  if (data?.deleted !== true) throw new Error('The server did not confirm the deletion. Reload this page to see whether your account is still there, or write to support.');
   await signOutLocal();
-  return { mediaIncomplete };
+  return { passesEnded: Number(data.passesEnded) || 0, mediaIncomplete: data.mediaIncomplete === true };
 }
 
 /** Drops the browser's session without calling the server (the user may already be gone). */

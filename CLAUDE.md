@@ -50,19 +50,53 @@ from `plans`.
 - **Support answers must be true for the shipped product**: iPhone only, no Android app,
   card checkout by Stripe (no Apple Pay claim), no Apple Health, the assistant is Coach
   Elite and the coach sends every message, refunds through the app within 90 days of the
-  payment, a coach who leaves refunds undelivered time automatically, one role per account
-  (change `Support.jsx` "Can I also train with a coach?" and Terms §3 together when the
-  two-mode account ships). The contact form composes a `mailto:` to `SUPPORT_EMAIL`; there
-  is no ticket backend. The search filters the page's own questions.
+  payment, a coach who leaves refunds undelivered time automatically, and an athlete who
+  switches coach or deletes their account ends the old pass that day with no refund of time
+  already paid ("ask your coach before you switch"; operator decision 2026-10-17). A coach
+  can also train (two modes); `Support.jsx` says so, but the Terms' "In plain words" still
+  says "either a coach or an athlete, not both" and needs the founder's wording. The contact
+  form composes a `mailto:` to `SUPPORT_EMAIL`; there is no ticket backend. The search
+  filters the page's own questions.
 - **Delete account is a real flow** (`DeleteAccount.jsx`, helpers in `api.js`): email →
   `signInWithOtp({ shouldCreateUser: false })` → code → `myRole()` (a `trainers` row →
-  coach, a `clients` row → athlete) → coach: `departurePreview()` =
-  `delete-trainer-account {preview: true}` (athletes, refund total; 3/hour, a 429 or a
-  Stripe 502 is shown in words and the policy sentence stays) → checkbox → coach
-  `deleteCoachAccount()` (the function, then `auth.getUser()` must fail before the page says
-  Deleted; 2/day) or athlete `deleteAthleteAccount()` (`delete-account-media` best effort,
-  then RPC `delete_client_account`) → local sign-out → Deleted. Never say "deleted"
-  before the server answered. A session already in the browser skips the code.
+  coach, a `clients` row → athlete). A session already in the browser skips the code.
+  - Coach: `departurePreview()` = `delete-trainer-account {preview: true}` (athletes, refund
+    total, and `ownPassesEnding[].line`: the coach's own passes with other coaches and their
+    placeholders', listed verbatim under "Also ending today"; 3/hour, a 429 or a Stripe 502
+    is shown in words and the policy sentence stays) → checkbox → `deleteCoachAccount()` (the
+    function, then `auth.getUser()` must fail before the page says Deleted; 2/day).
+  - Athlete (fitlink-app 2026-10-17, athlete-exit is the athletes' one exit; no app calls
+    `delete-account-media` or `delete_client_account` any more): `previewAthleteDeletion()` =
+    `athlete-exit {action: 'delete_account', preview: true}` → each `passesEnding[].line` and
+    `coachNotice` verbatim → checkbox → `deleteAthleteAccount()` = `{action:
+    'delete_account', confirm: true}` → Deleted and local sign-out only on `deleted: true`.
+    The Delete button stays disabled until a preview body is on screen (preview 10/h + 60/day,
+    delete 3/day: a failed preview must not leave a commit that ends unlisted passes); a
+    preview refusal shows the server's sentence (guardRate's hourly or daily one included)
+    with Check again. Refusals (`needs_confirmation`, `coach_account` → read the role again,
+    `live_subscription`, `stripe_error` / `db_error` / `delete_failed`, which say what ended)
+    are shown as sent; a refusal with `passesEnded > 0` reloads the preview.
+  - Never say "deleted" before the server answered. A commit with no decided answer (status
+    0, a gateway timeout, any 5xx that is not `{error, code}`) says the outcome is unknown and
+    to reload; a 401 drops the local session and goes back to the email step.
+- **Checkout joins through athlete-exit, then buys** (`Checkout.jsx`): the sheet first checks
+  what the page can see would make create-subscription refuse (`planIsPriced`, the server's
+  `planAmountCents` rule; `coachTakesCards` = `trainers_public.stripe_charges_enabled`; the
+  Stripe key from `app-config`) and stops with "Nothing was changed" (`CoachPublicPage` never
+  offers Buy on an unpriced pass) → email code → `previewInvite` = `athlete-exit
+  {action: 'accept_invite', code, preview: true}` → when `needsConfirmation`, the
+  `passesEnding[].line` list and "this happens as soon as you confirm, before the card form"
+  → `acceptInvite(code, {confirm: true})`, which ends those passes at Stripe NOW (no refund,
+  open invoices forgiven) and moves the athlete → `create-subscription {planId, clientId}`
+  (`alreadyActive` is a success; `payingOpenInvoice` + `amountDueCents` is "pay what you owe")
+  → Stripe PaymentElement → `confirm-subscription {clientId, subscriptionId}` (asked again only
+  on no answer / 5xx; a 4xx shows its sentence; `{active: false, code: 'roster_full', error}`
+  shows `error`) → "You're in" only on `active: true`. "Switched" and "your previous pass has
+  ended" come only from the confirm's own `switched` / `passesEnded`. A confirm whose answer is
+  lost says nobody can tell whether the pass ended (Check again re-runs the preview); a 401
+  offers Sign in again. What only the server can know can still refuse after a confirmed
+  switch (`live_subscription` on a second pass with the new coach, `stripe_error`, `db_error`),
+  and the sheet then keeps saying the old pass ended.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.
@@ -87,7 +121,13 @@ from `plans`.
   Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo as the
   processors. Change the table, change `privacyContent.jsx`. Every address on the site is
   `support@fitlink.coach` (the iOS submission pack's mailbox); the getfitlink.com addresses
-  are gone.
+  are gone. **Open, founder decision before the next Vercel deploy:** `TERMS_UPDATED`
+  (`legalMeta.js`) is 17 October 2026 and the Terms now say switching coach or deleting an
+  account ends the pass with no refund of time already paid (In plain words, §3, §4, §5,
+  §11). §16 promises at
+  least 14 days' notice for a material change and says the date at the top is when the
+  version took effect: either give notice and show the later effective date, or record why
+  §16's exception (required by law or a payment/platform partner) applies.
 - **Plans for sale are `archived_at is null`** (`api.js plansFor`). An archived pass stays with
   its holders and in the coach's editor list (tagged "archived"); `create-subscription`
   refuses it on the server as well. The `42703` fallback in `plansFor` exists for a deploy that

@@ -5,7 +5,7 @@
 // already trains with the coach is sent into the app with the code.
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { inviteInfo, normalizeCode, plansFor, dollars, firstName } from './api';
+import { inviteInfo, normalizeCode, plansFor, planIsPriced, dollars, firstName } from './api';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
 import './web.css';
@@ -104,7 +104,8 @@ export default function CoachPublicPage() {
   const brand = coach.name || 'FitLink';
   const kicker = [coach.specialization, ...(Array.isArray(coach.specializations) ? coach.specializations.filter((s) => s !== coach.specialization) : [])]
     .filter(Boolean).slice(0, 2).join(' · ');
-  const mostChosen = plans.length > 1 ? plans.find((p) => !p.duration_weeks) ?? plans[0] : null;
+  const forSale = plans.filter(planIsPriced);
+  const mostChosen = plans.length > 1 ? forSale.find((p) => !p.duration_weeks) ?? forSale[0] ?? null : null;
 
   return (
     <div className="fl">
@@ -146,6 +147,8 @@ export default function CoachPublicPage() {
           <div className="fl-grid">
             {plans.map((plan) => {
               const dark = mostChosen && plan.id === mostChosen.id;
+              // create-subscription refuses a pass without a price (plan_unpriced): never offer to buy one.
+              const priced = planIsPriced(plan);
               const { amount, unit } = priceParts(plan);
               const lines = [startsLine(plan), ...(Array.isArray(plan.features) ? plan.features : [])].filter(Boolean);
               if (lines.length === 0 && plan.description) lines.push(plan.description);
@@ -155,13 +158,17 @@ export default function CoachPublicPage() {
                     <h3>{plan.name}</h3>
                     {dark && <span className="badge">Most chosen</span>}
                   </div>
-                  <div className="fl-price"><b>{amount}</b><span>{unit}</span></div>
+                  {priced && <div className="fl-price"><b>{amount}</b><span>{unit}</span></div>}
                   {lines.length > 0 && (
                     <ul>{lines.map((l, i) => <li key={i}><Check dark={dark} />{l}</li>)}</ul>
                   )}
-                  <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => setBuying(plan)}>
-                    {plan.duration_weeks ? 'Join the season' : `Buy ${plan.name}`}
-                  </button>
+                  {priced ? (
+                    <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => setBuying(plan)}>
+                      {plan.duration_weeks ? 'Join the season' : `Buy ${plan.name}`}
+                    </button>
+                  ) : (
+                    <p className="fl-unpriced">No price set yet, so this pass can’t be bought. Ask {first} about it.</p>
+                  )}
                 </article>
               );
             })}

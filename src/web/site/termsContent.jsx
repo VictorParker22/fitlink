@@ -17,7 +17,7 @@ export default function TermsBody() {
     <div className="s-doc">
       <section id="plain" className="s-plain" aria-labelledby="plain-h">
         <h2 id="plain-h">In plain words</h2>
-        <p>FitLink is where independent coaches sell training passes and run their athletes’ weeks. <strong>The coach sells the pass; FitLink runs the platform and processes the payment through Stripe.</strong> Passes renew until you cancel them. Refunds are the coach’s call and are issued through the app. The Coach Elite subscription is sold through Apple under Apple’s terms. Training carries risk and nothing on FitLink is medical advice. You must be 16 or older, and each account is either a coach or an athlete, not both.</p>
+        <p>FitLink is where independent coaches sell training passes and run their athletes’ weeks. <strong>The coach sells the pass; FitLink runs the platform and processes the payment through Stripe.</strong> Passes renew until you cancel them. Refunds are the coach’s call and are issued through the app. Switching coaches or deleting your account ends your pass that day, and time already paid isn’t refunded, so ask your coach before you switch. The Coach Elite subscription is sold through Apple under Apple’s terms. Training carries risk and nothing on FitLink is medical advice. You must be 16 or older, and each account is either a coach or an athlete, not both.</p>
       </section>
 
       <section id="s1" aria-labelledby="s1-h">
@@ -44,6 +44,7 @@ export default function TermsBody() {
           <li><strong>Signing in.</strong> You sign in with a six-digit code sent to your email, or with Sign in with Apple. There is no password. You are responsible for keeping your email inbox and your device secure. Tell us at once if you believe someone else has used your account.</li>
           <li><strong>Accuracy.</strong> Give us accurate information and keep it current. An account is for one person; do not share it or let someone else use it.</li>
           <li><strong>Joining a roster takes an action by the athlete.</strong> An athlete joins a coach’s roster only by accepting that coach’s invitation, by sending a request that the coach accepts, or by buying that coach’s pass. Coaches may not add people who have not done one of these things.</li>
+          <li><strong>Switching coaches ends your current pass.</strong> When you join a new coach, every pass you hold with any other coach ends that day: it stops billing and does not renew, and any unpaid amount on it is forgiven. Time you have already paid for is not refunded. You see which passes end before you confirm, and they stay ended even if you do not finish buying the new coach’s pass. Ask your coach before you switch.</li>
         </ul>
       </section>
 
@@ -51,7 +52,7 @@ export default function TermsBody() {
         <h2 id="s4-h">4. Passes and subscriptions (athletes)</h2>
         <ul>
           <li><strong>What a pass is.</strong> A pass is what the coach describes on it: a monthly or yearly subscription, or a one-time season of a fixed number of weeks. The price shown at checkout is the price you pay, plus any tax that applies where you live.</li>
-          <li><strong>Buying a pass joins the coach.</strong> When you buy a pass you join that coach’s roster, and the coach can see your training data, logged sets, check-ins and messages for as long as you are on it. If you were training with a different coach, buying a pass from a new one moves you to the new coach; your history stays in the previous coach’s records.</li>
+          <li><strong>Buying a pass joins the coach.</strong> When you buy a pass you join that coach’s roster, and the coach can see your training data, logged sets, check-ins and messages for as long as you are on it. If you were training with a different coach, buying a pass from a new one moves you to the new coach; your history stays in the previous coach’s records, and your pass with them ends as described in section 3 (no refund of time already paid).</li>
           <li><strong>Renewal.</strong> A subscription pass renews automatically at the end of each period, at the price shown, until you cancel it. A season pass ends when the season ends and does not renew.</li>
           <li><strong>Cancelling.</strong> You can cancel a subscription pass from the app at any time. Cancelling stops the next renewal; you keep access until the end of the period you have already paid for. A price change never applies to a period you have already paid for.</li>
           <li><strong>Failed payments.</strong> If a renewal payment fails, the pass goes on hold until payment succeeds. Your coach can see that it is on hold.</li>
@@ -70,6 +71,7 @@ export default function TermsBody() {
         <ul>
           <li>Refunds are at the coach’s discretion and are issued through the app, within 90 days of the payment. If you want a refund, ask your coach. The coach refunds the full payment or half of it, and either ends the pass that day or lets it run to the end of the period you paid for. The notice you receive says which.</li>
           <li>FitLink may also refund a payment where the law, Stripe’s rules or the card network’s rules require it, or where a coach’s account has been closed before a paid period was delivered.</li>
+          <li><strong>Switching coaches or deleting your account is not a refund.</strong> Either one ends your pass that day; time already paid is not refunded, and any unpaid amount on the pass is forgiven. If you want money back, ask your coach before you switch or delete.</li>
           <li>Nothing in this section limits rights you have as a consumer under the law where you live.</li>
         </ul>
         <h3>Disputes and chargebacks</h3>
@@ -152,8 +154,9 @@ export default function TermsBody() {
         <h2 id="s11-h">11. Ending your account</h2>
         <ul>
           <li><strong>You can leave at any time.</strong> Delete your account from Profile in the app, or <Link to="/delete-account">on the web</Link>. Deletion is immediate and permanent; what is deleted and what we must keep for tax and accounting law is described there.</li>
+          <li><strong>Athletes.</strong> Deleting your account ends every pass you hold that day, before the account is deleted: it stops billing and does not renew, any unpaid amount on it is forgiven, and time already paid is not refunded. You see which passes end before you confirm, and your coach is told you left. If a pass cannot be ended, the account is not deleted.</li>
           <li>Deleting your FitLink account does <strong>not</strong> cancel a Coach Elite subscription bought through Apple. Cancel it in your Apple Account first.</li>
-          <li><strong>Coaches.</strong> If you close your account, your athletes’ accounts are not deleted; their passes with you end. Time your athletes paid for and you have not yet delivered is refunded to them automatically from your Stripe balance when you close the account. If Stripe cannot issue one of those refunds, you remain responsible for it.</li>
+          <li><strong>Coaches.</strong> If you close your account, your athletes’ accounts are not deleted; their passes with you end. Time your athletes paid for and you have not yet delivered is refunded to them automatically from your Stripe balance when you close the account. If Stripe cannot issue one of those refunds, you remain responsible for it. A pass you hold yourself with another coach ends the same day, without a refund of time already paid.</li>
           <li><strong>We may suspend or close an account</strong> that breaks these terms, is used for fraud or abusive chargebacks, puts other people at risk, or where the law requires it. Where it is practical and lawful we tell you first and give you a chance to put things right.</li>
           <li>Sections that by their nature should survive the end of an account (content licences for data we must keep, payment obligations, disclaimers, limitation of liability, indemnity, governing law) survive it.</li>
         </ul>

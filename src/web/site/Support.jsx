@@ -2,8 +2,10 @@
 // on this page; the topic cards jump to a group; the contact form composes an
 // email to the support mailbox (there is no ticket backend). Every answer is
 // true for the shipped product: coach-led passes, invites, Stripe payouts,
-// Elite through Apple, refunds at the coach's discretion through the app, one
-// two modes on one account (coaching and training).
+// Elite through Apple, refunds at the coach's discretion through the app, two
+// modes on one account (coaching and training), and an athlete who switches
+// coach or deletes their account ends the old pass that day with no refund
+// (athlete-exit, operator decision 2026-10-17).
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
@@ -39,7 +41,7 @@ const GROUPS = [
       { q: 'Does a refund end the pass?', a: 'Only if you choose that. You can end the pass with the refund, or refund as a goodwill gesture and let the pass run to the end of the period they paid for. Either way the athlete stays on your roster with their history; removing them from the roster is a separate action.' },
       { q: 'An athlete disputed a charge with their bank.', a: 'Disputes run under Stripe’s and the card networks’ rules. While one is open the amount is held back from your payouts; if it closes in your favour the money is paid to you again.' },
       { q: 'How do athletes cancel?', a: 'From the app: Profile, then Manage pass. Cancelling stops the next renewal; they keep training until the period they paid for ends, and you can see the end date.' },
-      { q: 'What happens if I delete my account?', a: (<p>Every pass with you ends. Time your athletes prepaid and have not had is refunded to them automatically from your balance. They keep their accounts, logs and history and can join another coach. <Link to="/delete-account">Delete your account</Link> on the web or from Profile in the app.</p>) },
+      { q: 'What happens if I delete my account?', a: (<p>Every pass with you ends. Time your athletes prepaid and have not had is refunded to them automatically from your balance. They keep their accounts, logs and history and can join another coach. If you also train with another coach, that pass ends the same day; time you already paid for isn’t refunded. <Link to="/delete-account">Delete your account</Link> on the web or from Profile in the app.</p>) },
     ],
   },
   {
@@ -63,9 +65,9 @@ const GROUPS = [
     items: [
       { q: 'How do I buy a pass?', a: 'Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; FitLink never sees the number. The same email signs you in to the app.' },
       { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. You keep training until the end of what you have paid for. A season pass ends on its own.' },
-      { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are the coach’s call and are issued through the app, back to the card you paid with.' },
+      { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are the coach’s call and are issued through the app, back to the card you paid with. Switching coaches or deleting your account ends your pass that day, and time already paid isn’t refunded, so ask your coach before you switch.' },
       { q: 'My payment failed.', a: 'Your pass is on hold until a payment goes through; your coach can see that. Stripe emails you a link to update the card.' },
-      { q: 'Can I switch coaches?', a: 'Buying a pass from a new coach moves you to them; the app asks you to confirm first. Your history with the previous coach stays in their records.' },
+      { q: 'Can I switch coaches?', a: 'Yes: open the new coach’s link and confirm. Before you do, you see which of your passes end. Your pass with your current coach ends that day: it stops billing and won’t renew, and any unpaid amount on it is forgiven. Time already paid isn’t refunded, so ask your coach before you switch. Your history with the previous coach stays in their records.' },
     ],
   },
   {
@@ -89,7 +91,7 @@ const GROUPS = [
     items: [
       { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and what you send in the chat. Apple Health is optional and off by default: if you turn it on, FitLink can save finished workouts to Apple Health and read resting heart rate and sleep, and your coach sees those two numbers only if you also turn on sharing.' },
       { q: 'Is my coach’s reply written by AI?', a: 'Coaches can use an assistant that drafts a reply. Your coach reads, edits and sends every message.' },
-      { q: 'How do I delete my account?', a: (<p>From Profile in the app, or <Link to="/delete-account">on the web</Link>. It is immediate and cannot be undone; payment records are kept where the law requires it.</p>) },
+      { q: 'How do I delete my account?', a: (<p>From Profile in the app, or <Link to="/delete-account">on the web</Link>. You see which passes end before you confirm. Any pass you hold ends that day and stops billing; time already paid isn’t refunded. It is immediate and cannot be undone; payment records are kept where the law requires it.</p>) },
     ],
   },
 ];

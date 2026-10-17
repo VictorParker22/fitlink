@@ -106,6 +106,8 @@
 .fl-pass li { display: flex; gap: 10px; }
 .fl-pass li svg { flex: none; margin-top: 2px; }
 .fl-pass .fl-btn { margin-top: auto; }
+.fl-pass .fl-unpriced { margin-top: auto; font-size: 15px; line-height: 1.45; color: var(--fl-text-2); }
+.fl-pass.ink .fl-unpriced { color: var(--fl-on-ink-2); }
 .fl-steps { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
 .fl-step { background: var(--fl-surface); border-radius: 28px; padding: 24px; display: flex; flex-direction: column; gap: 10px; }
 .fl-step .n { width: 44px; height: 44px; border-radius: 50%; background: var(--fl-ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; }
@@ -136,6 +138,11 @@
 .fl-ok { width: 64px; height: 64px; border-radius: 50%; background: var(--fl-green); color: #fff; display: flex; align-items: center; justify-content: center; }
 .fl-code { display: flex; gap: 8px; }
 .fl-code input { text-align: center; font-size: 24px; letter-spacing: 0.4em; font-variant-numeric: tabular-nums; }
+/* checkout: what a switch ends, in the server's own sentences */
+.fl-copy { font-size: 16px; line-height: 1.5; }
+.fl-ending { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fl-ending li { background: var(--fl-surface); border-radius: 14px; padding: 12px 14px; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+.fl-done-note { background: var(--fl-surface); border-radius: 14px; padding: 12px 14px; font-size: 15px; line-height: 1.45; }
 
 /* season editor */
 .fl-editor { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 16px 120px; width: 100%; max-width: 1600px; margin: 0 auto; }
