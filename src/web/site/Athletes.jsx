@@ -30,7 +30,8 @@ function PlanScreen() {
 }
 
 const FAQ = [
-  { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. You keep training until the end of what you’ve paid for. A season pass renews like any other pass until you cancel it.' },
+  { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. Cancelling stops the next payment. You keep your coach’s plan until the end of what you’ve paid for; after that it is no longer part of your pass. Your logged sets, check-ins and messages stay. A season stops billing by itself after its last payment, so there is nothing to cancel when it ends.' },
+  { q: 'What happens when my season ends?', a: 'A season is billed a set number of payments, shown before you pay, and then nothing more is charged. When the period the last payment covered ends, the season is complete: you keep your copy of it and everything you logged, and you stay with your coach. Open your coach’s link to start another season with them.' },
   { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and anything you send in the chat. Apple Health is optional and off by default: if you turn it on in the app, FitLink can save finished workouts to Apple Health and read resting heart rate and sleep, and your coach sees those two numbers only if you also turn on sharing.' },
   { q: 'Is my coach’s reply written by AI?', a: 'Coaches can use an assistant that drafts a reply from your check-in and your log. Your coach reads, edits and sends every message; nothing is sent on its own.' },
   { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are at the coach’s discretion and are issued through the app, back to the card you paid with. If a coach closes their account, time you prepaid and have not had is refunded automatically. If you switch coaches or delete your account, your pass ends that day and time already paid isn’t refunded, so ask your coach before you switch.' },
@@ -58,7 +59,7 @@ export default function Athletes() {
         <div className="s-stack" style={{ gap: 28 }}>
           <h2 id="as-h" className="s-h2 sm">Four steps, no surprises</h2>
           <ol className="s-steps">
-            <li className="s-step"><span className="s-num">1</span><b>Open your coach’s link</b><span>It shows their passes and prices.</span></li>
+            <li className="s-step"><span className="s-num">1</span><b>Open your coach’s link</b><span>It shows their passes and prices, and for a season how many payments it takes.</span></li>
             <li className="s-step"><span className="s-num">2</span><b>Pay on the web</b><span>Card checkout, handled by Stripe. We email you a six-digit code; no password.</span></li>
             <li className="s-step"><span className="s-num">3</span><b>Get the app</b><span>Sign in with the email you paid with. Your plan is already there.</span></li>
             <li className="s-step"><span className="s-num">4</span><b>Train and check in</b><span>Log your sets, say how it felt, and your coach adjusts.</span></li>

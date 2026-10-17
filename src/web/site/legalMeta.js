@@ -2,7 +2,9 @@
 // document. The text itself is privacyContent.jsx / termsContent.jsx.
 export const LEGAL_UPDATED = '16 October 2026';
 // The Terms changed on 17 October 2026: switching coaches or deleting an
-// account ends the pass that day, with no refund of time already paid.
+// account ends the pass that day, with no refund of time already paid; a
+// season is billed a fixed number of payments and then stops by itself, and
+// when a pass stops billing, the coach's plan is no longer part of it (§4).
 export const TERMS_UPDATED = '17 October 2026';
 
 const PRIVACY_SECTIONS = [

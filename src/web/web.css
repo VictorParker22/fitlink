@@ -98,7 +98,7 @@
 .fl-pass-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .fl-pass h3 { font-size: 21px; font-weight: 700; }
 .fl-pass .badge { font-size: 12px; font-weight: 600; background: var(--fl-ink-soft); color: #fff; border-radius: 999px; padding: 5px 10px; }
-.fl-price { display: flex; align-items: baseline; gap: 6px; }
+.fl-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; }
 .fl-price b { font-family: ui-rounded, 'SF Pro Rounded', var(--fl-sans); font-size: 56px; line-height: 1; font-weight: 700; }
 .fl-price span { font-size: 16px; color: var(--fl-text-2); }
 .fl-pass.ink .fl-price span { color: var(--fl-on-ink-2); }
@@ -107,6 +107,10 @@
 .fl-pass li svg { flex: none; margin-top: 2px; }
 .fl-pass .fl-btn { margin-top: auto; }
 .fl-pass .fl-unpriced { margin-top: auto; font-size: 15px; line-height: 1.45; color: var(--fl-text-2); }
+/* "Start another season": a signed-in athlete whose season with this coach is complete. */
+.fl-again { background: var(--fl-accent-soft); border-radius: 28px; padding: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.fl-again h2 { font-size: 22px; line-height: 1.2; font-weight: 700; }
+.fl-again p { font-size: 16px; line-height: 1.5; color: var(--fl-text-2); max-width: 60ch; }
 .fl-pass.ink .fl-unpriced { color: var(--fl-on-ink-2); }
 .fl-steps { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
 .fl-step { background: var(--fl-surface); border-radius: 28px; padding: 24px; display: flex; flex-direction: column; gap: 10px; }

@@ -1,6 +1,6 @@
 # CLAUDE.md — FitLink Project Memory
 
-> **Last updated**: 2026-10-16
+> **Last updated**: 2026-10-17
 > **Project**: FitLink — Gym Trainer Referral & Client Management Platform
 > **Location**: `c:\projects\fitlink`
 > **Dev server**: `npm run dev` → http://localhost:5173 (or next available port)
@@ -54,7 +54,10 @@ from `plans`.
   the app within 90 days of the payment, a coach who leaves refunds undelivered time
   automatically, and an athlete who
   switches coach or deletes their account ends the old pass that day with no refund of time
-  already paid ("ask your coach before you switch"; operator decision 2026-10-17). A coach
+  already paid ("ask your coach before you switch"; operator decision 2026-10-17). A season
+  is billed a fixed number of payments and stops by itself; an open pass renews until
+  cancelled; a cancelled pass keeps access to the plan until the paid time ends, and after
+  that the plan "is no longer part of the pass" (never "access closes": see below). A coach
   can also train (two modes); `Support.jsx` says so, but the Terms' "In plain words" still
   says "either a coach or an athlete, not both" and needs the founder's wording. The contact
   form composes a `mailto:` to `SUPPORT_EMAIL`; there is no ticket backend. The search
@@ -110,11 +113,56 @@ from `plans`.
   can know can still refuse after a confirmed switch (`live_subscription` on a second pass with
   the new coach, `stripe_error`, `db_error`), and the sheet then keeps saying the old pass
   ended.
-- **Every pass renews, a season included.** `create-subscription` prices every plan as a
-  Stripe subscription every month (`period: 'year'` → every year) and nothing ends a season's
-  subscription after `duration_weeks`, so the public page, the checkout and the Terms §4 / Help
-  answers show a season as "$X / month … until you cancel", never "once". Change them
-  together if the server starts ending seasons.
+- **A season stops billing after its weeks (owner decision 2026-10-17; fitlink-app
+  `_shared/season.ts`, migration 20261017130000).** A pass with `duration_weeks` is billed
+  `price` every month (`period: 'year'` → every year; any other period bills monthly) for
+  P = `seasonPayments(weeks, period)` payments, then stops: month `max(1, ceil(weeks × 7 /
+  30.4375))`, year `max(1, ceil(weeks × 7 / 365.25))` (4 w → 1, 8 w → 2, 12 w → 3, 52 w → 12).
+  An open pass (no `duration_weeks`) renews until cancelled. `src/web/season.js` is the web's
+  copy (integer maths, the server's table pinned in `src/web/season.test.js`: run
+  `node --test src/web/season.test.js`; change both repos or neither) and every season
+  sentence comes from it: the card reads "$180 / month" + "8-week season · 2 monthly payments
+  ($360 in all)", a one-payment season "$90 for the 4-week season" + "One payment · nothing
+  renews"; the checkout's line under the card form is "$180 today, then monthly: 2 payments
+  in all. Billing stops after the season." / "$90 today. One payment for the season." (open
+  passes keep "Charged today, then every month until you cancel."); the season editor shows
+  "$180 / month · Athletes pay 2 monthly payments ($360)" and, in the publish review, what a
+  new week count does to buyers' payments (publishing writes `plans.duration_weeks`, and a
+  write that fails is said). Never "$X once". The price stays per period. Whether a pass is a
+  season is `passBilling(plan).kind` (1..520 whole weeks, the server's `seasonWeeks`), never a
+  truthy `duration_weeks`: a 600-week pass is an open pass that renews, so its card says "Buy
+  <name>", not "Join the season". When billing ends the history stays and a season paid in
+  full keeps its own copy ('completed'); Help, For athletes and Terms §4 say the plan "is no
+  longer part of the pass" / "may be closed", NOT "access closes" (review 2026-10-17: the
+  athlete can mark their own season 'completed' through `guard_enrollment_columns`, live
+  stripe-webhook's `endPassAccess` moves only active/paused rows, and `my_track_ids` serves
+  'completed' snapshots, so a season skipped to the end and cancelled early is still served;
+  fitlink-app's review fix makes an early end cancel a 'completed' row too, not yet deployed,
+  and a season with no subscription at all never ends; the softer words are true either way,
+  so change them only with the server's proof). A signed-in athlete whose
+  season with the coach reads 'completed' and who holds no running pass with them (status
+  active / trialing / past_due / unpaid / paused) gets "Start another season with <first>" on
+  the coach's page (`api.js finishedSeasonWith`, reads only; a failed read shows nothing).
+  "Every payment is made, so nothing more is charged" appears ONLY with a 'season_complete'
+  notification for that plan created at or after the season's `started_at` (only stripe-webhook
+  inserts that type, after all P payments; `season.js finishedSeason` → `paidInFull`); a season
+  that reads 'completed' without one says "You finished your <plan> season. Everything you
+  logged stays with you." **Lengths and athletes already paying:** a subscription bought
+  before create-subscription stamped `fitlink_season_weeks` / `fitlink_season_payments` is
+  billed by the plan's CURRENT `duration_weeks` (server `seasonFor`; live: one, the 8-week
+  "Spring" pass, renewing 2026-11-08). The editor reads the coach's running
+  `client_subscriptions` per pass (`payingFor`) and, when a new length changes P, the review
+  adds "N athlete(s) pay for this pass now. A pass bought before seasons were billed a fixed
+  number of payments may be billed by the new length too, so tell them before you publish."
+  (unknown count → "Athletes may already pay for this pass."). Terms §4 ("that number is
+  fixed when you buy") and Help are true for that subscription only once the server stamps it
+  (weeks '8', payments '2'): a fitlink-app rollout step, required before this site's deploy.
+  The web has no manage-pass screen and no inbox, so `client_subscriptions.ends_at` and the
+  `season_complete` notice are the apps' to show (the web reads the notice only for the
+  payment sentence above). **Deploy order:** the site goes out after
+  the server's season deploy (migration 20261017130000, then stripe-webhook,
+  confirm-subscription, create-subscription); until then live subscriptions still renew
+  until cancelled and this copy would be wrong.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.
@@ -142,7 +190,8 @@ from `plans`.
   are gone. **Open, founder decision before the next Vercel deploy:** `TERMS_UPDATED`
   (`legalMeta.js`) is 17 October 2026 and the Terms now say switching coach or deleting an
   account ends the pass with no refund of time already paid (In plain words, §3, §4, §5,
-  §11). §16 promises at
+  §11), and that a season is billed a fixed number of payments and then stops, the plan no
+  longer being part of a pass that stopped billing (In plain words, §4). §16 promises at
   least 14 days' notice for a material change and says the date at the top is when the
   version took effect: either give notice and show the later effective date, or record why
   §16's exception (required by law or a payment/platform partner) applies.

@@ -20,16 +20,20 @@
 // pass, stripe_error, db_error) can still refuse after a confirmed switch,
 // and the sheet then says the old pass ended.
 //
-// create-subscription bills every pass, a season included, as a subscription
-// that renews every month (or year) until it is cancelled; the sheet says so.
+// create-subscription bills every pass as a subscription at the plan's price
+// every month (or year). An open pass renews until it is cancelled; a season
+// (plans.duration_weeks) is billed a fixed number of payments and then stops
+// by itself (2026-10-17; season.js holds the server's formula). The sheet
+// says which, with the number of payments and the total, before the card form.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase, APP_SCHEME } from './supabase';
 import {
-  acceptInvite, appConfig, coachTakesCards, confirmSubscription, createSubscription, dollars, firstName,
+  acceptInvite, appConfig, coachTakesCards, confirmSubscription, createSubscription, firstName,
   functionError, myClient, planIsPriced, previewInvite, session, signOutLocal,
 } from './api';
+import { checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
 import { SUPPORT_EMAIL } from './site/pricing';
 
 const STEP = { email: 'email', code: 'code', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
@@ -375,11 +379,16 @@ export default function Checkout({ plan, coach, code, onClose }) {
     },
   }) : null, [clientSecret]);
 
-  // create-subscription's interval (rules.ts planInterval), for a season too.
-  const period = plan.period === 'year' ? 'year' : 'month';
-  const price = `${dollars(plan.price)} / ${period}`;
+  // Per period, as create-subscription bills it; a season of one payment reads "$X for the N-week season".
+  const price = passPriceText(plan) ?? 'no price set';
+  const seasonLine = passSeasonLine(plan);
+  const billing = passBilling(plan);
   const owing = purchase?.payingOpenInvoice === true;
-  const payLabel = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : price.split(' ')[0];
+  // A season of one payment has nothing left to cancel once it is paid.
+  const chargeLine = owing
+    ? 'Charged today. Cancel any time from the app.'
+    : `${checkoutChargeLine(plan)}${billing.kind === 'season' && billing.payments === 1 ? '' : ' Cancel any time from the app.'}`;
+  const payLabel = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : (passPriceParts(plan)?.amount ?? '');
   const ending = Array.isArray(view?.passesEnding) ? view.passesEnding.filter((p) => p && typeof p.line === 'string' && p.line) : [];
   const currentName = view?.currentCoach?.name || null;
   const passEnded = Number(joined?.passesEnded) > 0;
@@ -410,6 +419,7 @@ export default function Checkout({ plan, coach, code, onClose }) {
           <h2 id="co-title">{title}</h2>
           <button type="button" className="fl-btn sm" onClick={onClose} disabled={busy} aria-label="Close">✕</button>
         </div>
+        {seasonLine && step !== STEP.done && step !== STEP.switch && !owing && <p className="fl-note">{seasonLine}</p>}
 
         {step === STEP.email && (
           <form onSubmit={sendCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -467,7 +477,7 @@ export default function Checkout({ plan, coach, code, onClose }) {
               </p>
             )}
             <Elements stripe={stripePromise} options={elementsOptions}>
-              <PayForm payLabel={payLabel} owing={owing} period={period} onPaid={paid} />
+              <PayForm payLabel={payLabel} chargeLine={chargeLine} onPaid={paid} />
             </Elements>
           </>
         )}
@@ -514,7 +524,7 @@ export default function Checkout({ plan, coach, code, onClose }) {
   );
 }
 
-function PayForm({ payLabel, owing, period, onPaid }) {
+function PayForm({ payLabel, chargeLine, onPaid }) {
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
@@ -545,8 +555,7 @@ function PayForm({ payLabel, owing, period, onPaid }) {
       {error && <div className="fl-error" role="alert">{error}</div>}
       <button type="submit" className="fl-btn accent lg" disabled={!stripe || busy}>{busy ? 'Paying…' : `Pay ${payLabel}`}</button>
       <p className="fl-note">
-        {owing ? 'Charged today. ' : `Charged today, then every ${period} until you cancel. `}
-        Cancel any time from the app. Card details go to Stripe, never to FitLink.
+        {chargeLine} Card details go to Stripe, never to FitLink.
       </p>
     </form>
   );

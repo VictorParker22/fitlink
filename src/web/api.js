@@ -2,6 +2,7 @@
 // The server identifies the caller from the session's JWT; the page only
 // ever sends ids (invite code, plan id, client id), never a price or a payee.
 import { supabase, SUPABASE_KEY, FUNCTIONS_URL } from './supabase';
+import { finishedSeason } from './season';
 
 /** Upper-case, letters and digits only, six of them. */
 export function normalizeCode(value) {
@@ -76,6 +77,37 @@ export async function appConfig() {
 export async function session() {
   const { data } = await supabase.auth.getSession();
   return data.session ?? null;
+}
+
+/**
+ * "Start another season": the signed-in person's most recent season with this
+ * coach that reads 'completed' (client_plan_enrollments), while they hold no
+ * pass with the coach that is still running (client_subscriptions). Whether
+ * every payment was made is read from the server-written 'season_complete'
+ * notice (notifications; stripe-webhook writes it only after all P payments),
+ * never from the enrollment, which the athlete can mark completed themselves.
+ * All three are readable by the athlete for their own rows. `{ planId,
+ * planName, paidInFull }`, or null when signed out, never a client, or nothing
+ * to offer. A failed read throws; the page then shows nothing. Reads only.
+ */
+export async function finishedSeasonWith(coachId) {
+  const s = await session();
+  if (!s || !coachId) return null;
+  const rows = await supabase.from('clients').select('id').eq('auth_user_id', s.user.id);
+  if (rows.error) throw rows.error;
+  const ids = (rows.data ?? []).map((r) => r.id);
+  if (ids.length === 0) return null;
+  const [enrollments, subscriptions, coachPlans, notices] = await Promise.all([
+    supabase.from('client_plan_enrollments').select('plan_id, status, started_at, completed_at').in('client_id', ids).eq('status', 'completed'),
+    supabase.from('client_subscriptions').select('trainer_id, status').in('client_id', ids),
+    // Archived passes included: the season may be on a pass no longer for sale.
+    supabase.from('plans').select('id, name, trainer_id').eq('trainer_id', coachId),
+    supabase.from('notifications').select('type, metadata, created_at').eq('type', 'season_complete').in('client_id', ids),
+  ]);
+  for (const r of [enrollments, subscriptions, coachPlans, notices]) if (r.error) throw r.error;
+  return finishedSeason({
+    enrollments: enrollments.data, subscriptions: subscriptions.data, coachPlans: coachPlans.data, notices: notices.data, coachId,
+  });
 }
 
 /** The signed-in athlete's own row, if any. */

@@ -3,9 +3,19 @@
 // is a row: no quotes, no stats, no "replies same day" unless the data
 // says so. Choose a pass → Checkout (email code, card, done). Someone who
 // already trains with the coach is sent into the app with the code.
+//
+// Prices are per period ("$180 / month"); a season says how many payments
+// it is billed in and what that comes to (season.js, the server's formula):
+// a season stops billing by itself after its last payment (2026-10-17). A
+// signed-in athlete whose season with this coach reads complete, and who
+// holds no pass with them, is offered another season first; the card says
+// every payment is made only when the server's 'season_complete' notice says
+// so (the athlete can mark a season complete themselves). Whether a pass is a
+// season is billing's answer (passBilling), never a truthy duration_weeks.
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { inviteInfo, normalizeCode, plansFor, planIsPriced, dollars, firstName } from './api';
+import { inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith } from './api';
+import { passBilling, passPriceParts, passSeasonLine } from './season';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
 import './web.css';
@@ -16,16 +26,8 @@ const Check = ({ dark }) => (
   </svg>
 );
 
-/** As create-subscription bills it: every pass, a season included, renews monthly (or yearly) until cancelled. */
-function priceParts(plan) {
-  return { amount: dollars(plan.price), unit: `/ ${plan.period === 'year' ? 'year' : 'month'}` };
-}
-
-function seasonLine(plan) {
-  const weeks = Number(plan.duration_weeks);
-  if (!Number.isInteger(weeks) || weeks <= 0) return null;
-  return `${weeks}-week season, billed every ${plan.period === 'year' ? 'year' : 'month'} until you cancel`;
-}
+/** A season by billing's rule (1..520 whole weeks), as create-subscription stamps it; anything else renews until cancelled. */
+const isSeason = (plan) => passBilling(plan).kind === 'season';
 
 function startsLine(plan) {
   if (!plan.starts_on) return null;
@@ -39,6 +41,10 @@ export default function CoachPublicPage() {
   const code = normalizeCode(raw);
   const [state, setState] = useState({ loading: true, card: null, plans: [], error: null });
   const [buying, setBuying] = useState(null);
+  /** The signed-in athlete's completed season with this coach: { planId, planName, paidInFull } or null. */
+  const [finished, setFinished] = useState(null);
+  /** Bumped when the checkout closes, so a season bought there takes the offer away. */
+  const [recheck, setRecheck] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +70,17 @@ export default function CoachPublicPage() {
     const coach = state.card?.coach;
     document.title = coach?.name ? `${coach.name} — FitLink` : 'FitLink';
   }, [state.card]);
+
+  // Only with a session already in this browser (no sign-in is asked for).
+  // A read that fails shows nothing: the offer is an invitation, not a fact
+  // anyone needs to see. Asked again when the checkout closes.
+  const coachId = state.card?.kind === 'coach' ? state.card?.coach?.id ?? null : null;
+  useEffect(() => {
+    if (!coachId) return undefined;
+    let cancelled = false;
+    finishedSeasonWith(coachId).then((f) => { if (!cancelled) setFinished(f); }).catch(() => { if (!cancelled) setFinished(null); });
+    return () => { cancelled = true; };
+  }, [coachId, recheck]);
 
   if (state.loading) {
     return <div className="fl"><div className="fl-empty"><p className="fl-note">Loading…</p></div></div>;
@@ -110,7 +127,7 @@ export default function CoachPublicPage() {
   const kicker = [coach.specialization, ...(Array.isArray(coach.specializations) ? coach.specializations.filter((s) => s !== coach.specialization) : [])]
     .filter(Boolean).slice(0, 2).join(' · ');
   const forSale = plans.filter(planIsPriced);
-  const mostChosen = plans.length > 1 ? forSale.find((p) => !p.duration_weeks) ?? forSale[0] ?? null : null;
+  const mostChosen = plans.length > 1 ? forSale.find((p) => !isSeason(p)) ?? forSale[0] ?? null : null;
 
   return (
     <div className="fl">
@@ -139,6 +156,29 @@ export default function CoachPublicPage() {
         </div>
       </section>
 
+      {finished && (
+        <section aria-labelledby="again-h" className="fl-section" style={{ paddingBottom: 0 }}>
+          <div className="fl-again">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {finished.paidInFull ? (
+                <>
+                  <h2 id="again-h">{finished.planName ? `Your ${finished.planName} season is complete.` : 'Your season is complete.'}</h2>
+                  <p>Every payment is made, so nothing more is charged. You keep the season and everything you logged.</p>
+                </>
+              ) : (
+                <>
+                  <h2 id="again-h">{finished.planName ? `You finished your ${finished.planName} season.` : 'You finished your season.'}</h2>
+                  <p>Everything you logged stays with you.</p>
+                </>
+              )}
+            </div>
+            {forSale.length > 0
+              ? <a className="fl-btn accent lg" href="#passes">Start another season with {first}</a>
+              : <p>{first} has no pass for sale right now. Ask them about the next season.</p>}
+          </div>
+        </section>
+      )}
+
       <section id="passes" aria-labelledby="passes-h" className="fl-section">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <h2 id="passes-h" className="fl-h2">{forSale.length > 0 ? 'Pick a pass. Start this week.' : plans.length > 0 ? 'No pass for sale yet.' : 'No pass yet.'}</h2>
@@ -156,10 +196,10 @@ export default function CoachPublicPage() {
               const dark = mostChosen && plan.id === mostChosen.id;
               // create-subscription refuses a pass without a price (plan_unpriced): never offer to buy one.
               const priced = planIsPriced(plan);
-              const { amount, unit } = priceParts(plan);
+              const price = passPriceParts(plan);
               const lines = [startsLine(plan), ...(Array.isArray(plan.features) ? plan.features : [])].filter(Boolean);
               if (lines.length === 0 && plan.description) lines.push(plan.description);
-              const season = priced ? seasonLine(plan) : null;
+              const season = passSeasonLine(plan);
               if (season) lines.unshift(season);
               return (
                 <article key={plan.id} className={`fl-pass${dark ? ' ink' : ''}`}>
@@ -167,13 +207,13 @@ export default function CoachPublicPage() {
                     <h3>{plan.name}</h3>
                     {dark && <span className="badge">Most chosen</span>}
                   </div>
-                  {priced && <div className="fl-price"><b>{amount}</b><span>{unit}</span></div>}
+                  {priced && price && <div className="fl-price"><b>{price.amount}</b><span>{price.unit}</span></div>}
                   {lines.length > 0 && (
                     <ul>{lines.map((l, i) => <li key={i}><Check dark={dark} />{l}</li>)}</ul>
                   )}
                   {priced ? (
                     <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => setBuying(plan)}>
-                      {plan.duration_weeks ? 'Join the season' : `Buy ${plan.name}`}
+                      {isSeason(plan) ? 'Join the season' : `Buy ${plan.name}`}
                     </button>
                   ) : (
                     <p className="fl-unpriced">No price set yet, so this pass can’t be bought. Ask {first} about it.</p>
@@ -207,7 +247,7 @@ export default function CoachPublicPage() {
         </div>
       </section>
 
-      {buying && <Checkout plan={buying} coach={coach} code={code} onClose={() => setBuying(null)} />}
+      {buying && <Checkout plan={buying} coach={coach} code={code} onClose={() => { setBuying(null); setRecheck((n) => n + 1); }} />}
     </div>
   );
 }

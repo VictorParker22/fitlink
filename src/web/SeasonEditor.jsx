@@ -10,12 +10,21 @@
 // elsewhere since answers stale_version, and the coach chooses between the
 // latest season and the edits on screen (never a silent overwrite).
 //
+// The price reads per period, and a season says what athletes pay in all:
+// "$180 / month · Athletes pay 2 monthly payments ($360)" (season.js, the
+// server's formula: a season stops billing after its last payment). Publishing
+// a new week count rewrites plans.duration_weeks, which changes the payments
+// for buyers from then on, and can reach an athlete already paying whose
+// subscription predates the season stamp (the server then bills by the plan
+// as it is now); the review says both before the coach publishes, with the
+// count of athletes paying now (client_subscriptions, the coach's own rows).
+//
 // Not drawn: the assistant's "Suggested Week 4" card (no server support)
 // and templates (no rows).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from './supabase';
-import { dollars } from './api';
+import { coachPriceLine, lengthChangeLine, passBilling, payingFor, usdFromCents } from './season';
 import {
   blocksFromWeeks, buildProtectedSnapshot, describeChanges, diffTracks, emptyDays, liveHoldersFor,
   nodeKey, seasonToTrack, trackToSeason,
@@ -25,6 +34,13 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const BLOCK_FILLS = ['#15171C', '#3A3D45', '#5B5F68', '#D6D1C7'];
 
+/** The sidebar's short line for a pass: "8 weeks · $180 / month", "$20 / month". */
+function passSideLabel(p) {
+  const b = passBilling(p);
+  const price = b.priced ? `${usdFromCents(b.priceCents)} / ${b.period}` : 'no price yet';
+  return b.kind === 'season' ? `${b.weeks} weeks · ${price}` : price;
+}
+
 const Grip = () => (
   <svg className="grip" width="12" height="16" viewBox="0 0 12 16" aria-hidden="true"><path d="M3 3h.01M9 3h.01M3 8h.01M9 8h.01M3 13h.01M9 13h.01" style={{ fill: 'none', stroke: '#8A8E97', strokeWidth: 2.6, strokeLinecap: 'round' }} /></svg>
 );
@@ -33,7 +49,8 @@ export default function SeasonEditor({ session }) {
   const uid = session.user.id;
   const { planId } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState({ plans: [], workouts: [], enrollments: [], clients: [], loaded: false, error: null });
+  // subscriptions: the coach's client_subscriptions rows (plan_id, status), or null when that read failed.
+  const [data, setData] = useState({ plans: [], workouts: [], enrollments: [], clients: [], subscriptions: [], loaded: false, error: null });
   const [weeks, setWeeks] = useState([]);
   const [finalMilestones, setFinalMilestones] = useState([]);
   const [baseline, setBaseline] = useState([]);
@@ -70,7 +87,12 @@ export default function SeasonEditor({ session }) {
       const enrollments = ids.length > 0
         ? (await supabase.from('client_plan_enrollments').select('*').in('plan_id', ids)).data ?? []
         : [];
-      const next = { plans: plans.data ?? [], workouts: workouts.data ?? [], enrollments, clients: clients.data ?? [], loaded: true, error: null };
+      // Who pays for each pass now: the length review says when a new length can reach them.
+      const subs = ids.length > 0
+        ? await supabase.from('client_subscriptions').select('plan_id, status').eq('trainer_id', uid).in('plan_id', ids)
+        : { data: [], error: null };
+      const subscriptions = subs.error ? null : subs.data ?? [];
+      const next = { plans: plans.data ?? [], workouts: workouts.data ?? [], enrollments, clients: clients.data ?? [], subscriptions, loaded: true, error: null };
       setData(next);
       return next.plans;
     } catch (e) {
@@ -168,13 +190,18 @@ export default function SeasonEditor({ session }) {
         const { data: v } = await supabase.from('plan_versions').select('version').eq('plan_id', plan.id).order('version', { ascending: false }).limit(1);
         await supabase.from('plan_versions').insert({ plan_id: plan.id, version: ((v?.[0]?.version) ?? 0) + 1, track: baseline, summary: describeChanges(changes, labelOf) || 'Layout' });
       } catch { /* optional table */ }
+      // The length sets how many payments a buyer makes from now on, so a write
+      // that did not land is said, never assumed.
+      let lengthKept = null;
       if (plan.duration_weeks && plan.duration_weeks !== weeks.length) {
-        await supabase.from('plans').update({ duration_weeks: weeks.length }).eq('id', plan.id);
+        const { error: lenErr } = await supabase.from('plans').update({ duration_weeks: weeks.length }).eq('id', plan.id);
+        if (lenErr) lengthKept = plan.duration_weeks;
       }
       setBaseline(newTrack);
       setReview(false);
       const n = typeof moved === 'number' ? moved : snapshots.length;
-      say(n > 0 ? `Published · ${n} athlete${n === 1 ? '' : 's'} updated` : 'Published');
+      const done = n > 0 ? `Published · ${n} athlete${n === 1 ? '' : 's'} updated` : 'Published';
+      say(lengthKept !== null ? `${done}. The season length didn’t save: it is still ${lengthKept} weeks, and buyers pay for that.` : done);
       seededFor.current = null;
       await load();
     } catch (e) {
@@ -222,6 +249,7 @@ export default function SeasonEditor({ session }) {
   }
 
   const cur = weeks[week] ?? { days: emptyDays(), label: '', isRest: false };
+  const lengthLine = lengthChangeLine(plan, weeks.length, payingFor(data.subscriptions, plan.id));
   const holdersHere = plan.duration_weeks ? data.enrollments.filter((e) => e.plan_id === plan.id && e.status === 'active').length : holders.length;
 
   return (
@@ -233,7 +261,7 @@ export default function SeasonEditor({ session }) {
             const n = data.enrollments.filter((e) => e.plan_id === p.id && e.status === 'active').length;
             return (
               <button key={p.id} type="button" className="fl-side-row" aria-current={p.id === plan.id ? 'page' : undefined} onClick={() => { if (changes.length > 0 && !window.confirm('Leave without publishing? Your changes to this season are lost.')) return; navigate(`/coach/seasons/${p.id}`); }}>
-                {p.name} <small>{n > 0 ? `${n} on it` : (p.duration_weeks ? `${p.duration_weeks} weeks` : dollars(p.price))}{p.archived_at ? ' · archived' : ''}</small>
+                {p.name} <small>{n > 0 ? `${n} on it` : passSideLabel(p)}{p.archived_at ? ' · archived' : ''}</small>
               </button>
             );
           })}
@@ -254,6 +282,7 @@ export default function SeasonEditor({ session }) {
           <span className="fl-meta">
             {[`${weeks.length} week${weeks.length === 1 ? '' : 's'}`, daysPerWeek ? `${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} a week` : null, `${holdersHere} athlete${holdersHere === 1 ? '' : 's'} on it`].filter(Boolean).join(' · ')}
           </span>
+          <span className="fl-meta">{coachPriceLine(plan) ?? 'No price yet. Set one in the FitLink app; nobody can buy this pass until then.'}</span>
         </div>
 
         {blocks.length > 0 && (
@@ -396,6 +425,7 @@ export default function SeasonEditor({ session }) {
               return <li key={i}><span>{c.kind === 'added' ? 'Added' : 'Removed'} {labelOf(c.node)} · week {c.week}</span><small>{note}</small></li>;
             })}
           </ul>
+          {lengthLine && <p className="fl-copy">{lengthLine}</p>}
           <p className="fl-note">The pass and every athlete's copy update together. A week an athlete has started keeps what it had.</p>
           <button type="button" className="fl-btn accent lg" disabled={publishing} onClick={publish}>{publishing ? 'Publishing…' : 'Publish changes'}</button>
         </Sheet>

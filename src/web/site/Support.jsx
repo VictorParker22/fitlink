@@ -5,7 +5,12 @@
 // Elite through Apple, refunds at the coach's discretion through the app, two
 // modes on one account (coaching and training), and an athlete who switches
 // coach or deletes their account ends the old pass that day with no refund
-// (athlete-exit, operator decision 2026-10-17).
+// (athlete-exit, operator decision 2026-10-17). A season is billed a fixed
+// number of payments and then stops by itself; an open pass renews until it
+// is cancelled; when billing ends, the coach's plan is no longer part of the
+// pass and the history stays (season billing, owner decision 2026-10-17). The
+// wording says what the pass includes, not that access is cut: the server
+// still serves a season the athlete marked 'completed' after an early end.
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
@@ -27,7 +32,8 @@ const GROUPS = [
   {
     id: 'coach-passes', audience: 'For coaches', title: 'Passes and prices',
     items: [
-      { q: 'What kinds of pass can I sell?', a: 'A monthly subscription, a yearly subscription, or a season of a fixed number of weeks. You set the price in the app. Every pass, a season included, charges its price every month (every year for a yearly pass) until the athlete cancels. A price change never applies to a period an athlete has already paid for.' },
+      { q: 'What kinds of pass can I sell?', a: 'An open pass that renews every month (or every year) until the athlete cancels, or a season of a fixed number of weeks. You set the price per month (or per year) in the app. A season charges that price for as many payments as its weeks take and then stops billing by itself: on a monthly price, a 4-week season is one payment, 8 weeks is two and 12 weeks is three. Athletes see the number of payments and the total before they pay. A price change never applies to a period an athlete has already paid for.' },
+      { q: 'What happens when a season’s payments are done?', a: 'Nothing more is charged. The season ends when the period the last payment covered ends. The athlete keeps their copy of the season and everything they logged, stays on your roster, and is invited to start another season with you; edits you publish to the pass no longer reach them. Changing a season’s length changes the payments for athletes who buy it after the change.' },
       { q: 'How do athletes join?', a: 'Share your link: it opens your page with your passes, in any browser. Athletes buy there or in the app, or send you a request you accept. Nobody lands on your roster without doing one of those things.' },
       { q: 'Can I stop selling a pass?', a: 'Yes: Stop selling, from the pass’s menu. Athletes who hold it keep it; new athletes can’t buy it. Sell again brings it back.' },
       { q: 'Is there a limit on athletes?', a: `The free plan holds ${FREE_ROSTER_CAP} active athletes. Coach Elite has no cap.` },
@@ -40,7 +46,7 @@ const GROUPS = [
       { q: 'How do I refund an athlete?', a: 'From the athlete’s page in the app: Refund last payment. Choose the full amount or half of it, and whether their pass ends now or keeps running to the end of the period they paid for. You see the amount, the date and the pass before you confirm. The refund goes back to their card through Stripe and comes out of your balance; Stripe may keep its processing fee. Payments older than 90 days can’t be refunded this way.' },
       { q: 'Does a refund end the pass?', a: 'Only if you choose that. You can end the pass with the refund, or refund as a goodwill gesture and let the pass run to the end of the period they paid for. Either way the athlete stays on your roster with their history; removing them from the roster is a separate action.' },
       { q: 'An athlete disputed a charge with their bank.', a: 'Disputes run under Stripe’s and the card networks’ rules. While one is open the amount is held back from your payouts; if it closes in your favour the money is paid to you again.' },
-      { q: 'How do athletes cancel?', a: 'From the app: Profile, then Manage pass. Cancelling stops the next renewal; they keep training until the period they paid for ends, and you can see the end date.' },
+      { q: 'How do athletes cancel?', a: 'From the app: Profile, then Manage pass. Cancelling stops the next payment; they keep training until the period they paid for ends, and you can see the end date. After that the pass’s plan is no longer part of what they paid for. They stay on your roster with their history and can buy a pass again.' },
       { q: 'What happens if I delete my account?', a: (<p>Every pass with you ends. Time your athletes prepaid and have not had is refunded to them automatically from your balance. They keep their accounts, logs and history and can join another coach. If you also train with another coach, that pass ends the same day; time you already paid for isn’t refunded. <Link to="/delete-account">Delete your account</Link> on the web or from Profile in the app.</p>) },
     ],
   },
@@ -64,7 +70,8 @@ const GROUPS = [
     id: 'athlete-paying', audience: 'For athletes', title: 'Paying and cancelling',
     items: [
       { q: 'How do I buy a pass?', a: 'Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; FitLink never sees the number. The same email signs you in to the app.' },
-      { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. You keep training until the end of what you have paid for. A season pass renews like any other pass until you cancel it.' },
+      { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. Cancelling stops the next payment. You keep your coach’s plan until the end of what you have paid for; after that it is no longer part of your pass. Your logged sets, check-ins and messages stay. A season stops billing by itself after its last payment, so there is nothing to cancel when it ends.' },
+      { q: 'What happens when my season ends?', a: 'A season is billed a set number of payments, shown before you pay, and then nothing more is charged. When the period the last payment covered ends, the season is complete: you keep your copy of it and everything you logged, and you stay with your coach. Open your coach’s link to start another season with them.' },
       { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are the coach’s call and are issued through the app, back to the card you paid with. Switching coaches or deleting your account ends your pass that day, and time already paid isn’t refunded, so ask your coach before you switch.' },
       { q: 'My payment failed.', a: 'Your pass is on hold until a payment goes through; your coach can see that. Stripe emails you a link to update the card.' },
       { q: 'Can I switch coaches?', a: 'Yes: open the new coach’s link and confirm. Before you do, you see which of your passes end. Your pass with your current coach ends that day: it stops billing and won’t renew, and any unpaid amount on it is forgiven. Time already paid isn’t refunded, so ask your coach before you switch. Your history with the previous coach stays in their records.' },
