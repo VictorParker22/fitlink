@@ -161,8 +161,10 @@ from `plans`.
   `season_complete` notice are the apps' to show (the web reads the notice only for the
   payment sentence above). **Deploy order:** the site goes out after
   the server's season deploy (migration 20261017130000, then stripe-webhook,
-  confirm-subscription, create-subscription); until then live subscriptions still renew
-  until cancelled and this copy would be wrong.
+  confirm-subscription, create-subscription). That deploy is DONE (2026-10-17 ~19:44 UTC:
+  stripe-webhook v41, confirm-subscription v7, create-subscription v28), so the season copy
+  is now true for new purchases; the site still waits on the Terms §16 decision below, and the
+  one unstamped live subscription is billed by the plan's current length until it is stamped.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.
