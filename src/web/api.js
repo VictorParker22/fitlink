@@ -93,13 +93,25 @@ export async function takeAuthReturnNote() {
   return r.note;
 }
 
-/** The signed-in user with identities: the session's copy, else /auth/v1/user. null when signed out. */
-export async function currentUser() {
-  const s = await session();
-  if (!s) return null;
-  if (Array.isArray(s.user?.identities)) return s.user;
-  const { data, error } = await supabase.auth.getUser();
-  return error ? s.user : (data?.user ?? s.user);
+/**
+ * The signed-in user as the server has it NOW (GET /auth/v1/user), with
+ * identities and metadata. The browser's stored copy can be an hour old: an
+ * Apple sign-up that picked Coach in the app since then still reads as
+ * unfinished there, and claim_athlete_role would delete that coach's new
+ * trainers row. Every write decided on who the account is (claim_athlete_role,
+ * role 'client') reads this, never the stored session. Never null: throws
+ * `{ status, code, message }` (code `unauthorized` when the session is gone, a
+ * 401/403 or no session; the role read's sentences otherwise), so a caller
+ * that cannot check writes nothing.
+ */
+export async function freshUser() {
+  let data;
+  let error;
+  try { ({ data, error } = await supabase.auth.getUser()); } catch (e) { data = null; error = e; }
+  if (!error && data?.user) return data.user;
+  const status = Number(error?.status) || 0;
+  const gone = !error || status === 401 || status === 403 || error?.name === 'AuthSessionMissingError';
+  throw roleReadError(gone ? 401 : status);
 }
 
 /**
@@ -148,8 +160,8 @@ export async function signInWithApple(where) {
  * it (AuthService.claimRole(.client)): claim_athlete_role (removes the trainers row
  * handle_new_user made by default; refuses `trainer_in_use`), then role 'client' in
  * metadata, plus the name the person typed when Apple gave none. Called ONLY when
- * appleSignUpUnfinished(user): on a finished coach claim_athlete_role would delete a
- * real coach row. Throws { code: 'trainer_in_use' | 'unauthorized' | 'sign_up_failed' }.
+ * appleSignUpUnfinished(await freshUser()): on a finished coach claim_athlete_role would
+ * delete a real coach row. Throws { code: 'trainer_in_use' | 'unauthorized' | 'sign_up_failed' }.
  */
 export async function finishAthleteSignUp({ name = '' } = {}) {
   const { error: claimErr, status } = await supabase.rpc('claim_athlete_role');

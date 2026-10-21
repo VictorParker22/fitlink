@@ -109,6 +109,16 @@ from `plans`.
     Checkout finishes it as an athlete (`claim_athlete_role`, then `role: 'client'`), the iOS rule.
     `/delete-account` lets it delete itself. Never call `claim_athlete_role` for an account with a
     role.
+  - **Who the account is comes from the server.** `freshUser()` (GET `/auth/v1/user`) decides every
+    write that depends on it (`claim_athlete_role`, `role: 'client'`) and the `/coach` and
+    `/delete-account` reads; never the stored session, which can be an hour old (review 2026-10-21:
+    an Apple sign-up that picked Coach in the app since still read as unfinished, and `/coach` deleted
+    the new coach's trainers row). A read that fails writes nothing: `/coach` says it couldn't check
+    (Check again), a 401/403 or a missing session goes back to sign-in.
+  - **Every sign-out is `signOutLocal()`** (scope `local`; when `/logout` can't be reached, the stored
+    session and verifier are removed by hand). Never `supabase.auth.signOut()` bare: it is global (it
+    also signs the coach out of the app) and auth-js keeps the session when `/logout` fails, so on a
+    shared computer the editor stayed signed in.
   - **Sign in with Apple** shows only when `VITE_APPLE_WEB_SIGN_IN=on` was set at build time, on
     `https://fitlink.coach` or localhost, and not in a Home Screen web app.
     - The owner's console steps are in fitlink-app's threat model (Apple vendor row): Services ID
@@ -123,14 +133,21 @@ from `plans`.
     sign-in sentence lives in `appleAuth.js` (`node --test src/web/appleAuth.test.js`). The iPhone path
     to the Sign in with Apple list is "Settings, then your name, then Sign in with Apple" (iPhone User
     Guide, iOS 26).
-- **Checkout joins through athlete-exit, then buys** (`Checkout.jsx`): the sheet first checks
+- **Checkout joins through athlete-exit, then buys** (`Checkout.jsx`). A session already in the
+  browser that the sheet did not make (not a code typed in it, not this tab's own Apple return
+  through `/join` with no failure note) is somebody's: the sheet opens on "Signed in as <email, or
+  the phone with its +>[ with Apple] · Not you? Sign out" with Continue, and nothing is finished,
+  joined or bought before that tap (review 2026-10-21: with a coach's session left on a shared
+  computer, opening another coach's checkout put that coach on the roster before any who-line).
+  Signed out, the sheet first checks
   what the page can see would make create-subscription refuse (`planIsPriced`, the server's
   `planAmountCents` rule; `coachTakesCards` = `trainers_public.stripe_charges_enabled`; the
   Stripe key from `app-config`; an `app-config` call that fails says so in its own words,
   only a 2xx without a `pk_` key is "not set up") and stops with "Nothing was changed"
   (`CoachPublicPage` never offers Buy on an unpriced pass, and with no priced pass it shows
   no "Choose a pass" prompt) → email code or Sign in with Apple (a new Apple account is
-  finished as an athlete first) → `previewInvite` = `athlete-exit
+  finished as an athlete first, BEFORE the same checks run again, so a refusal there never leaves
+  it a coach row named after the person) → `previewInvite` = `athlete-exit
   {action: 'accept_invite', code, preview: true}` → when `needsConfirmation`, the
   `passesEnding[].line` list and "this happens as soon as you confirm, before the card form"
   → `acceptInvite(code, {confirm: true})`, which ends those passes at Stripe NOW (no refund,

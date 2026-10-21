@@ -22,8 +22,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
 import {
-  appleAvailableHere, currentUser, deleteAthleteAccount, deleteCoachAccount, departurePreview, isStandaloneHere, myRole,
-  previewAthleteDeletion, session, signInWithApple, signOutLocal, takeAuthReturnNote,
+  appleAvailableHere, deleteAthleteAccount, deleteCoachAccount, departurePreview, isStandaloneHere, myRole,
+  freshUser, previewAthleteDeletion, session, signInWithApple, signOutLocal, takeAuthReturnNote,
 } from '../api';
 import {
   appleSignUpUnfinished, usedApple, APPLE_STILL_LISTED, DELETE_CODE_HINT, OR_EMAIL, UNFINISHED_DELETE_INTRO, noAccountMessage, signInHint,
@@ -114,8 +114,17 @@ export default function DeleteAccount() {
     setPreview(null);
     setPreviewNote(null);
     setAgreed(false);
-    const user = await currentUser();
-    setAccount({ unfinished: appleSignUpUnfinished(user), apple: usedApple(user) });
+    // Who the account is, as the server has it now: the stored copy can predate a role
+    // picked in the app, and the intro would then hide what a coach's deletion does.
+    let user = null;
+    try {
+      user = await freshUser();
+    } catch (err) {
+      if (err.code === 'unauthorized') { await sessionExpired(err.message); return; }
+      // Not checked: no "never finished" intro; the role read below says whether the server answers.
+    }
+    const stored = user ? null : (await session())?.user ?? null;
+    setAccount({ unfinished: appleSignUpUnfinished(user), apple: usedApple(user ?? stored) });
     let r;
     try {
       r = await myRole();

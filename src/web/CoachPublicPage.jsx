@@ -276,7 +276,7 @@ export default function CoachPublicPage() {
 
       {buying && (
         <Checkout plan={buying} coach={coach} code={code}
-          returnNote={resume?.returnNote ?? null} resumeName={resume?.resumeName ?? ''}
+          returnNote={resume?.returnNote ?? null} resumeName={resume?.resumeName ?? ''} resumed={resume !== null}
           onClose={() => { setBuying(null); setResume(null); setRecheck((n) => n + 1); }} />
       )}
     </div>

@@ -52,6 +52,20 @@ export const JOIN_NOTHING_BODY = 'This page finishes a sign-in that started on a
 /** The checkout's optional name step, when Apple sent no name for a new account. */
 export const nameStepTitle = (first) => `What should ${first} call you?`;
 export const nameStepHint = (first) => `Optional. ${first} sees it on their roster.`;
+/** The checkout's first step when the browser was already signed in (a session this sheet did not make): under "Signed in as … · Not you? Sign out". */
+export const whoStepBody = (planName) => `This browser is already signed in. ${planName} goes on this account, and nothing changes until you continue.`;
+
+/**
+ * How the who-line names an account: its email, else its phone (GoTrue stores
+ * E.164 without the "+"), else '' (the line then reads "Signed in" alone).
+ */
+export function accountLabel(user) {
+  const email = String(user?.email ?? '').trim();
+  if (email) return email;
+  const phone = String(user?.phone ?? '').trim();
+  if (!phone) return '';
+  return /^\d{4,15}$/.test(phone) ? `+${phone}` : phone;
+}
 
 /** Offered here at all: the build's flag, a return origin Supabase allows, and not a Home Screen web app (it may finish an off-origin flow outside its own storage; device check A-L8). */
 export function appleAvailable({ enabled, origin, standalone }) {
@@ -63,7 +77,9 @@ export function appleAvailable({ enabled, origin, standalone }) {
  * no role the apps know. OAuth cannot carry metadata, so such an account was
  * made by a first Apple sign-in (handle_new_user then gave it a trainers row by
  * default). A legacy email coach without a role has an email identity, so it
- * never counts. Identities missing → false (currentUser() fetches them).
+ * never counts. Identities missing → false. Decide a write on it only with the
+ * server's copy of the user (api.js freshUser()): the browser's stored copy can be
+ * an hour old, from before the person picked a role in the app.
  */
 export function appleSignUpUnfinished(user) {
   const ids = user?.identities;

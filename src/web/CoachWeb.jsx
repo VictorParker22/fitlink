@@ -5,10 +5,10 @@
 // The header has what exists on the web (Seasons, Public page, Open the app);
 // Home, Athletes and Money stay in the app until they are built here.
 import { useEffect, useState } from 'react';
-import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { supabase, APP_SCHEME } from './supabase';
 import {
-  appleAvailableHere, currentUser, isStandaloneHere, leaveUnfinishedAppleSignUp, myRole, signInWithApple, signOutLocal,
+  appleAvailableHere, freshUser, isStandaloneHere, leaveUnfinishedAppleSignUp, myRole, signInWithApple, signOutLocal,
   standingInvite, takeAuthReturnNote,
 } from './api';
 import {
@@ -22,7 +22,12 @@ import './web.css';
 
 const Loading = ({ text = 'Loading…' }) => <div className="fl"><div className="fl-empty"><p className="fl-note" aria-live="polite">{text}</p></div></div>;
 
-/** Sign out of this browser (even offline), then a fresh /coach: onAuthStateChange is silent when storage had to be cleared by hand. */
+/**
+ * Sign out of this browser (even offline), then a fresh /coach: onAuthStateChange is
+ * silent when storage had to be cleared by hand. Local scope, always: a global sign-out
+ * would also sign the coach out of the app, and when /logout fails auth-js keeps the
+ * session (the editor would stay signed in on a shared computer).
+ */
 function signOutHere() {
   return signOutLocal().then(() => window.location.assign('/coach'));
 }
@@ -51,13 +56,29 @@ export default function CoachWeb() {
 
   // Re-checked when the signed-in user changes, never on a token refresh. Every
   // sentence for the sign-in screen is set BEFORE the sign-out: signing out
-  // clears the session, which ends this run.
+  // clears the session, which ends this run. Who the account is comes from the
+  // server (freshUser), never the stored copy: a stale "unfinished Apple sign-up"
+  // would make claim_athlete_role delete a coach row made in the app since.
   const uid = sess?.user?.id ?? null;
   useEffect(() => {
     if (!uid) return undefined;
     let alive = true;
     (async () => {
-      const user = await currentUser();
+      let user;
+      try {
+        user = await freshUser();
+      } catch (err) {
+        if (!alive) return;
+        if (err.code === 'unauthorized') {
+          setNote(err.message);
+          await signOutLocal();
+          if (alive) setSess(null);
+          return;
+        }
+        // Could not check: never the editor, never a write.
+        setGate({ uid, state: 'error', message: err.message });
+        return;
+      }
       if (!alive) return;
       if (appleSignUpUnfinished(user)) {
         setNote(APPLE_NOT_COACH);
@@ -110,7 +131,6 @@ export default function CoachWeb() {
 function Shell({ session, children }) {
   const [coach, setCoach] = useState(null);
   const [publicCode, setPublicCode] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -129,7 +149,7 @@ function Shell({ session, children }) {
             <a href={APP_SCHEME}>Home · in the app</a>
             <Link to="/coach/seasons" aria-current="page">Seasons</Link>
             {publicCode && <Link to={`/i/${publicCode}`}>Public page</Link>}
-            <button type="button" onClick={async () => { await supabase.auth.signOut(); navigate('/coach'); }}>Sign out</button>
+            <button type="button" onClick={signOutHere}>Sign out</button>
           </nav>
         </div>
       </header>

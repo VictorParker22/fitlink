@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 import * as A from './appleAuth.js';
 import {
   APPLE_CANCELLED, APPLE_SETTINGS_PATH, APPLE_TITLE, AUTH_RETURN_FAILED, CHECKOUT_RETURN_TTL_MS, HINTS,
-  appleAvailable, appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, noAccountMessage,
-  parkedCheckoutValue, parseAuthReturn, readParkedCheckout, signInHint, siteCopy, usedApple,
+  accountLabel, appleAvailable, appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, noAccountMessage,
+  parkedCheckoutValue, parseAuthReturn, readParkedCheckout, signInHint, siteCopy, usedApple, whoStepBody,
 } from './appleAuth.js';
 import { normalizeCode } from './codes.js';
 
@@ -37,6 +37,20 @@ test('usedApple: an identity or the app metadata names Apple', () => {
   assert.equal(usedApple({ app_metadata: { provider: 'apple' } }), true);
   assert.equal(usedApple({ identities: [{ provider: 'email' }], app_metadata: { provider: 'email', providers: ['email'] } }), false);
   assert.equal(usedApple(null), false);
+});
+
+test('accountLabel: the email, else the phone with its "+", else nothing', () => {
+  assert.equal(accountLabel({ email: 'sam@example.com', phone: '15555550123' }), 'sam@example.com');
+  assert.equal(accountLabel({ email: '  sam@example.com ' }), 'sam@example.com');
+  assert.equal(accountLabel({ email: '', phone: '15555550123' }), '+15555550123', 'GoTrue stores E.164 without the plus');
+  assert.equal(accountLabel({ email: null, phone: '+15555550123' }), '+15555550123');
+  assert.equal(accountLabel({ email: '', phone: '' }), '');
+  assert.equal(accountLabel({}), '');
+  assert.equal(accountLabel(null), '');
+});
+
+test('whoStepBody: names the pass and says nothing happens before Continue', () => {
+  assert.equal(whoStepBody('Strength block'), 'This browser is already signed in. Strength block goes on this account, and nothing changes until you continue.');
 });
 
 test('cleanName and metadataName', () => {
@@ -197,7 +211,7 @@ function everySentence() {
   for (const page of ['coach', 'delete']) for (const available of [true, false]) out.push([`noAccountMessage(${page}, ${available})`, noAccountMessage(page, available)]);
   for (const [page, h] of Object.entries(HINTS)) for (const [state, v] of Object.entries(h)) out.push([`HINTS.${page}.${state}`, v]);
   for (const enabled of [true, false]) for (const [k, v] of Object.entries(siteCopy(enabled))) out.push([`siteCopy(${enabled}).${k}`, v]);
-  out.push(['nameStepTitle', nameStepTitle('Dana')], ['nameStepHint', nameStepHint('Dana')]);
+  out.push(['nameStepTitle', nameStepTitle('Dana')], ['nameStepHint', nameStepHint('Dana')], ['whoStepBody', whoStepBody('Strength block')]);
   return out;
 }
 

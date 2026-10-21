@@ -20,6 +20,13 @@
 // Nothing here says "switched", "ended" or "you're in" before the server
 // answered it.
 //
+// A session this sheet did not make (by a code typed in it, or by this tab's
+// own Apple return) may be somebody else's: a shared computer, an old tab, a
+// coach who used /coach. The sheet then opens on "Signed in as … · Not you? Sign out" with
+// Continue, and nothing is finished, joined or bought before that tap (review
+// 2026-10-21: the join used to run on open, before the who-line). Who the
+// account is comes from the server (freshUser), never the stored copy.
+//
 // Before anything can end a pass, the sheet checks what the page can already
 // see would make the purchase fail afterwards (create-subscription's own
 // rules): the pass has a price (plan_unpriced) and the coach can take a card
@@ -39,19 +46,21 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { supabase, APP_SCHEME } from './supabase';
 import {
   acceptInvite, appConfig, appleAvailableHere, clearParkedCheckout, coachTakesCards, confirmSubscription, createSubscription,
-  finishAthleteSignUp, firstName, functionError, isStandaloneHere, myClient, parkCheckout, planIsPriced, previewInvite, session,
-  signInWithApple, signOutLocal,
+  finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, parkCheckout, planIsPriced, previewInvite,
+  session, signInWithApple, signOutLocal,
 } from './api';
 import { checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
 import {
-  appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, signInHint, siteCopy, usedApple,
-  APPLE_PARK_FAILED, OR_EMAIL, SETTING_UP,
+  accountLabel, appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, signInHint, siteCopy, usedApple,
+  whoStepBody, APPLE_PARK_FAILED, OR_EMAIL, SETTING_UP,
 } from './appleAuth';
 import { APPLE_WEB_ENABLED } from './authConfig';
 import AppleButton from './AppleButton';
 import { SUPPORT_EMAIL } from './site/pricing';
 
-const STEP = { email: 'email', code: 'code', name: 'name', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
+const STEP = { email: 'email', code: 'code', who: 'who', name: 'name', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
+/** The steps that carry "Signed in as … · Not you? Sign out" (a session is in the browser). */
+const WHO_STEPS = new Set([STEP.who, STEP.name, STEP.switch, STEP.pay, STEP.stopped]);
 
 // Refusals a second try cannot change: the sheet offers Close only.
 const FINAL_CODES = new Set([
@@ -92,11 +101,24 @@ function unknownSwitch(err) {
   return stop(message);
 }
 
-export default function Checkout({ plan, coach, code, onClose, returnNote = null, resumeName = '' }) {
+/**
+ * `resumed`: this sheet reopened after this tab's own Sign in with Apple (/join,
+ * from what the tab parked before leaving). A return with `returnNote` set did
+ * not sign anyone in here, so a session found then is not taken as the person's.
+ */
+export default function Checkout({ plan, coach, code, onClose, returnNote = null, resumeName = '', resumed = false }) {
   const first = firstName(coach?.name);
   const [step, setStep] = useState(STEP.checking);
   const [checkingNote, setCheckingNote] = useState('One moment…');
   const [email, setEmail] = useState('');
+  /** How the who-line names the signed-in account (accountLabel); null while nobody is signed in. */
+  const [who, setWho] = useState(null);
+  /**
+   * The person said this session is theirs: they typed its code here, came back from
+   * their own Apple sign-in, or tapped Continue under "Signed in as …". Until then
+   * nothing is finished, joined or bought on it.
+   */
+  const identityOk = useRef(resumed && !returnNote);
   /** The signed-in account used Sign in with Apple: the who-line says so. */
   const [apple, setApple] = useState(false);
   const [name, setName] = useState(resumeName);
@@ -170,7 +192,14 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
       setError('That code didn’t match. Check it or ask for a new one.');
       return;
     }
+    identityOk.current = true;   // a session this sheet made, with the person's own code
     await begin();
+  }
+
+  /** "Continue" under "Signed in as …": the person says the account is theirs. */
+  function itsMe() {
+    identityOk.current = true;
+    begin();
   }
 
   /** Any refusal: the server's sentence, and a fresh look rather than a blind retry. */
@@ -190,10 +219,11 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
    */
   async function notMe() {
     setBusy(true); await signOutLocal(); setBusy(false);
+    identityOk.current = false;
     lostSwitch.current = null;
     nameAsked.current = false;
     setName('');
-    setEmail(''); setToken(''); setApple(false); setView(null); setJoined(null); setPurchase(null); setStripePromise(null);
+    setEmail(''); setWho(null); setToken(''); setApple(false); setView(null); setJoined(null); setPurchase(null); setStripePromise(null);
     setOutcome(null); setError(null); setNeedsSignIn(false); setClientId(null); setStep(STEP.email);
   }
 
@@ -202,6 +232,8 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     setBusy(true);
     await signOutLocal();
     setBusy(false);
+    identityOk.current = false;
+    setWho(null);
     setToken('');
     setError(null);
     setNeedsSignIn(false);
@@ -240,9 +272,14 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   }
 
   /**
-   * Open, after the code, and Check again: whether this page can sell the
-   * pass, then (signed in) what joining this coach would end (athlete-exit
-   * preview). Nothing here changes anything, except a join that the server
+   * Open, after the code, after "Continue", and Check again. Signed out:
+   * whether this page can sell the pass, then the email step. Signed in: who
+   * the account is (from the server), and nothing more until the person said
+   * it is theirs (the who step); then a new Apple account becomes an athlete
+   * BEFORE anything can stop the sheet (a refusal must not leave it a coach
+   * row named after the person); then whether the page can sell the pass;
+   * then what joining this coach would end (athlete-exit preview). Nothing
+   * here changes anything, except that sign-up and a join that the server
    * says needs no confirmation (no pass ends and no coach changes).
    */
   async function begin() {
@@ -253,23 +290,33 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     setCheckingNote('One moment…');
     setStep(STEP.checking);
     try {
-      await assertSellable();
       const s = await session();
       if (!s) {
+        setWho(null);
+        await assertSellable();   // before asking anyone for an email
         setStep(STEP.email);
         if (returnNoteRef.current) { setError(returnNoteRef.current); returnNoteRef.current = null; }
         return;
       }
+      // The stored copy names the account on screen at once (so "Not you?" is there even
+      // when the server can't be reached); the server's copy decides everything after.
       setEmail(s.user.email ?? '');
+      setWho(accountLabel(s.user));
       setApple(usedApple(s.user));
+      const user = await freshUser();
+      setEmail(user.email ?? '');
+      setWho(accountLabel(user));
+      setApple(usedApple(user));
+      if (!identityOk.current) { setStep(STEP.who); return; }
       // A brand-new Apple account: an athlete first, as the iOS app makes one. Never for an
       // account with a role (claim_athlete_role would delete a real coach row).
-      if (appleSignUpUnfinished(s.user)) {
+      if (appleSignUpUnfinished(user)) {
         const typed = cleanName(name);
-        if (!typed && !metadataName(s.user) && !nameAsked.current) { setStep(STEP.name); return; }
+        if (!typed && !metadataName(user) && !nameAsked.current) { setStep(STEP.name); return; }
         setCheckingNote(SETTING_UP);
         await finishAthleteSignUp({ name: typed });
       }
+      await assertSellable();
       setCheckingNote('Checking your passes…');
       const v = await previewInvite(code);
       const lost = lostSwitch.current;
@@ -297,10 +344,10 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     }
   }
 
-  // On open (declared after begin(), which it calls): whether the page can
-  // sell this pass at all, before asking for an email; a session that already
-  // exists (the person bought before, came back from Apple, or opened the code
-  // screen earlier) goes straight on to what joining would end.
+  // On open (declared after begin(), which it calls): signed out, whether the
+  // page can sell this pass at all, before asking for an email; a session that
+  // already exists is named first (the who step), unless it is this tab's own
+  // Apple return, which goes straight on.
   useEffect(() => {
     if (started.current) return;
     started.current = true;
@@ -474,9 +521,9 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
           <h2 id="co-title">{title}</h2>
           <button type="button" className="fl-btn sm" onClick={onClose} disabled={busy} aria-label="Close">✕</button>
         </div>
-        {email && !needsSignIn && [STEP.name, STEP.switch, STEP.pay, STEP.stopped].includes(step) && (
+        {who !== null && !needsSignIn && WHO_STEPS.has(step) && (
           <div className="fl-who">
-            <span>Signed in as <b>{email}</b>{apple ? ' with Apple' : ''}</span>
+            <span>Signed in{who ? <> as <b>{who}</b></> : ''}{apple ? ' with Apple' : ''}</span>
             <button type="button" onClick={notMe} disabled={busy}>Not you? Sign out</button>
           </div>
         )}
@@ -499,6 +546,13 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
               {error && <div className="fl-error" role="alert">{error}</div>}
               <button type="submit" className="fl-btn accent lg" disabled={busy || appleBusy || !/\S+@\S+\.\S+/.test(email)}>{busy ? 'Sending…' : 'Email me a code'}</button>
             </form>
+          </div>
+        )}
+
+        {step === STEP.who && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p className="fl-copy">{whoStepBody(plan.name)}</p>
+            <button type="button" className="fl-btn accent lg" disabled={busy} onClick={itsMe}>Continue</button>
           </div>
         )}
 
@@ -571,7 +625,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
               <>
                 {apple
                   ? <p className="fl-note">It can take a minute. Open the FitLink app and sign in with Apple; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
-                  : <p className="fl-note">It can take a minute. Open the FitLink app signed in with <b>{email}</b>; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>}
+                  : <p className="fl-note">It can take a minute. Open the FitLink app signed in with <b>{who || email}</b>; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>}
                 {outcome.canCheck !== false && (
                   <button type="button" className="fl-btn accent lg" disabled={busy} onClick={checkAgain}>{busy ? 'Checking…' : 'Check again'}</button>
                 )}
@@ -599,7 +653,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
             {joinedNote}
             {apple
               ? <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app: sign in there with Apple.</p>
-              : <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app, signed in with <b>{email}</b>.</p>}
+              : <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app, signed in with <b>{who || email}</b>.</p>}
             <a className="fl-btn accent lg" href={`${APP_SCHEME}invite/${code}`}>Open the FitLink app</a>
             <p className="fl-note">{apple
               ? 'No app yet? Install FitLink from the App Store, sign in with Apple, and the pass is already there.'
