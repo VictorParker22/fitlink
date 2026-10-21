@@ -3,12 +3,9 @@
 // ever sends ids (invite code, plan id, client id), never a price or a payee.
 import { supabase, SUPABASE_KEY, FUNCTIONS_URL } from './supabase';
 import { finishedSeason } from './season';
+import { parseAuthReturn } from './appleAuth';
 
-/** Upper-case, letters and digits only, six of them. */
-export function normalizeCode(value) {
-  const code = String(value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-  return code.length === 6 ? code : null;
-}
+export { normalizeCode } from './codes';
 
 /** The public invite card: coach name, photo, bio; kind coach | live. */
 export async function inviteInfo(code) {
@@ -77,6 +74,40 @@ export async function appConfig() {
 export async function session() {
   const { data } = await supabase.auth.getSession();
   return data.session ?? null;
+}
+
+/**
+ * After the auth client has looked at the URL (initialize() is cached, so this
+ * waits for the exchange), remove every auth parameter from the address bar and
+ * say, in ONE fixed sentence, whether a sign-in came back unfinished. Never the
+ * URL's own text: anyone can craft ?error_description=<anything>.
+ */
+export async function takeAuthReturnNote() {
+  try { await supabase.auth.initialize(); } catch { /* initialize never throws; belt and braces */ }
+  const r = parseAuthReturn(window.location.search, window.location.hash);
+  if (r.changed) window.history.replaceState(window.history.state, '', `${window.location.pathname}${r.search}${r.hash}`);
+  return r.note;
+}
+
+/** The signed-in user with identities: the session's copy, else /auth/v1/user. null when signed out. */
+export async function currentUser() {
+  const s = await session();
+  if (!s) return null;
+  if (Array.isArray(s.user?.identities)) return s.user;
+  const { data, error } = await supabase.auth.getUser();
+  return error ? s.user : (data?.user ?? s.user);
+}
+
+/**
+ * A brand-new Apple account reached /coach: sign-up happens in the app. Drop the
+ * trainers row the sign-up trigger made by default (claim_athlete_role; it
+ * refuses once the coach side is in use), so no empty coach profile is listed
+ * in trainers_public, then sign this browser out. Best effort: the app's role
+ * screen finds or recreates the row, and the account stays role-less either way.
+ */
+export async function leaveUnfinishedAppleSignUp() {
+  try { await supabase.rpc('claim_athlete_role'); } catch { /* best effort */ }
+  await signOutLocal();
 }
 
 /**
@@ -338,9 +369,17 @@ export async function deleteAthleteAccount() {
   return { passesEnded: Number(data.passesEnded) || 0, mediaIncomplete: data.mediaIncomplete === true };
 }
 
-/** Drops the browser's session without calling the server (the user may already be gone). */
+/**
+ * Drops the browser's session. When /logout can't be reached, forgets it locally
+ * anyway: "Signed out" must be true. (auth-js keeps the stored session when
+ * /logout fails with anything but 401/403/404.)
+ */
 export async function signOutLocal() {
-  try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* the session is gone either way */ }
+  let failed;
+  try { const { error } = await supabase.auth.signOut({ scope: 'local' }); failed = Boolean(error); } catch { failed = true; }
+  if (failed) {
+    try { window.localStorage.removeItem('fitlink-web'); window.localStorage.removeItem('fitlink-web-code-verifier'); } catch { /* storage blocked */ }
+  }
 }
 
 /** The coach's standing invite (created once, reused): the public page URL. */

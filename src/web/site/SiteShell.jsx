@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { APP_STORE_URL, SUPPORT_EMAIL } from './pricing';
 import { useBodyClass } from './meta';
+import { takeAuthReturnNote } from '../api';
 import '../web.css';
 import './site.css';
 
@@ -70,6 +71,16 @@ export function SiteFooter() {
 
 export default function SiteShell() {
   useBodyClass('fl-site-body');
+  // Take any tokens or error text out of the address bar, silently: none of
+  // these pages receives a sign-in return. Not on /delete-account, which takes
+  // the return itself and shows its sentence (parent effects run after the
+  // child's, and the first to read the URL cleans it).
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (pathname !== '/delete-account') takeAuthReturnNote();
+    // Once, on the page the visitor arrived at.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <div className="fl fl-site">
       <ScrollToTop />

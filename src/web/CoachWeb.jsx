@@ -1,25 +1,94 @@
-// /coach — the coach on the web: an email-code sign-in (existing accounts
-// only; sign-up happens in the app), then the season editor. The header
-// has what exists on the web (Seasons, Public page, Open the app); Home,
-// Athletes and Money stay in the app until they are built here.
+// /coach — the coach on the web: sign-in by email code, existing accounts
+// only (sign-up happens in the app); then a role gate: only a coach account
+// sees the editor (2026-10-21; it used to open for any signed-in account).
+// The header has what exists on the web (Seasons, Public page, Open the app);
+// Home, Athletes and Money stay in the app until they are built here.
 import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase, APP_SCHEME } from './supabase';
-import { standingInvite } from './api';
+import { currentUser, leaveUnfinishedAppleSignUp, myRole, signOutLocal, standingInvite, takeAuthReturnNote } from './api';
+import {
+  appleSignUpUnfinished, usedApple, APPLE_NOT_COACH, CHECKING_ACCOUNT, NOT_COACH, NOT_COACH_TITLE, ROLE_ERROR_TITLE,
+  TOO_MANY_CODES, noAccountMessage,
+} from './appleAuth';
 import SeasonEditor from './SeasonEditor';
 import './web.css';
 
+const Loading = ({ text = 'Loading…' }) => <div className="fl"><div className="fl-empty"><p className="fl-note" aria-live="polite">{text}</p></div></div>;
+
+/** Sign out of this browser (even offline), then a fresh /coach: onAuthStateChange is silent when storage had to be cleared by hand. */
+function signOutHere() {
+  return signOutLocal().then(() => window.location.assign('/coach'));
+}
+
 export default function CoachWeb() {
   const [sess, setSess] = useState(undefined);
+  /** The one sentence the sign-in screen opens with: a failed return, a refused account, an expired sign-in. */
+  const [note, setNote] = useState(null);
+  /** Whose account the gate checked, and what it found: checking | coach | not_coach | error. */
+  const [gate, setGate] = useState({ uid: null, state: 'checking' });
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSess(data.session ?? null));
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.auth.getSession();   // waits for the PKCE exchange
+      const n = await takeAuthReturnNote();
+      if (!alive) return;
+      if (n) setNote(n);
+      setSess(data.session ?? null);
+    })();
+    // Only state here: never await a Supabase call inside this callback (auth-js holds its lock).
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSess(s ?? null));
-    return () => sub.subscription.unsubscribe();
+    return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  if (sess === undefined) return <div className="fl"><div className="fl-empty"><p className="fl-note">Loading…</p></div></div>;
-  if (!sess) return <div className="fl"><SignIn /></div>;
+  // Re-checked when the signed-in user changes, never on a token refresh. Every
+  // sentence for the sign-in screen is set BEFORE the sign-out: signing out
+  // clears the session, which ends this run.
+  const uid = sess?.user?.id ?? null;
+  useEffect(() => {
+    if (!uid) return undefined;
+    let alive = true;
+    (async () => {
+      const user = await currentUser();
+      if (!alive) return;
+      if (appleSignUpUnfinished(user)) {
+        setNote(APPLE_NOT_COACH);
+        await leaveUnfinishedAppleSignUp();
+        if (alive) setSess(null);
+        return;
+      }
+      setNote(null);
+      try {
+        const role = await myRole();
+        if (!alive) return;
+        if (role === 'coach') setGate({ uid, state: 'coach' });
+        else setGate({ uid, state: 'not_coach', email: user?.email ?? '', apple: usedApple(user) });
+      } catch (err) {
+        if (!alive) return;
+        if (err.code === 'unauthorized') {
+          setNote(err.message);
+          await signOutLocal();
+          if (alive) setSess(null);
+          return;
+        }
+        setGate({ uid, state: 'error', message: err.message });
+      }
+    })();
+    return () => { alive = false; };
+  }, [uid, attempt]);
+
+  if (sess === undefined) return <Loading />;
+  // Keyed by the sentence: a sentence that arrives after the screen is up opens it again with that sentence.
+  if (!sess) return <div className="fl"><SignIn key={note ?? ''} note={note} /></div>;
+  // A gate result belongs to the account it checked; anything else is still being checked.
+  const state = gate.uid === uid ? gate.state : 'checking';
+  if (state === 'checking') return <Loading text={CHECKING_ACCOUNT} />;
+  if (state === 'error') {
+    return <div className="fl"><RoleError message={gate.message} onRetry={() => { setGate({ uid, state: 'checking' }); setAttempt((n) => n + 1); }} /></div>;
+  }
+  if (state === 'not_coach') return <div className="fl"><NotCoach email={gate.email} apple={gate.apple} /></div>;
   return (
     <div className="fl">
       <Routes>
@@ -58,25 +127,57 @@ function Shell({ session, children }) {
           </nav>
         </div>
       </header>
-      {coach === null && coach !== undefined ? null : null}
       {children}
     </>
   );
 }
 
-function SignIn() {
+/** The role read did not answer: never the editor, never "no profile". */
+function RoleError({ message, onRetry }) {
+  return (
+    <div className="fl-signin">
+      <span className="fl-kicker">FitLink · coach</span>
+      <h1>{ROLE_ERROR_TITLE}</h1>
+      <p className="fl-sub" style={{ fontSize: 16 }} role="alert">{message}</p>
+      <button type="button" className="fl-btn accent lg" onClick={onRetry}>Check again</button>
+      <button type="button" className="fl-btn quiet" onClick={signOutHere}>Sign out</button>
+    </div>
+  );
+}
+
+/** Signed in, but not as a coach (an athlete, or an account with neither row). */
+function NotCoach({ email, apple }) {
+  return (
+    <div className="fl-signin">
+      <span className="fl-kicker">FitLink · coach</span>
+      <h1>{NOT_COACH_TITLE}</h1>
+      <p className="fl-sub" style={{ fontSize: 16 }}>{NOT_COACH}</p>
+      {email && <p className="fl-note">Signed in as <b>{email}</b>{apple ? ' with Apple' : ''}.</p>}
+      <a className="fl-btn accent lg" href={APP_SCHEME}>Open the FitLink app</a>
+      <button type="button" className="fl-btn quiet" onClick={signOutHere}>Sign out</button>
+    </div>
+  );
+}
+
+function SignIn({ note }) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(note);
 
   async function send(e) {
     e.preventDefault();
     setBusy(true); setError(null);
     const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: false } });
     setBusy(false);
-    if (err) { setError(err.message?.toLowerCase().includes('signups') ? 'No account with that email. Sign up in the FitLink app first.' : 'Couldn’t send the code. Check the address and try again.'); return; }
+    if (err) {
+      const text = String(err.message ?? '').toLowerCase();
+      if (text.includes('signups') || text.includes('not allowed')) setError(noAccountMessage('coach', false));
+      else if (text.includes('rate') || err.status === 429) setError(TOO_MANY_CODES);
+      else setError('Couldn’t send the code. Check the address and try again.');
+      return;
+    }
     setSent(true);
   }
 

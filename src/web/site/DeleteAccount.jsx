@@ -20,7 +20,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { deleteAthleteAccount, deleteCoachAccount, departurePreview, myRole, previewAthleteDeletion, session, signOutLocal } from '../api';
+import {
+  currentUser, deleteAthleteAccount, deleteCoachAccount, departurePreview, myRole, previewAthleteDeletion, session, signOutLocal,
+  takeAuthReturnNote,
+} from '../api';
+import { appleSignUpUnfinished, usedApple, APPLE_STILL_LISTED, UNFINISHED_DELETE_INTRO } from '../appleAuth';
 import { usePageMeta } from './meta';
 import { SUPPORT_EMAIL } from './pricing';
 
@@ -80,10 +84,13 @@ export default function DeleteAccount() {
   const [previewNote, setPreviewNote] = useState(null);
   const [agreed, setAgreed] = useState(false);
   const [outcome, setOutcome] = useState(null);
+  /** Who the session is, from its identities: a sign-up nobody finished (every identity Apple, no role), an account that used Apple. */
+  const [account, setAccount] = useState({ unfinished: false, apple: false });
 
   /** The server no longer accepts this browser's session: drop it and ask for a fresh code. */
   async function sessionExpired(message) {
     await signOutLocal();
+    setAccount({ unfinished: false, apple: false });
     setRole(null);
     setPreview(null);
     setPreviewNote(null);
@@ -100,6 +107,8 @@ export default function DeleteAccount() {
     setPreview(null);
     setPreviewNote(null);
     setAgreed(false);
+    const user = await currentUser();
+    setAccount({ unfinished: appleSignUpUnfinished(user), apple: usedApple(user) });
     let r;
     try {
       r = await myRole();
@@ -166,8 +175,9 @@ export default function DeleteAccount() {
     let cancelled = false;
     (async () => {
       const s = await session();
+      const n = await takeAuthReturnNote();
       if (cancelled) return;
-      if (!s) { setStep(STEP.email); return; }
+      if (!s) { setError(n); setStep(STEP.email); return; }
       setEmail(s.user.email ?? '');
       await prepare();
     })();
@@ -212,13 +222,15 @@ export default function DeleteAccount() {
     setStep(STEP.deleting);
     setBusy(true);
     try {
+      // Read before the session goes: the Deleted step says where Apple still lists FitLink.
+      const apple = account.apple;
       if (role === 'coach') {
         const r = await deleteCoachAccount();
-        setOutcome({ role, departure: r?.departure ?? null, mediaIncomplete: r?.mediaIncomplete === true });
+        setOutcome({ role, departure: r?.departure ?? null, mediaIncomplete: r?.mediaIncomplete === true, usedApple: apple });
       } else {
         // Resolves only on the server's `deleted: true`, after the session is dropped.
         const r = await deleteAthleteAccount();
-        setOutcome({ role, passesEnded: r.passesEnded, mediaIncomplete: r.mediaIncomplete });
+        setOutcome({ role, passesEnded: r.passesEnded, mediaIncomplete: r.mediaIncomplete, usedApple: apple });
       }
       setStep(STEP.done);
     } catch (err) {
@@ -257,6 +269,7 @@ export default function DeleteAccount() {
     setBusy(true);
     await signOutLocal();
     setBusy(false);
+    setAccount({ unfinished: false, apple: false });
     setRole(null);
     setPreview(null);
     setToken('');
@@ -282,7 +295,7 @@ export default function DeleteAccount() {
   return (
     <div className="s-wrap tight s-delete">
       <h1 className="s-h1 sm">{step === STEP.done ? 'Deleted.' : 'Delete your FitLink account'}</h1>
-      {step !== STEP.done && <p className="s-copy">{intro}</p>}
+      {step !== STEP.done && <p className="s-copy">{account.unfinished ? UNFINISHED_DELETE_INTRO : intro}</p>}
 
       {step === STEP.email && (
         <form className="s-form" onSubmit={sendCode}>
@@ -314,7 +327,7 @@ export default function DeleteAccount() {
       {(step === STEP.confirm || step === STEP.deleting) && (
         <div className="s-form" aria-live="polite">
           <div className="s-who">
-            <span>Signed in as <b>{email}</b>{role === 'coach' ? ' · coach' : role === 'athlete' ? ' · athlete' : ''}</span>
+            <span>Signed in as <b>{email}</b>{account.apple ? ' with Apple' : ''}{account.unfinished ? '' : role === 'coach' ? ' · coach' : role === 'athlete' ? ' · athlete' : ''}</span>
             <button type="button" onClick={notMe} disabled={busy}>Not you? Sign out</button>
           </div>
 
@@ -351,12 +364,13 @@ export default function DeleteAccount() {
                   {ownEnding.map((p, i) => <span key={p.stripeSubscriptionId || `${p.planId || 'own'}-${i}`}>{p.line}</span>)}
                 </div>
               )}
-              <ul className="s-bullets">
+              {/* An unfinished Apple sign-up holds only the default trainers row: none of this applies. */}
+              {!account.unfinished && <ul className="s-bullets">
                 <li>Every athlete’s pass with you ends today.</li>
                 <li>Your athletes keep their accounts, logs, check-ins and the sessions they trained. Your profile, your page and your passes go; they see you as a former coach.</li>
                 <li>Payment records may be kept where the law requires it.</li>
                 <li>A Coach Elite subscription bought through Apple is not cancelled by this. Cancel it in your Apple Account’s subscriptions.</li>
-              </ul>
+              </ul>}
             </>
           )}
 
@@ -433,6 +447,7 @@ export default function DeleteAccount() {
           </p>
           {outcome.mediaIncomplete && <p className="s-small">Some uploaded files could not be removed automatically. Write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> and they will be removed for you.</p>}
           <p className="s-small">If you had a subscription through Apple, cancel it in your Apple Account’s subscriptions: deleting the FitLink account does not cancel it.</p>
+          {outcome.usedApple && <p className="s-small">{APPLE_STILL_LISTED}</p>}
           <Link className="fl-btn lg" to="/">Back to FitLink</Link>
         </div>
       )}

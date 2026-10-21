@@ -34,6 +34,7 @@ import {
   functionError, myClient, planIsPriced, previewInvite, session, signOutLocal,
 } from './api';
 import { checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
+import { usedApple } from './appleAuth';
 import { SUPPORT_EMAIL } from './site/pricing';
 
 const STEP = { email: 'email', code: 'code', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
@@ -82,6 +83,8 @@ export default function Checkout({ plan, coach, code, onClose }) {
   const [step, setStep] = useState(STEP.checking);
   const [checkingNote, setCheckingNote] = useState('One moment…');
   const [email, setEmail] = useState('');
+  /** The signed-in account used Sign in with Apple: the who-line says so. */
+  const [apple, setApple] = useState(false);
   const [name, setName] = useState('');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -163,6 +166,18 @@ export default function Checkout({ plan, coach, code, onClose }) {
     setStep(STEP.stopped);
   }
 
+  /**
+   * "Not you? Sign out": a browser someone else signed in to must never pay onto
+   * their account. Signs out here even when /logout can't be reached, forgets
+   * everything this sheet learned about that account, and starts over at the email.
+   */
+  async function notMe() {
+    setBusy(true); await signOutLocal(); setBusy(false);
+    lostSwitch.current = null;
+    setEmail(''); setToken(''); setApple(false); setView(null); setJoined(null); setPurchase(null); setStripePromise(null);
+    setOutcome(null); setError(null); setNeedsSignIn(false); setClientId(null); setStep(STEP.email);
+  }
+
   /** The session expired: drop it here and ask for a fresh code. Nothing on the server changes. */
   async function signInAgain() {
     setBusy(true);
@@ -226,6 +241,7 @@ export default function Checkout({ plan, coach, code, onClose }) {
         return;
       }
       setEmail(s.user.email ?? '');
+      setApple(usedApple(s.user));
       setCheckingNote('Checking your passes…');
       const v = await previewInvite(code);
       const lost = lostSwitch.current;
@@ -419,6 +435,12 @@ export default function Checkout({ plan, coach, code, onClose }) {
           <h2 id="co-title">{title}</h2>
           <button type="button" className="fl-btn sm" onClick={onClose} disabled={busy} aria-label="Close">✕</button>
         </div>
+        {email && !needsSignIn && [STEP.switch, STEP.pay, STEP.stopped].includes(step) && (
+          <div className="fl-who">
+            <span>Signed in as <b>{email}</b>{apple ? ' with Apple' : ''}</span>
+            <button type="button" onClick={notMe} disabled={busy}>Not you? Sign out</button>
+          </div>
+        )}
         {seasonLine && step !== STEP.done && step !== STEP.switch && !owing && <p className="fl-note">{seasonLine}</p>}
 
         {step === STEP.email && (

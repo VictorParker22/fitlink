@@ -14,7 +14,7 @@
 // season is billing's answer (passBilling), never a truthy duration_weeks.
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith } from './api';
+import { inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, takeAuthReturnNote } from './api';
 import { passBilling, passPriceParts, passSeasonLine } from './season';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
@@ -45,6 +45,10 @@ export default function CoachPublicPage() {
   const [finished, setFinished] = useState(null);
   /** Bumped when the checkout closes, so a season bought there takes the offer away. */
   const [recheck, setRecheck] = useState(0);
+
+  // No sign-in returns here: take any tokens or error text out of the address
+  // bar, silently (Stripe's 3DS parameters stay; only auth keys go).
+  useEffect(() => { takeAuthReturnNote(); }, []);
 
   useEffect(() => {
     let cancelled = false;

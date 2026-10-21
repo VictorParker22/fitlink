@@ -147,6 +147,9 @@
 .fl-ending { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .fl-ending li { background: var(--fl-surface); border-radius: 14px; padding: 12px 14px; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
 .fl-done-note { background: var(--fl-surface); border-radius: 14px; padding: 12px 14px; font-size: 15px; line-height: 1.45; }
+/* "Signed in as … · Not you? Sign out" (the checkout sheet; /delete-account has its own .s-who) */
+.fl-who { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; font-size: 14px; color: var(--fl-text-2); }
+.fl-who button { border: 0; background: transparent; color: var(--fl-accent-ink); font: inherit; font-weight: 600; padding: 0; min-height: 32px; }
 
 /* season editor */
 .fl-editor { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 16px 120px; width: 100%; max-width: 1600px; margin: 0 auto; }
