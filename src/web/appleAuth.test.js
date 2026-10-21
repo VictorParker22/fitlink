@@ -49,6 +49,11 @@ test('accountLabel: the email, else the phone with its "+", else nothing', () =>
   assert.equal(accountLabel(null), '');
 });
 
+test('the signed-out sentences after an unfinished Apple sign-up was left', () => {
+  assert.equal(A.JOIN_SIGNED_OUT, 'This browser is signed out, and nothing was bought.');
+  assert.equal(A.RESUME_SIGNED_OUT, 'This browser is signed out, and nothing was bought. Sign in again when you pick a pass.');
+});
+
 test('whoStepBody: names the pass and says nothing happens before Continue', () => {
   assert.equal(whoStepBody('Strength block'), 'This browser is already signed in. Strength block goes on this account, and nothing changes until you continue.');
 });

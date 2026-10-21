@@ -48,6 +48,10 @@ export const TRAINER_IN_USE = 'This Apple ID already has a coach account on FitL
 export const RESUME_PASS_GONE = 'The pass you chose isn’t for sale any more. Pick another pass below.';
 export const JOIN_NOTHING_TITLE = 'Nothing to finish here';
 export const JOIN_NOTHING_BODY = 'This page finishes a sign-in that started on a coach’s page. Open your coach’s link again to choose a pass.';
+/** /join with nothing to finish, after an unfinished Apple sign-up was left (or the person signed out). */
+export const JOIN_SIGNED_OUT = 'This browser is signed out, and nothing was bought.';
+/** Back from Apple to a pass that is gone, for a sign-up nobody finished: under RESUME_PASS_GONE. */
+export const RESUME_SIGNED_OUT = 'This browser is signed out, and nothing was bought. Sign in again when you pick a pass.';
 
 /** The checkout's optional name step, when Apple sent no name for a new account. */
 export const nameStepTitle = (first) => `What should ${first} call you?`;

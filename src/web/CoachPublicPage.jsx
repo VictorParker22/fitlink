@@ -7,7 +7,10 @@
 // Back from Sign in with Apple (/join moved here with `state.resume`: the plan
 // id, the return's sentence, a typed name), the checkout reopens on that pass
 // once the page has loaded, or the page says the pass is no longer for sale.
-// The history state is cleared first, so a reload never reopens it.
+// The history state is cleared first, so a reload never reopens it. When the
+// pass is gone and the account is a sign-up nobody finished (read from the
+// server), its default trainers row goes (its name is public in
+// trainers_public) and the browser is signed out, as /coach does it.
 //
 // Prices are per period ("$180 / month"); a season says how many payments
 // it is billed in and what that comes to (season.js, the server's formula):
@@ -19,8 +22,11 @@
 // season is billing's answer (passBilling), never a truthy duration_weeks.
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, takeAuthReturnNote } from './api';
-import { RESUME_PASS_GONE } from './appleAuth';
+import {
+  inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, freshUser, leaveUnfinishedAppleSignUp, session,
+  takeAuthReturnNote,
+} from './api';
+import { appleSignUpUnfinished, RESUME_PASS_GONE, RESUME_SIGNED_OUT } from './appleAuth';
 import { passBilling, passPriceParts, passSeasonLine } from './season';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
@@ -61,14 +67,23 @@ export default function CoachPublicPage() {
   const resumeRef = useRef(location.state?.resume ?? null);   // { planId, note, name }
   const [resume, setResume] = useState(null);                 // props for Checkout
   const [resumeMissing, setResumeMissing] = useState(false);
+  /** The pass was gone and an unfinished Apple sign-up was signed out: said under RESUME_PASS_GONE. */
+  const [resumeSignedOut, setResumeSignedOut] = useState(false);
   useEffect(() => {
     const r = resumeRef.current;
     if (!r || state.loading) return;
     resumeRef.current = null;
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null });   // a reload must not reopen it
     const plan = state.card?.kind === 'coach' && !state.card?.expired ? state.plans.find((p) => p.id === r.planId && planIsPriced(p)) : null;
-    if (plan) { setResume({ returnNote: r.note ?? null, resumeName: r.name ?? '' }); setBuying(plan); }
-    else setResumeMissing(true);
+    if (plan) { setResume({ returnNote: r.note ?? null, resumeName: r.name ?? '' }); setBuying(plan); return; }
+    setResumeMissing(true);
+    (async () => {
+      if (!(await session())) return;
+      const user = await freshUser().catch(() => null);
+      if (!appleSignUpUnfinished(user)) return;
+      await leaveUnfinishedAppleSignUp();
+      setResumeSignedOut(true);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.loading]);
 
@@ -215,7 +230,7 @@ export default function CoachPublicPage() {
                 ? `${first} hasn’t set a price on a pass yet. Ask them, or check back soon.`
                 : `${first} hasn’t published a pass. Ask them, or check back soon.`}
           </p>
-          {resumeMissing && <div className="fl-error" role="alert">{RESUME_PASS_GONE}</div>}
+          {resumeMissing && <div className="fl-error" role="alert">{RESUME_PASS_GONE}{resumeSignedOut ? ` ${RESUME_SIGNED_OUT}` : ''}</div>}
         </div>
         {plans.length > 0 && (
           <div className="fl-grid">
@@ -239,7 +254,7 @@ export default function CoachPublicPage() {
                     <ul>{lines.map((l, i) => <li key={i}><Check dark={dark} />{l}</li>)}</ul>
                   )}
                   {priced ? (
-                    <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => { setResumeMissing(false); setResume(null); setBuying(plan); }}>
+                    <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => { setResumeMissing(false); setResumeSignedOut(false); setResume(null); setBuying(plan); }}>
                       {isSeason(plan) ? 'Join the season' : `Buy ${plan.name}`}
                     </button>
                   ) : (

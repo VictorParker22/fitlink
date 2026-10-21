@@ -115,11 +115,14 @@ export async function freshUser() {
 }
 
 /**
- * A brand-new Apple account reached /coach: sign-up happens in the app. Drop the
- * trainers row the sign-up trigger made by default (claim_athlete_role; it
- * refuses once the coach side is in use), so no empty coach profile is listed
- * in trainers_public, then sign this browser out. Best effort: the app's role
- * screen finds or recreates the row, and the account stays role-less either way.
+ * A brand-new Apple account reached /coach, /join with nothing to finish, or a
+ * pass that is gone on the way back from Apple: sign-up happens in the app or at a
+ * checkout. Drop the trainers row the sign-up trigger made by default
+ * (claim_athlete_role; it refuses once the coach side is in use), so no coach
+ * profile under the person's name is listed in trainers_public, then sign this
+ * browser out. Best effort: the app's role screen finds or recreates the row, and
+ * the account stays role-less either way. Decide it on freshUser(), never the
+ * stored session.
  */
 export async function leaveUnfinishedAppleSignUp() {
   try { await supabase.rpc('claim_athlete_role'); } catch { /* best effort */ }
@@ -156,20 +159,29 @@ export async function signInWithApple(where) {
 }
 
 /**
- * A new Apple account at checkout becomes an athlete exactly as the iOS app does
- * it (AuthService.claimRole(.client)): claim_athlete_role (removes the trainers row
- * handle_new_user made by default; refuses `trainer_in_use`), then role 'client' in
- * metadata, plus the name the person typed when Apple gave none. Called ONLY when
- * appleSignUpUnfinished(await freshUser()): on a finished coach claim_athlete_role would
- * delete a real coach row. Throws { code: 'trainer_in_use' | 'unauthorized' | 'sign_up_failed' }.
+ * Step 1 of a new Apple account at checkout (AuthService.claimRole(.client)):
+ * claim_athlete_role removes the trainers row handle_new_user made by default (its
+ * name, Apple's full name or the email's local part, is anon-readable in
+ * trainers_public) and refuses `trainer_in_use` once the coach side is in use.
+ * Idempotent (a second call deletes nothing). Runs FIRST, before a name step or any
+ * check that can stop the sheet, so an abandoned checkout leaves no coach row.
+ * Called ONLY when appleSignUpUnfinished(await freshUser()): on a finished coach it
+ * would delete a real coach row. Throws { code: 'trainer_in_use' | 'unauthorized' |
+ * 'sign_up_failed' }.
+ */
+export async function claimAthleteRole() {
+  const { error, status } = await supabase.rpc('claim_athlete_role');
+  if (!error) return;
+  if (status === 401) throw Object.assign(new Error(SIGNED_OUT_SENTENCE), { code: 'unauthorized' });
+  if (String(error.message ?? '').includes('trainer_in_use')) throw Object.assign(new Error(TRAINER_IN_USE), { code: 'trainer_in_use' });
+  throw Object.assign(new Error(SIGN_UP_FAILED), { code: 'sign_up_failed' });
+}
+
+/**
+ * Step 2, after claimAthleteRole(): role 'client' in metadata, plus the name the
+ * person typed when Apple gave none. Throws { code: 'unauthorized' | 'sign_up_failed' }.
  */
 export async function finishAthleteSignUp({ name = '' } = {}) {
-  const { error: claimErr, status } = await supabase.rpc('claim_athlete_role');
-  if (claimErr) {
-    if (status === 401) throw Object.assign(new Error(SIGNED_OUT_SENTENCE), { code: 'unauthorized' });
-    if (String(claimErr.message ?? '').includes('trainer_in_use')) throw Object.assign(new Error(TRAINER_IN_USE), { code: 'trainer_in_use' });
-    throw Object.assign(new Error(SIGN_UP_FAILED), { code: 'sign_up_failed' });
-  }
   const clean = cleanName(name);
   const { error } = await supabase.auth.updateUser({ data: { role: 'client', ...(clean ? { name: clean } : {}) } });
   if (error) {

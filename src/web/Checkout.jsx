@@ -8,8 +8,11 @@
 // tab's sessionStorage, Apple returns to /join, and /join moves back to
 // /i/CODE, which reopens this sheet with `returnNote` / `resumeName`. A
 // brand-new Apple account (every identity Apple, no role) is first made an
-// athlete the way the iOS app does it (claim_athlete_role, then role
-// 'client'), asking for a name only when Apple gave none.
+// athlete the way the iOS app does it: claim_athlete_role at once (the
+// trainers row handle_new_user made by default carries the person's name in
+// trainers_public, so it goes before anything can stop the sheet, a name step
+// closed included), then role 'client', asking for a name only when Apple
+// gave none.
 //
 // Joining goes through athlete-exit (fitlink-app, 2026-10-17): a preview
 // first, which lists every pass the athlete still pays that the move would
@@ -45,9 +48,9 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase, APP_SCHEME } from './supabase';
 import {
-  acceptInvite, appConfig, appleAvailableHere, clearParkedCheckout, coachTakesCards, confirmSubscription, createSubscription,
-  finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, parkCheckout, planIsPriced, previewInvite,
-  session, signInWithApple, signOutLocal,
+  acceptInvite, appConfig, appleAvailableHere, claimAthleteRole, clearParkedCheckout, coachTakesCards, confirmSubscription,
+  createSubscription, finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, parkCheckout,
+  planIsPriced, previewInvite, session, signInWithApple, signOutLocal,
 } from './api';
 import { checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
 import {
@@ -126,6 +129,8 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   const returnNoteRef = useRef(returnNote);
   /** The name step was shown and answered (an empty answer keeps the server's fallback). */
   const nameAsked = useRef(false);
+  /** The account whose default trainers row this sheet already removed (claim_athlete_role). */
+  const claimedFor = useRef(null);
   const [appleBusy, setAppleBusy] = useState(false);
   const appleOk = appleAvailableHere();
   const [token, setToken] = useState('');
@@ -220,6 +225,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   async function notMe() {
     setBusy(true); await signOutLocal(); setBusy(false);
     identityOk.current = false;
+    claimedFor.current = null;
     lostSwitch.current = null;
     nameAsked.current = false;
     setName('');
@@ -309,11 +315,16 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
       setApple(usedApple(user));
       if (!identityOk.current) { setStep(STEP.who); return; }
       // A brand-new Apple account: an athlete first, as the iOS app makes one. Never for an
-      // account with a role (claim_athlete_role would delete a real coach row).
+      // account with a role (claim_athlete_role would delete a real coach row). The default
+      // trainers row goes first, before the name step, so closing the sheet there leaves none.
       if (appleSignUpUnfinished(user)) {
+        setCheckingNote(SETTING_UP);
+        if (claimedFor.current !== user.id) {
+          await claimAthleteRole();
+          claimedFor.current = user.id;
+        }
         const typed = cleanName(name);
         if (!typed && !metadataName(user) && !nameAsked.current) { setStep(STEP.name); return; }
-        setCheckingNote(SETTING_UP);
         await finishAthleteSignUp({ name: typed });
       }
       await assertSellable();

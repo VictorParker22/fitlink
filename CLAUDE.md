@@ -105,10 +105,16 @@ from `plans`.
     `none` → "isn't a coach account" with Sign out; a failed read → Check again, never the editor. A
     gate result is kept with the uid it checked, so another account never sees it. An account whose
     every identity is Apple and whose metadata has no `role` (`appleSignUpUnfinished`) is a sign-up
-    nobody finished. `/coach` drops the default trainers row (`claim_athlete_role`) and signs it out.
-    Checkout finishes it as an athlete (`claim_athlete_role`, then `role: 'client'`), the iOS rule.
+    nobody finished. Its default trainers row (made by `handle_new_user`) carries Apple's full name,
+    or the email's local part, and `trainers_public` lists it to anyone, so every web path that meets
+    one removes it before anything can stop: `/coach` drops the row (`claim_athlete_role`) and signs
+    it out; checkout makes it an athlete, `claim_athlete_role` FIRST (before the name step and the
+    sellable checks), then `role: 'client'`, the iOS rule; `/join` with nothing parked, and a pass
+    gone on the way back from Apple, drop the row and sign out (`leaveUnfinishedAppleSignUp`);
     `/delete-account` lets it delete itself. Never call `claim_athlete_role` for an account with a
-    role.
+    role. Open (fitlink-app, server): `handle_new_user` still inserts that row for a role-less Apple
+    or Google sign-up, so one abandoned before any of these paths (an Apple sign-in on
+    `/delete-account` that never deletes, an iOS sign-up left at the role screen) keeps it.
   - **Who the account is comes from the server.** `freshUser()` (GET `/auth/v1/user`) decides every
     write that depends on it (`claim_athlete_role`, `role: 'client'`) and the `/coach` and
     `/delete-account` reads; never the stored session, which can be an hour old (review 2026-10-21:
@@ -126,7 +132,10 @@ from `plans`.
     - Return paths are fixed: `/coach`, `/delete-account`, `/join`. Never `/i/*` or `/live/*` (the
       AASA paths). Never from a query.
     - Checkout parks `{code, planId, name}` in sessionStorage (`fitlink-web-checkout-return`, 30
-      minutes). `/join` moves client-side to `/i/CODE`, which reopens the sheet.
+      minutes). `/join` moves client-side to `/i/CODE`, which reopens the sheet (no who step: the
+      session is this tab's own, unless the return came back with a failure note). With nothing
+      parked, `/join` never leaves a silent sign-in: an unfinished sign-up is left as above, any
+      other account is named ("Signed in as … with Apple.") with Sign out.
   - **The button** is `AppleButton.jsx`: Apple's logo file unmodified (`public/apple/`), black,
     "Continue with Apple", title at 43 % of the height, never smaller than the email button beside it.
   - **Copy.** Never ask an Apple user for a personal email; point them to the Apple button. Every
