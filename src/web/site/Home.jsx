@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { APP_STORE_URL, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, NEEDS_CONFIRM, STANDARD_FEE_PERCENT, usd } from './pricing';
+import { siteCopy } from '../appleAuth';
+import { APPLE_WEB_ENABLED } from '../authConfig';
 
 const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Confirm against platform_config / App Store Connect before launch">[confirm]</sup> : null);
 
@@ -67,7 +69,7 @@ function AthleteTodayScreen() {
 }
 
 const FAQ = [
-  { q: 'Do my athletes need the app to pay?', a: 'No. They pay on your page in any browser, then get the app to train. Their plan is waiting when they sign in with the same email.' },
+  { q: 'Do my athletes need the app to pay?', a: siteCopy(APPLE_WEB_ENABLED).homeNeedAppA },
   { q: 'Does FitLink work on Android?', a: 'FitLink is an iPhone app today. There is no Android app, so an athlete needs an iPhone to train with you.' },
   { q: 'How do payouts work?', a: 'Payments run on Stripe. You connect a bank once, inside the app, and Stripe sends your payouts to it. Athletes can’t buy a pass until Stripe says your account can take charges.' },
   { q: 'Does the AI message my athletes?', a: 'Never on its own. With Coach Elite it drafts a reply from the check-in and the logged sets; you edit, approve and send.' },

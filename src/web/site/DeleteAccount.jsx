@@ -1,5 +1,6 @@
 // /delete-account (Web-Delete): the real flow, not instructions.
-//   email → six-digit code (existing accounts only) → the page reads the
+//   email code (existing accounts only) or Sign in with Apple (when this build
+//   offers it; it returns to this page) → the page reads the
 //   session's role (a trainers row → coach; a clients row → athlete; neither
 //   → a plain account, which athlete-exit deletes too) → coach: the server's
 //   departure preview (athletes, refund total, the coach's own passes that
@@ -21,10 +22,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
 import {
-  currentUser, deleteAthleteAccount, deleteCoachAccount, departurePreview, myRole, previewAthleteDeletion, session, signOutLocal,
-  takeAuthReturnNote,
+  appleAvailableHere, currentUser, deleteAthleteAccount, deleteCoachAccount, departurePreview, isStandaloneHere, myRole,
+  previewAthleteDeletion, session, signInWithApple, signOutLocal, takeAuthReturnNote,
 } from '../api';
-import { appleSignUpUnfinished, usedApple, APPLE_STILL_LISTED, UNFINISHED_DELETE_INTRO } from '../appleAuth';
+import {
+  appleSignUpUnfinished, usedApple, APPLE_STILL_LISTED, DELETE_CODE_HINT, OR_EMAIL, UNFINISHED_DELETE_INTRO, noAccountMessage, signInHint,
+} from '../appleAuth';
+import { APPLE_WEB_ENABLED } from '../authConfig';
+import AppleButton from '../AppleButton';
 import { usePageMeta } from './meta';
 import { SUPPORT_EMAIL } from './pricing';
 
@@ -73,7 +78,7 @@ function money(cents, currency) {
 }
 
 export default function DeleteAccount() {
-  usePageMeta('Delete your account', 'Delete your FitLink account from the web: sign in with an email code, see what goes, confirm. Immediate and permanent.');
+  usePageMeta('Delete your account', 'Delete your FitLink account from the web: sign in, see what goes, confirm. Immediate and permanent.');
   const [step, setStep] = useState(STEP.loading);
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
@@ -86,6 +91,8 @@ export default function DeleteAccount() {
   const [outcome, setOutcome] = useState(null);
   /** Who the session is, from its identities: a sign-up nobody finished (every identity Apple, no role), an account that used Apple. */
   const [account, setAccount] = useState({ unfinished: false, apple: false });
+  const [appleBusy, setAppleBusy] = useState(false);
+  const appleOk = appleAvailableHere();
 
   /** The server no longer accepts this browser's session: drop it and ask for a fresh code. */
   async function sessionExpired(message) {
@@ -186,6 +193,12 @@ export default function DeleteAccount() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Sign in with Apple; it comes back to this page, which then reads the role and the preview. */
+  async function startApple() {
+    setError(null);
+    try { await signInWithApple('delete'); return true; } catch (err) { setError(err.message); return false; }
+  }
+
   async function sendCode(e) {
     e.preventDefault();
     setError(null);
@@ -194,7 +207,7 @@ export default function DeleteAccount() {
     setBusy(false);
     if (err) {
       const text = String(err.message ?? '').toLowerCase();
-      if (text.includes('signup') || text.includes('not allowed') || text.includes('not found')) setError('No FitLink account uses that email. Check the address, or the one you used in the app.');
+      if (text.includes('signup') || text.includes('not allowed') || text.includes('not found')) setError(noAccountMessage('delete', appleOk));
       else if (text.includes('rate') || err.status === 429) setError('Too many codes sent. Wait a minute and try again.');
       else setError('Couldn’t send the code. Check the address and try again.');
       return;
@@ -298,13 +311,22 @@ export default function DeleteAccount() {
       {step !== STEP.done && <p className="s-copy">{account.unfinished ? UNFINISHED_DELETE_INTRO : intro}</p>}
 
       {step === STEP.email && (
-        <form className="s-form" onSubmit={sendCode}>
-          <label htmlFor="d-email">The email you sign in with</label>
-          <input id="d-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} />
-          <span className="hint">We’ll email a code to confirm it’s you. Accounts that sign in with Apple use the email on that Apple ID.</span>
-          {error && <div className="fl-error" role="alert">{error}</div>}
-          <button type="submit" className="fl-btn danger lg" disabled={busy || !/\S+@\S+\.\S+/.test(email)}>{busy ? 'Sending…' : 'Email me a code'}</button>
-        </form>
+        <div className="s-form">
+          {appleOk && (
+            <>
+              <AppleButton size="md" onPress={startApple} disabled={busy} onBusyChange={setAppleBusy} />
+              <p className="fl-or">{OR_EMAIL}</p>
+            </>
+          )}
+          <form onSubmit={sendCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <label htmlFor="d-email">The email you sign in with</label>
+            <input id="d-email" type="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy || appleBusy} />
+            <span className="hint">{DELETE_CODE_HINT}</span>
+            <span className="hint">{signInHint('delete', { available: appleOk, enabled: APPLE_WEB_ENABLED, standalone: isStandaloneHere() })}</span>
+            {error && <div className="fl-error" role="alert">{error}</div>}
+            <button type="submit" className="fl-btn danger lg" disabled={busy || appleBusy || !/\S+@\S+\.\S+/.test(email)}>{busy ? 'Sending…' : 'Email me a code'}</button>
+          </form>
+        </div>
       )}
 
       {step === STEP.code && (

@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './index.css'
 import CoachPublicPage from './web/CoachPublicPage.jsx'
 import CoachWeb from './web/CoachWeb.jsx'
+import JoinReturn from './web/JoinReturn.jsx'
 import SiteShell from './web/site/SiteShell.jsx'
 import Home from './web/site/Home.jsx'
 import Pricing from './web/site/Pricing.jsx'
@@ -14,8 +15,9 @@ import DeleteAccount from './web/site/DeleteAccount.jsx'
 import NotFound from './web/site/NotFound.jsx'
 
 // The marketing and policy pages share SiteShell (header, footer); a coach's
-// public page at /i/CODE (and /live/CODE, the same card for a live link) and
-// the coach's web editor under /coach keep their own chrome; everything else
+// public page at /i/CODE (and /live/CODE, the same card for a live link),
+// the coach's web editor under /coach and /join (where Sign in with Apple
+// returns when it started at checkout) keep their own chrome; everything else
 // is the 404. The legacy dark landing page (src/App.jsx) and the legacy
 // trainer/client PWA under src/pages are kept in the tree but not routed:
 // the PWA was already unreachable (App.jsx rendered only the landing page),
@@ -36,6 +38,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/i/:code" element={<CoachPublicPage />} />
         <Route path="/live/:code" element={<CoachPublicPage />} />
         <Route path="/coach/*" element={<CoachWeb />} />
+        <Route path="/join" element={<JoinReturn />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

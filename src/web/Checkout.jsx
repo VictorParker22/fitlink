@@ -1,7 +1,15 @@
-// Buying a pass on the web: email → six-digit code → what joining ends →
-// card → done. The account is the same Supabase user the app uses, so the
-// first week lands in the app. The server computes the price and the payee
-// from the plan (create-subscription); this sheet only ever sends ids.
+// Buying a pass on the web: email → six-digit code (or Sign in with Apple,
+// when this build offers it) → what joining ends → card → done. The account
+// is the same Supabase user the app uses, so the first week lands in the app.
+// The server computes the price and the payee from the plan
+// (create-subscription); this sheet only ever sends ids.
+//
+// Apple leaves the page: the sheet parks {code, plan id, typed name} in this
+// tab's sessionStorage, Apple returns to /join, and /join moves back to
+// /i/CODE, which reopens this sheet with `returnNote` / `resumeName`. A
+// brand-new Apple account (every identity Apple, no role) is first made an
+// athlete the way the iOS app does it (claim_athlete_role, then role
+// 'client'), asking for a name only when Apple gave none.
 //
 // Joining goes through athlete-exit (fitlink-app, 2026-10-17): a preview
 // first, which lists every pass the athlete still pays that the move would
@@ -30,19 +38,25 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase, APP_SCHEME } from './supabase';
 import {
-  acceptInvite, appConfig, coachTakesCards, confirmSubscription, createSubscription, firstName,
-  functionError, myClient, planIsPriced, previewInvite, session, signOutLocal,
+  acceptInvite, appConfig, appleAvailableHere, clearParkedCheckout, coachTakesCards, confirmSubscription, createSubscription,
+  finishAthleteSignUp, firstName, functionError, isStandaloneHere, myClient, parkCheckout, planIsPriced, previewInvite, session,
+  signInWithApple, signOutLocal,
 } from './api';
 import { checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
-import { usedApple } from './appleAuth';
+import {
+  appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, signInHint, siteCopy, usedApple,
+  APPLE_PARK_FAILED, OR_EMAIL, SETTING_UP,
+} from './appleAuth';
+import { APPLE_WEB_ENABLED } from './authConfig';
+import AppleButton from './AppleButton';
 import { SUPPORT_EMAIL } from './site/pricing';
 
-const STEP = { email: 'email', code: 'code', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
+const STEP = { email: 'email', code: 'code', name: 'name', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
 
 // Refusals a second try cannot change: the sheet offers Close only.
 const FINAL_CODES = new Set([
   'invite_not_found', 'invite_expired', 'invite_already_accepted', 'cannot_coach_yourself',
-  'athlete_only', 'plan_archived', 'plan_not_found', 'coach_not_found', 'plan_unpriced', 'payouts_not_ready',
+  'athlete_only', 'plan_archived', 'plan_not_found', 'coach_not_found', 'plan_unpriced', 'payouts_not_ready', 'trainer_in_use',
 ]);
 
 function cents(amount) {
@@ -78,14 +92,20 @@ function unknownSwitch(err) {
   return stop(message);
 }
 
-export default function Checkout({ plan, coach, code, onClose }) {
+export default function Checkout({ plan, coach, code, onClose, returnNote = null, resumeName = '' }) {
   const first = firstName(coach?.name);
   const [step, setStep] = useState(STEP.checking);
   const [checkingNote, setCheckingNote] = useState('One moment…');
   const [email, setEmail] = useState('');
   /** The signed-in account used Sign in with Apple: the who-line says so. */
   const [apple, setApple] = useState(false);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(resumeName);
+  /** Back from Apple without a session (cancelled, refused): said once, on the email step. */
+  const returnNoteRef = useRef(returnNote);
+  /** The name step was shown and answered (an empty answer keeps the server's fallback). */
+  const nameAsked = useRef(false);
+  const [appleBusy, setAppleBusy] = useState(false);
+  const appleOk = appleAvailableHere();
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -108,21 +128,18 @@ export default function Checkout({ plan, coach, code, onClose }) {
   /** A switch confirm whose answer was lost: what it was asked to do, until a preview shows where things stand. */
   const lostSwitch = useRef(null);
 
-  // Whether the page can sell this pass at all, before asking for an email;
-  // a session that already exists (the person bought before, or opened the
-  // code screen earlier) goes straight on to what joining would end.
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    begin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && !busy) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !busy && !appleBusy) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [busy, onClose]);
+  }, [busy, appleBusy, onClose]);
+
+  /** Park this pass for the way back, then leave for Apple. */
+  async function startApple() {
+    setError(null);
+    if (!parkCheckout({ code, planId: plan.id, name })) { setError(APPLE_PARK_FAILED); return false; }
+    try { await signInWithApple('checkout'); return true; } catch (e) { clearParkedCheckout(); setError(e.message); return false; }
+  }
 
   async function sendCode(e) {
     e?.preventDefault();
@@ -174,6 +191,8 @@ export default function Checkout({ plan, coach, code, onClose }) {
   async function notMe() {
     setBusy(true); await signOutLocal(); setBusy(false);
     lostSwitch.current = null;
+    nameAsked.current = false;
+    setName('');
     setEmail(''); setToken(''); setApple(false); setView(null); setJoined(null); setPurchase(null); setStripePromise(null);
     setOutcome(null); setError(null); setNeedsSignIn(false); setClientId(null); setStep(STEP.email);
   }
@@ -238,10 +257,19 @@ export default function Checkout({ plan, coach, code, onClose }) {
       const s = await session();
       if (!s) {
         setStep(STEP.email);
+        if (returnNoteRef.current) { setError(returnNoteRef.current); returnNoteRef.current = null; }
         return;
       }
       setEmail(s.user.email ?? '');
       setApple(usedApple(s.user));
+      // A brand-new Apple account: an athlete first, as the iOS app makes one. Never for an
+      // account with a role (claim_athlete_role would delete a real coach row).
+      if (appleSignUpUnfinished(s.user)) {
+        const typed = cleanName(name);
+        if (!typed && !metadataName(s.user) && !nameAsked.current) { setStep(STEP.name); return; }
+        setCheckingNote(SETTING_UP);
+        await finishAthleteSignUp({ name: typed });
+      }
       setCheckingNote('Checking your passes…');
       const v = await previewInvite(code);
       const lost = lostSwitch.current;
@@ -268,6 +296,17 @@ export default function Checkout({ plan, coach, code, onClose }) {
       setBusy(false);
     }
   }
+
+  // On open (declared after begin(), which it calls): whether the page can
+  // sell this pass at all, before asking for an email; a session that already
+  // exists (the person bought before, came back from Apple, or opened the code
+  // screen earlier) goes straight on to what joining would end.
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    begin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** The person said yes to what the preview listed. */
   async function confirmSwitch() {
@@ -429,13 +468,13 @@ export default function Checkout({ plan, coach, code, onClose }) {
       : `${plan.name} · ${price}`;
 
   return (
-    <div className="fl-scrim" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}>
+    <div className="fl-scrim" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy && !appleBusy) onClose(); }}>
       <div className="fl-sheet" role="dialog" aria-modal="true" aria-labelledby="co-title">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <h2 id="co-title">{title}</h2>
           <button type="button" className="fl-btn sm" onClick={onClose} disabled={busy} aria-label="Close">✕</button>
         </div>
-        {email && !needsSignIn && [STEP.switch, STEP.pay, STEP.stopped].includes(step) && (
+        {email && !needsSignIn && [STEP.name, STEP.switch, STEP.pay, STEP.stopped].includes(step) && (
           <div className="fl-who">
             <span>Signed in as <b>{email}</b>{apple ? ' with Apple' : ''}</span>
             <button type="button" onClick={notMe} disabled={busy}>Not you? Sign out</button>
@@ -444,13 +483,33 @@ export default function Checkout({ plan, coach, code, onClose }) {
         {seasonLine && step !== STEP.done && step !== STEP.switch && !owing && <p className="fl-note">{seasonLine}</p>}
 
         {step === STEP.email && (
-          <form onSubmit={sendCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <p className="fl-note">One account for the pass and the app. We email you a six-digit code; no password.</p>
-            <div className="fl-field"><label htmlFor="co-name">Your name</label><input id="co-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={120} /></div>
-            <div className="fl-field"><label htmlFor="co-email">Email</label><input id="co-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" /></div>
-            {error && <div className="fl-error" role="alert">{error}</div>}
-            <button type="submit" className="fl-btn accent lg" disabled={busy || !/\S+@\S+\.\S+/.test(email)}>{busy ? 'Sending…' : 'Email me a code'}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p className="fl-note">{siteCopy(appleOk).checkoutIntro}</p>
             <p className="fl-note">By continuing you agree to the <a href="/terms">Terms</a> and the <a href="/privacy">Privacy Policy</a>.</p>
+            {appleOk && (
+              <>
+                <AppleButton onPress={startApple} disabled={busy} onBusyChange={setAppleBusy} />
+                <p className="fl-or">{OR_EMAIL}</p>
+              </>
+            )}
+            <form onSubmit={sendCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="fl-field"><label htmlFor="co-name">Your name</label><input id="co-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={120} disabled={appleBusy} /></div>
+              <div className="fl-field"><label htmlFor="co-email">Email</label><input id="co-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" disabled={appleBusy} /></div>
+              <p className="fl-note">{signInHint('checkout', { available: appleOk, enabled: APPLE_WEB_ENABLED, standalone: isStandaloneHere() })}</p>
+              {error && <div className="fl-error" role="alert">{error}</div>}
+              <button type="submit" className="fl-btn accent lg" disabled={busy || appleBusy || !/\S+@\S+\.\S+/.test(email)}>{busy ? 'Sending…' : 'Email me a code'}</button>
+            </form>
+          </div>
+        )}
+
+        {step === STEP.name && (
+          <form onSubmit={(e) => { e.preventDefault(); nameAsked.current = true; begin(); }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p className="fl-copy">{nameStepTitle(first)}</p>
+            <div className="fl-field"><label htmlFor="co-name2">Your name</label>
+              <input id="co-name2" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={120} autoFocus /></div>
+            <p className="fl-note">{nameStepHint(first)}</p>
+            {error && <div className="fl-error" role="alert">{error}</div>}
+            <button type="submit" className="fl-btn accent lg" disabled={busy}>{busy ? 'One moment…' : 'Continue'}</button>
           </form>
         )}
 
@@ -510,7 +569,9 @@ export default function Checkout({ plan, coach, code, onClose }) {
             <div className="fl-error" role="alert">{outcome.message}</div>
             {outcome.kind === 'unconfirmed' && (
               <>
-                <p className="fl-note">It can take a minute. Open the FitLink app signed in with <b>{email}</b>; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
+                {apple
+                  ? <p className="fl-note">It can take a minute. Open the FitLink app and sign in with Apple; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
+                  : <p className="fl-note">It can take a minute. Open the FitLink app signed in with <b>{email}</b>; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>}
                 {outcome.canCheck !== false && (
                   <button type="button" className="fl-btn accent lg" disabled={busy} onClick={checkAgain}>{busy ? 'Checking…' : 'Check again'}</button>
                 )}
@@ -536,9 +597,13 @@ export default function Checkout({ plan, coach, code, onClose }) {
               <svg width="30" height="30" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.8, strokeLinecap: 'round', strokeLinejoin: 'round' }} /></svg>
             </div>
             {joinedNote}
-            <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app, signed in with <b>{email}</b>.</p>
+            {apple
+              ? <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app: sign in there with Apple.</p>
+              : <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app, signed in with <b>{email}</b>.</p>}
             <a className="fl-btn accent lg" href={`${APP_SCHEME}invite/${code}`}>Open the FitLink app</a>
-            <p className="fl-note">No app yet? Install FitLink from the App Store, sign in with the same email code, and the pass is already there.</p>
+            <p className="fl-note">{apple
+              ? 'No app yet? Install FitLink from the App Store, sign in with Apple, and the pass is already there.'
+              : 'No app yet? Install FitLink from the App Store, sign in with the same email code, and the pass is already there.'}</p>
           </div>
         )}
       </div>

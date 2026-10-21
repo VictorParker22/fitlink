@@ -6,8 +6,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as A from './appleAuth.js';
 import {
-  APPLE_CANCELLED, APPLE_SETTINGS_PATH, AUTH_RETURN_FAILED,
-  appleSignUpUnfinished, cleanName, metadataName, noAccountMessage, parseAuthReturn, usedApple,
+  APPLE_CANCELLED, APPLE_SETTINGS_PATH, APPLE_TITLE, AUTH_RETURN_FAILED, CHECKOUT_RETURN_TTL_MS, HINTS,
+  appleAvailable, appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, noAccountMessage,
+  parkedCheckoutValue, parseAuthReturn, readParkedCheckout, signInHint, siteCopy, usedApple,
 } from './appleAuth.js';
 import { normalizeCode } from './codes.js';
 
@@ -98,6 +99,95 @@ test('noAccountMessage, by page and by whether Apple is offered', () => {
   assert.equal(noAccountMessage('delete', false), 'No FitLink account uses that email. Check the address, or the one you used in the app.');
 });
 
+test('appleAvailable: the flag, a listed origin, and not a Home Screen web app', () => {
+  for (const enabled of [true, false]) {
+    for (const origin of ['https://fitlink.coach', 'http://localhost:4173', 'https://fitlink-abc.vercel.app']) {
+      for (const standalone of [true, false]) {
+        const want = enabled && origin !== 'https://fitlink-abc.vercel.app' && !standalone;
+        assert.equal(appleAvailable({ enabled, origin, standalone }), want, `${enabled} ${origin} ${standalone}`);
+      }
+    }
+  }
+  assert.equal(appleAvailable({ enabled: 'on', origin: 'https://fitlink.coach', standalone: false }), false, 'only a boolean true turns it on');
+  assert.equal(appleAvailable({ enabled: true, origin: 'http://localhost:5173' }), true);
+});
+
+const PLAN = '44444444-4444-4444-8444-444444444444';
+
+test('the parked checkout: written, read back, and refused when it is not ours or too old', () => {
+  const now = 1_800_000_000_000;
+  const raw = parkedCheckoutValue({ code: 'abc-d2e', planId: PLAN, name: '  Sam\t Lee ' }, now);
+  assert.deepEqual(JSON.parse(raw), { v: 1, code: 'ABCD2E', planId: PLAN, name: 'Sam Lee', at: now });
+  assert.deepEqual(readParkedCheckout(raw, now + 60_000), { code: 'ABCD2E', planId: PLAN, name: 'Sam Lee' });
+
+  assert.equal(parkedCheckoutValue({ code: 'ABC12', planId: PLAN, name: '' }, now), null, 'a 5-character code');
+  assert.equal(parkedCheckoutValue({ code: 'ABCDEF', planId: 'not-a-uuid', name: '' }, now), null, 'a bad UUID');
+  assert.equal(parkedCheckoutValue({ code: 'ABCDEF', planId: undefined, name: '' }, now), null);
+
+  const good = { v: 1, code: 'ABCDEF', planId: PLAN, name: 'Sam', at: now };
+  const read = (o, at = now) => readParkedCheckout(JSON.stringify(o), at);
+  assert.deepEqual(read(good), { code: 'ABCDEF', planId: PLAN, name: 'Sam' });
+  assert.equal(readParkedCheckout('{not json', now), null, 'bad JSON');
+  assert.equal(read({ ...good, v: 2 }), null, 'v: 2');
+  assert.equal(read({ ...good, code: 'abcdef' }), null, 'a code that is not already normalized');
+  assert.equal(read({ ...good, code: 'ABCDE' }), null, 'a 5-character code');
+  assert.equal(read({ ...good, planId: 'x' }), null, 'a bad UUID');
+  assert.equal(read({ ...good, at: String(now) }), null, 'a non-number at');
+  assert.equal(read({ ...good, at: now - 31 * 60 * 1000 }), null, '31 minutes old');
+  assert.notEqual(read({ ...good, at: now - CHECKOUT_RETURN_TTL_MS }), null, 'exactly 30 minutes is still good');
+  assert.equal(read({ ...good, at: now + 2 * 60 * 1000 }), null, '2 minutes in the future');
+  assert.equal(readParkedCheckout(undefined, now), null);
+  assert.equal(readParkedCheckout(null, now), null);
+  assert.equal(read({ ...good, name: 'x'.repeat(130) }).name.length, 120, 'a long name is cut to 120');
+  assert.equal(JSON.parse(parkedCheckoutValue({ code: 'ABCDEF', planId: PLAN, name: 'y'.repeat(130) }, now)).name.length, 120);
+});
+
+test('signInHint and noAccountMessage: every page and state, the §5 words', () => {
+  const states = { apple: { available: true, enabled: true, standalone: false }, safari: { available: false, enabled: true, standalone: true }, off: { available: false, enabled: false, standalone: false } };
+  const want = {
+    coach: {
+      apple: 'Signed up with Sign in with Apple and hid your email? Use Continue with Apple.',
+      safari: 'Signed up with Sign in with Apple? Open fitlink.coach/coach in Safari to continue with Apple.',
+      off: 'Signed up with Sign in with Apple and hid your email? Sign in in the FitLink app instead.',
+    },
+    delete: {
+      apple: 'Signed up with Sign in with Apple and hid your email? Use Continue with Apple.',
+      safari: 'Signed up with Sign in with Apple? Open fitlink.coach/delete-account in Safari to continue with Apple.',
+      off: 'Signed up with Sign in with Apple and hid your email? Delete from the FitLink app instead: Profile, then Delete account.',
+    },
+    checkout: {
+      apple: 'Signed up in the app with Sign in with Apple? Use Continue with Apple, so the pass lands on that account.',
+      safari: 'Signed up in the app with Sign in with Apple? Open this page in Safari to continue with Apple, so the pass lands on that account.',
+      off: 'Signed up in the app with Sign in with Apple? Open this link in the FitLink app instead, so the pass lands on that account.',
+    },
+  };
+  for (const page of Object.keys(want)) for (const [state, args] of Object.entries(states)) assert.equal(signInHint(page, args), want[page][state], `${page} ${state}`);
+  // Enabled but not standalone and not available (an unlisted origin): the app, not Safari.
+  assert.equal(signInHint('coach', { available: false, enabled: true, standalone: false }), want.coach.off);
+  assert.equal(nameStepTitle('Dana'), 'What should Dana call you?');
+  assert.equal(nameStepHint('Dana'), 'Optional. Dana sees it on their roster.');
+});
+
+test('siteCopy(false) is the pages’ words before Apple came to the web', () => {
+  // Copied from Support.jsx, Athletes.jsx, Home.jsx, CoachWeb.jsx and Checkout.jsx as they stood at cd85bf4.
+  assert.deepEqual({ ...siteCopy(false), supportHidEmailA: undefined }, {
+    coachSignInSub: 'The same account as the app. We email you a six-digit code; no password.',
+    checkoutIntro: 'One account for the pass and the app. We email you a six-digit code; no password.',
+    supportSignInA: 'With Sign in with Apple or a six-digit code sent to your email. There are no passwords. The season editor on the web signs in with the same email code.',
+    supportHidEmailA: undefined,
+    supportBuyA: 'Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; FitLink never sees the number. The same email signs you in to the app.',
+    supportPaidNoPlanLead: 'Sign in to the app with the same email you paid with.',
+    athletesStep2: 'Card checkout, handled by Stripe. We email you a six-digit code; no password.',
+    athletesStep3: 'Sign in with the email you paid with. Your plan is already there.',
+    athletesPaidNoPlanLead: 'Sign in to the app with the same email you paid with.',
+    homeNeedAppA: 'No. They pay on your page in any browser, then get the app to train. Their plan is waiting when they sign in with the same email.',
+  });
+  // The one new answer (no old words to keep): the app, never the hidden address.
+  assert.equal(siteCopy(false).supportHidEmailA, `Sign in in the FitLink app with Sign in with Apple; it opens the same account. To see the address FitLink has for you, on your iPhone open ${APPLE_SETTINGS_PATH}.`);
+  assert.deepEqual(Object.keys(siteCopy(true)).sort(), Object.keys(siteCopy(false)).sort());
+  assert.equal(siteCopy(true).coachSignInSub, 'The same account as the app. No password.');
+});
+
 /** Every sentence the module can show: its string exports and what its sentence functions return. */
 function everySentence() {
   const out = [];
@@ -105,6 +195,9 @@ function everySentence() {
     if (typeof value === 'string') out.push([name, value]);
   }
   for (const page of ['coach', 'delete']) for (const available of [true, false]) out.push([`noAccountMessage(${page}, ${available})`, noAccountMessage(page, available)]);
+  for (const [page, h] of Object.entries(HINTS)) for (const [state, v] of Object.entries(h)) out.push([`HINTS.${page}.${state}`, v]);
+  for (const enabled of [true, false]) for (const [k, v] of Object.entries(siteCopy(enabled))) out.push([`siteCopy(${enabled}).${k}`, v]);
+  out.push(['nameStepTitle', nameStepTitle('Dana')], ['nameStepHint', nameStepHint('Dana')]);
   return out;
 }
 
@@ -115,6 +208,7 @@ test('copy rules: no gendered pronouns, never a "real" or "personal" email', () 
     assert.doesNotMatch(text, /\b(he|she|him|her|his|hers)\b/i, name);
     assert.doesNotMatch(text, /real email|personal email/i, name);
   }
+  assert.equal(APPLE_TITLE, 'Continue with Apple');
   assert.ok(APPLE_SETTINGS_PATH.startsWith('Settings, then your name, then Sign in with Apple'));
 });
 

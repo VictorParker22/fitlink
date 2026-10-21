@@ -4,6 +4,11 @@
 // says so. Choose a pass → Checkout (email code, card, done). Someone who
 // already trains with the coach is sent into the app with the code.
 //
+// Back from Sign in with Apple (/join moved here with `state.resume`: the plan
+// id, the return's sentence, a typed name), the checkout reopens on that pass
+// once the page has loaded, or the page says the pass is no longer for sale.
+// The history state is cleared first, so a reload never reopens it.
+//
 // Prices are per period ("$180 / month"); a season says how many payments
 // it is billed in and what that comes to (season.js, the server's formula):
 // a season stops billing by itself after its last payment (2026-10-17). A
@@ -12,9 +17,10 @@
 // every payment is made only when the server's 'season_complete' notice says
 // so (the athlete can mark a season complete themselves). Whether a pass is a
 // season is billing's answer (passBilling), never a truthy duration_weeks.
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, takeAuthReturnNote } from './api';
+import { RESUME_PASS_GONE } from './appleAuth';
 import { passBilling, passPriceParts, passSeasonLine } from './season';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
@@ -49,6 +55,22 @@ export default function CoachPublicPage() {
   // No sign-in returns here: take any tokens or error text out of the address
   // bar, silently (Stripe's 3DS parameters stay; only auth keys go).
   useEffect(() => { takeAuthReturnNote(); }, []);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const resumeRef = useRef(location.state?.resume ?? null);   // { planId, note, name }
+  const [resume, setResume] = useState(null);                 // props for Checkout
+  const [resumeMissing, setResumeMissing] = useState(false);
+  useEffect(() => {
+    const r = resumeRef.current;
+    if (!r || state.loading) return;
+    resumeRef.current = null;
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });   // a reload must not reopen it
+    const plan = state.card?.kind === 'coach' && !state.card?.expired ? state.plans.find((p) => p.id === r.planId && planIsPriced(p)) : null;
+    if (plan) { setResume({ returnNote: r.note ?? null, resumeName: r.name ?? '' }); setBuying(plan); }
+    else setResumeMissing(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.loading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -193,6 +215,7 @@ export default function CoachPublicPage() {
                 ? `${first} hasn’t set a price on a pass yet. Ask them, or check back soon.`
                 : `${first} hasn’t published a pass. Ask them, or check back soon.`}
           </p>
+          {resumeMissing && <div className="fl-error" role="alert">{RESUME_PASS_GONE}</div>}
         </div>
         {plans.length > 0 && (
           <div className="fl-grid">
@@ -216,7 +239,7 @@ export default function CoachPublicPage() {
                     <ul>{lines.map((l, i) => <li key={i}><Check dark={dark} />{l}</li>)}</ul>
                   )}
                   {priced ? (
-                    <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => setBuying(plan)}>
+                    <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => { setResumeMissing(false); setResume(null); setBuying(plan); }}>
                       {isSeason(plan) ? 'Join the season' : `Buy ${plan.name}`}
                     </button>
                   ) : (
@@ -251,7 +274,11 @@ export default function CoachPublicPage() {
         </div>
       </section>
 
-      {buying && <Checkout plan={buying} coach={coach} code={code} onClose={() => { setBuying(null); setRecheck((n) => n + 1); }} />}
+      {buying && (
+        <Checkout plan={buying} coach={coach} code={code}
+          returnNote={resume?.returnNote ?? null} resumeName={resume?.resumeName ?? ''}
+          onClose={() => { setBuying(null); setResume(null); setRecheck((n) => n + 1); }} />
+      )}
     </div>
   );
 }

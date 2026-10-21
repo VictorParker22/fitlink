@@ -2,10 +2,16 @@
 // steps, the "no link yet" callout, the athlete questions. Every answer is
 // what the shipped app does today (iPhone only, card checkout by Stripe, no
 // Apple Health only by choice, the coach reads and sends every message).
+// How to sign in comes from siteCopy() (appleAuth.js): with Apple too when
+// this build offers it on the website.
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { APP_STORE_URL, SUPPORT_EMAIL } from './pricing';
+import { siteCopy } from '../appleAuth';
+import { APPLE_WEB_ENABLED } from '../authConfig';
+
+const copy = siteCopy(APPLE_WEB_ENABLED);
 
 function PlanScreen() {
   return (
@@ -37,11 +43,11 @@ const FAQ = [
   { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are at the coach’s discretion and are issued through the app, back to the card you paid with. If a coach closes their account, time you prepaid and have not had is refunded automatically. If you switch coaches or delete your account, your pass ends that day and time already paid isn’t refunded, so ask your coach before you switch.' },
   { q: 'My payment failed. What now?', a: 'Your pass is on hold until a payment goes through; your coach can see that. Stripe emails you a link to update the card.' },
   { q: 'I have an Android phone.', a: 'FitLink is an iPhone app today and there is no Android app. Buying a pass works in any browser, but training needs the iPhone app, so check with your coach before you pay.' },
-  { q: 'I paid but can’t see my plan.', a: (<p>Sign in to the app with the same email you paid with. Your first week comes from your coach, and Today says so while it is still on its way. Still stuck? <a href={`mailto:${SUPPORT_EMAIL}`}>Write to us</a> and include your receipt.</p>) },
+  { q: 'I paid but can’t see my plan.', a: (<p>{copy.athletesPaidNoPlanLead} Your first week comes from your coach, and Today says so while it is still on its way. Still stuck? <a href={`mailto:${SUPPORT_EMAIL}`}>Write to us</a> and include your receipt.</p>) },
 ];
 
 export default function Athletes() {
-  usePageMeta('For athletes', 'Got a link from your coach? Open it, pay on the web, sign in to the FitLink app with the same email, and train. Here is how it works.');
+  usePageMeta('For athletes', 'Got a link from your coach? Open it, pay on the web, sign in to the FitLink app the same way, and train. Here is how it works.');
   return (
     <>
       <section className="s-wrap s-hero" aria-labelledby="a-h" style={{ paddingBottom: 72 }}>
@@ -60,8 +66,8 @@ export default function Athletes() {
           <h2 id="as-h" className="s-h2 sm">Four steps, no surprises</h2>
           <ol className="s-steps">
             <li className="s-step"><span className="s-num">1</span><b>Open your coach’s link</b><span>It shows their passes and prices, and for a season how many payments it takes.</span></li>
-            <li className="s-step"><span className="s-num">2</span><b>Pay on the web</b><span>Card checkout, handled by Stripe. We email you a six-digit code; no password.</span></li>
-            <li className="s-step"><span className="s-num">3</span><b>Get the app</b><span>Sign in with the email you paid with. Your plan is already there.</span></li>
+            <li className="s-step"><span className="s-num">2</span><b>Pay on the web</b><span>{copy.athletesStep2}</span></li>
+            <li className="s-step"><span className="s-num">3</span><b>Get the app</b><span>{copy.athletesStep3}</span></li>
             <li className="s-step"><span className="s-num">4</span><b>Train and check in</b><span>Log your sets, say how it felt, and your coach adjusts.</span></li>
           </ol>
           <div className="s-callout">

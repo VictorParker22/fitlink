@@ -151,6 +151,23 @@
 .fl-who { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; font-size: 14px; color: var(--fl-text-2); }
 .fl-who button { border: 0; background: transparent; color: var(--fl-accent-ink); font: inherit; font-weight: 600; padding: 0; min-height: 32px; }
 
+/* Sign in with Apple (HIG): black on light, logo file at full height, title 43 % of the height. */
+.fl-apple-wrap { display: flex; flex-direction: column; gap: 6px; }
+.fl-apple-wrap .fl-note:empty { display: none; }
+.fl-apple { display: flex; align-items: center; justify-content: center; width: 100%; min-width: 140px; height: 56px;
+  padding: 0 8% 0 0; border: 0; border-radius: 999px; background: #000; color: #fff; cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: 0; white-space: nowrap; }
+.fl-apple.md { height: 54px; font-size: 23px; }           /* next to the 54 px buttons in .s-form */
+.fl-apple img { height: 100%; width: auto; flex: none; display: block; }
+.fl-apple:disabled { opacity: 0.6; cursor: default; }
+.fl-or { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--fl-text-2); margin: 2px 0; }
+.fl-or::before, .fl-or::after { content: ''; flex: 1; height: 1px; background: var(--fl-border); }
+@media (max-width: 349px) {
+  .fl-apple, .fl-apple.md { height: 48px; font-size: 21px; }
+  .fl-signin .fl-btn.lg, .fl-sheet .fl-btn.lg, .s-delete .s-form .fl-btn { min-height: 48px; }
+}
+
 /* season editor */
 .fl-editor { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 16px 120px; width: 100%; max-width: 1600px; margin: 0 auto; }
 .fl-side { flex: 1 1 220px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }

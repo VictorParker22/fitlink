@@ -1,6 +1,6 @@
 # CLAUDE.md — FitLink Project Memory
 
-> **Last updated**: 2026-10-17
+> **Last updated**: 2026-10-21
 > **Project**: FitLink — Gym Trainer Referral & Client Management Platform
 > **Location**: `c:\projects\fitlink`
 > **Dev server**: `npm run dev` → http://localhost:5173 (or next available port)
@@ -62,9 +62,9 @@ from `plans`.
   says "either a coach or an athlete, not both" and needs the founder's wording. The contact
   form composes a `mailto:` to `SUPPORT_EMAIL`; there is no ticket backend. The search
   filters the page's own questions.
-- **Delete account is a real flow** (`DeleteAccount.jsx`, helpers in `api.js`): email →
-  `signInWithOtp({ shouldCreateUser: false })` → code → `myRole()` (a `trainers` row →
-  coach, a `clients` row → athlete, neither → `none`; a read that fails throws and the page
+- **Delete account is a real flow** (`DeleteAccount.jsx`, helpers in `api.js`): email code
+  (`signInWithOtp({ shouldCreateUser: false })` → code) or Sign in with Apple → `myRole()`
+  (a `trainers` row → coach, a `clients` row → athlete, neither → `none`; a read that fails throws and the page
   says it couldn't check, with Check again, never "no profile"). A session already in the
   browser skips the code.
   - Coach: `departurePreview()` = `delete-trainer-account {preview: true}` (athletes, refund
@@ -90,13 +90,47 @@ from `plans`.
   - Never say "deleted" before the server answered. A commit with no decided answer (status
     0, a gateway timeout, any 5xx that is not `{error, code}`) says the outcome is unknown and
     to reload; a 401 drops the local session and goes back to the email step.
+- **Sign-in on the web (2026-10-21).**
+  - **PKCE.** `src/web/supabase.js` runs `flowType: 'pkce'`. A session is made only by a flow this
+    browser started (the verifier lives in `fitlink-web-code-verifier`) or by a six-digit code typed
+    here. Tokens in a URL are refused; under the old implicit flow `/i/CODE#access_token=…` signed a
+    visitor into someone else's account, and the card form then paid onto it.
+  - **After the client initializes, clean the URL.** The exchange runs once, at import. `/coach`,
+    `/delete-account` and `/join` then call `takeAuthReturnNote()`, which strips every auth parameter
+    and shows one fixed sentence, never the URL's text. Other pages clean silently; SiteShell skips
+    `/delete-account` (its effect runs after the page's and would clean the URL first). Never call
+    `exchangeCodeForSession` from a page. A sentence for the sign-in screen is set BEFORE a sign-out:
+    signing out clears the session and ends the effect that would have set it.
+  - **`/coach` is for coach accounts.** `myRole()` is `coach` (trainers row) → the editor; `athlete` /
+    `none` → "isn't a coach account" with Sign out; a failed read → Check again, never the editor. A
+    gate result is kept with the uid it checked, so another account never sees it. An account whose
+    every identity is Apple and whose metadata has no `role` (`appleSignUpUnfinished`) is a sign-up
+    nobody finished. `/coach` drops the default trainers row (`claim_athlete_role`) and signs it out.
+    Checkout finishes it as an athlete (`claim_athlete_role`, then `role: 'client'`), the iOS rule.
+    `/delete-account` lets it delete itself. Never call `claim_athlete_role` for an account with a
+    role.
+  - **Sign in with Apple** shows only when `VITE_APPLE_WEB_SIGN_IN=on` was set at build time, on
+    `https://fitlink.coach` or localhost, and not in a Home Screen web app.
+    - The owner's console steps are in fitlink-app's threat model (Apple vendor row): Services ID
+      `fitlink.app.web` FIRST in Supabase's Apple Client IDs, client secret expiry.
+    - Return paths are fixed: `/coach`, `/delete-account`, `/join`. Never `/i/*` or `/live/*` (the
+      AASA paths). Never from a query.
+    - Checkout parks `{code, planId, name}` in sessionStorage (`fitlink-web-checkout-return`, 30
+      minutes). `/join` moves client-side to `/i/CODE`, which reopens the sheet.
+  - **The button** is `AppleButton.jsx`: Apple's logo file unmodified (`public/apple/`), black,
+    "Continue with Apple", title at 43 % of the height, never smaller than the email button beside it.
+  - **Copy.** Never ask an Apple user for a personal email; point them to the Apple button. Every
+    sign-in sentence lives in `appleAuth.js` (`node --test src/web/appleAuth.test.js`). The iPhone path
+    to the Sign in with Apple list is "Settings, then your name, then Sign in with Apple" (iPhone User
+    Guide, iOS 26).
 - **Checkout joins through athlete-exit, then buys** (`Checkout.jsx`): the sheet first checks
   what the page can see would make create-subscription refuse (`planIsPriced`, the server's
   `planAmountCents` rule; `coachTakesCards` = `trainers_public.stripe_charges_enabled`; the
   Stripe key from `app-config`; an `app-config` call that fails says so in its own words,
   only a 2xx without a `pk_` key is "not set up") and stops with "Nothing was changed"
   (`CoachPublicPage` never offers Buy on an unpriced pass, and with no priced pass it shows
-  no "Choose a pass" prompt) → email code → `previewInvite` = `athlete-exit
+  no "Choose a pass" prompt) → email code or Sign in with Apple (a new Apple account is
+  finished as an athlete first) → `previewInvite` = `athlete-exit
   {action: 'accept_invite', code, preview: true}` → when `needsConfirmation`, the
   `passesEnding[].line` list and "this happens as soon as you confirm, before the card form"
   → `acceptInvite(code, {confirm: true})`, which ends those passes at Stripe NOW (no refund,
@@ -218,7 +252,9 @@ from `plans`.
   repo's package.json) renders every route; Google Fonts fail in the container (two console
   errors per page), everything else must be clean and `scrollWidth` must equal the viewport
   at 390 px. The delete flow can be driven with `page.route` stubs for `/auth/v1/*`,
-  `/rest/v1/*` and `/functions/v1/*`.
+  `/rest/v1/*` and `/functions/v1/*`. Apple flows: build with `VITE_APPLE_WEB_SIGN_IN=on`; stub
+  `/auth/v1/authorize` with a 302 to the return path and `/auth/v1/token?grant_type=pkce` with a
+  session.
 - fitlink.coach is not reachable from the build container. After a deploy check
   `curl -sI https://fitlink.coach/.well-known/apple-app-site-association` (application/json),
   every route answers 200 with `text/html` (`/`, `/pricing`, `/athletes`, `/support`,

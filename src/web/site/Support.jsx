@@ -11,13 +11,19 @@
 // pass and the history stays (season billing, owner decision 2026-10-17). The
 // wording says what the pass includes, not that access is cut: the server
 // still serves a season the athlete marked 'completed' after an early end.
+// Sign in with Apple on the website when this build offers it
+// (VITE_APPLE_WEB_SIGN_IN): the sign-in answers come from siteCopy() in
+// appleAuth.js, so a build without it never mentions a button it lacks.
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { ELITE_FEE_PERCENT, FREE_ROSTER_CAP, NEEDS_CONFIRM, STANDARD_FEE_PERCENT, SUPPORT_EMAIL } from './pricing';
+import { siteCopy } from '../appleAuth';
+import { APPLE_WEB_ENABLED } from '../authConfig';
 
 const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Confirm against platform_config before launch">[confirm]</sup> : null);
+const copy = siteCopy(APPLE_WEB_ENABLED);
 
 const GROUPS = [
   {
@@ -61,7 +67,8 @@ const GROUPS = [
   {
     id: 'coach-account', audience: 'For coaches', title: 'Your account',
     items: [
-      { q: 'How do I sign in?', a: 'With Sign in with Apple or a six-digit code sent to your email. There are no passwords. The season editor on the web signs in with the same email code.' },
+      { q: 'How do I sign in?', a: copy.supportSignInA },
+      { q: 'I signed up with Sign in with Apple and hid my email.', a: copy.supportHidEmailA },
       { q: 'Can I also train with a coach?', a: 'Yes. From Profile, a coach can turn on training and open another coach’s link or enter their code. The account then has two modes, Coaching and Training, each with its own Home, messages and notifications; your athletes never see your own training, and you cannot coach yourself.' },
       { q: 'How old do I have to be?', a: 'FitLink is for people aged 16 and over. We ask for your date of birth at sign-up.' },
     ],
@@ -69,7 +76,7 @@ const GROUPS = [
   {
     id: 'athlete-paying', audience: 'For athletes', title: 'Paying and cancelling',
     items: [
-      { q: 'How do I buy a pass?', a: 'Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; FitLink never sees the number. The same email signs you in to the app.' },
+      { q: 'How do I buy a pass?', a: copy.supportBuyA },
       { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. Cancelling stops the next payment. You keep your coach’s plan until the end of what you have paid for; after that it is no longer part of your pass. Your logged sets, check-ins and messages stay. A season stops billing by itself after its last payment, so there is nothing to cancel when it ends.' },
       { q: 'What happens when my season ends?', a: 'A season is billed a set number of payments, shown before you pay, and then nothing more is charged. When the period the last payment covered ends, the season is complete: you keep your copy of it and everything you logged, and you stay with your coach. Open your coach’s link to start another season with them.' },
       { q: 'Can I get a refund?', a: 'Ask your coach. Refunds are the coach’s call and are issued through the app, back to the card you paid with. Switching coaches or deleting your account ends your pass that day, and time already paid isn’t refunded, so ask your coach before you switch.' },
@@ -80,7 +87,7 @@ const GROUPS = [
   {
     id: 'athlete-plan', audience: 'For athletes', title: 'Finding your plan after paying',
     items: [
-      { q: 'I paid but can’t see my plan.', a: 'Sign in to the app with the same email you paid with. Your first week is written by your coach; Today says it is on its way while they do. If it has been a while, message your coach in the app.' },
+      { q: 'I paid but can’t see my plan.', a: `${copy.supportPaidNoPlanLead} Your first week is written by your coach; Today says it is on its way while they do. If it has been a while, message your coach in the app.` },
       { q: 'Do I need the app?', a: 'To train, yes. Buying works in any browser; the plan, the timer, check-ins and messages are in the iPhone app.' },
       { q: 'I have an Android phone.', a: 'FitLink is an iPhone app today; there is no Android app. Check with your coach before you pay.' },
     ],

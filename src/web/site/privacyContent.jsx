@@ -2,8 +2,9 @@
 // copy). Kept in step with fitlink-ios docs/SUBMISSION.md (App Privacy table):
 // Apple Health only by choice (no Health Connect), 16+, and Stripe / Apple + RevenueCat /
 // Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo
-// as the processors. Change the table, change this file. The title, date and
-// section list live in legalMeta.js.
+// as the processors; Sign in with Apple on the website (same identifier and
+// email or relay address as the app). Change the table, change this file. The
+// title, date and section list live in legalMeta.js.
 import { Link } from 'react-router-dom';
 import { SUPPORT_EMAIL } from './pricing';
 
@@ -32,7 +33,7 @@ export default function PrivacyBody() {
           <li><strong>Payment information:</strong> pass payments are processed by Stripe. We never see or store card numbers; we keep a record of which pass you bought, when, and its status. A coach who connects payouts gives their identity and bank details directly to Stripe. Coach Elite is bought through Apple; we receive the subscription’s status from Apple and RevenueCat, not your payment details.</li>
           <li><strong>Communications:</strong> messages exchanged between coaches and athletes within the app.</li>
           <li><strong>Device information:</strong> device type, OS version, and a push notification token, used only to deliver the notifications you have allowed.</li>
-          <li><strong>Website:</strong> a coach’s public page on fitlink.coach can be read by anyone with its link. If you sign in or buy a pass there, your sign-in session is kept in your browser’s local storage. We do not use advertising cookies.</li>
+          <li><strong>Website:</strong> a coach’s public page on fitlink.coach can be read by anyone with its link. You can sign in there with a six-digit code sent to your email or with Sign in with Apple. If you sign in with Apple, Apple gives us the same account identifier and email address (or private relay address) it gives the app, and your name the first time, if you choose to share it. Your sign-in session is kept in your browser’s local storage. When you continue with Apple from a coach’s page, that browser tab also keeps the link’s code, the pass you chose and any name you typed until you come back, for at most 30 minutes. We do not use advertising cookies.</li>
         </ul>
       </section>
 
@@ -70,6 +71,7 @@ export default function PrivacyBody() {
           <li><strong>With your coach:</strong> training data, logged sets, body weight, check-ins, photos you send and messages are shared with the coach you train with. A coach you leave keeps their own record of the coaching they delivered.</li>
           <li><strong>On a coach’s public page:</strong> a coach’s name, photo, bio and passes are public on the link the coach shares.</li>
           <li><strong>Payment processing:</strong> payment and payout data is handled by Stripe. The status of a Coach Elite subscription comes from Apple and RevenueCat.</li>
+          <li><strong>Sign in with Apple:</strong> when you choose it, in the app or on the website, Apple confirms who you are and sends us an identifier and your email address or a private relay address that forwards to you.</li>
           <li><strong>The coach’s assistant:</strong> when a coach asks the assistant to draft a reply, the athlete’s check-in text is sent to Google (Gemini) to produce that draft and for nothing else. The coach must agree to the assistant in the app before it is used, and reads and approves every message before it is sent.</li>
           <li><strong>Infrastructure:</strong> Supabase hosts our database, sign-in and file storage.</li>
           <li><strong>Push notifications:</strong> device tokens are shared with the Apple Push Notification service (APNs) and Expo’s push service for notification delivery.</li>

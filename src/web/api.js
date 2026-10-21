@@ -3,7 +3,11 @@
 // ever sends ids (invite code, plan id, client id), never a price or a payee.
 import { supabase, SUPABASE_KEY, FUNCTIONS_URL } from './supabase';
 import { finishedSeason } from './season';
-import { parseAuthReturn } from './appleAuth';
+import {
+  APPLE_RETURN_PATHS, CHECKOUT_RETURN_KEY, APPLE_START_FAILED, SIGN_UP_FAILED, TRAINER_IN_USE,
+  appleAvailable, parseAuthReturn, parkedCheckoutValue, readParkedCheckout, cleanName,
+} from './appleAuth';
+import { APPLE_WEB_ENABLED } from './authConfig';
 
 export { normalizeCode } from './codes';
 
@@ -109,6 +113,72 @@ export async function leaveUnfinishedAppleSignUp() {
   try { await supabase.rpc('claim_athlete_role'); } catch { /* best effort */ }
   await signOutLocal();
 }
+
+/** A Home Screen web app (iOS standalone display). */
+export function isStandaloneHere() {
+  return window.matchMedia?.('(display-mode: standalone)')?.matches === true || window.navigator?.standalone === true;
+}
+/** Offered here at all: the flag, a known origin, not a Home Screen web app. */
+export function appleAvailableHere() {
+  return appleAvailable({ enabled: APPLE_WEB_ENABLED, origin: window.location.origin, standalone: isStandaloneHere() });
+}
+
+/**
+ * Sign in with Apple through Supabase Auth (Services ID fitlink.app.web). The return
+ * page is fixed per caller and never taken from the URL; it is never under /i/* or
+ * /live/* (the AASA paths the installed app may claim). Resolves once the browser is
+ * leaving; throws APPLE_START_FAILED when it could not start. Supabase always asks
+ * Apple for name and email; `scopes` states the intent.
+ */
+export async function signInWithApple(where) {
+  const path = APPLE_RETURN_PATHS[where];
+  if (!path || !appleAvailableHere()) throw Object.assign(new Error(APPLE_START_FAILED), { code: 'apple_unavailable' });
+  let error;
+  try {
+    ({ error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: `${window.location.origin}${path}`, scopes: 'name email' },
+    }));
+  } catch (e) { error = e; }
+  if (error) throw Object.assign(new Error(APPLE_START_FAILED), { code: 'apple_unavailable' });
+}
+
+/**
+ * A new Apple account at checkout becomes an athlete exactly as the iOS app does
+ * it (AuthService.claimRole(.client)): claim_athlete_role (removes the trainers row
+ * handle_new_user made by default; refuses `trainer_in_use`), then role 'client' in
+ * metadata, plus the name the person typed when Apple gave none. Called ONLY when
+ * appleSignUpUnfinished(user): on a finished coach claim_athlete_role would delete a
+ * real coach row. Throws { code: 'trainer_in_use' | 'unauthorized' | 'sign_up_failed' }.
+ */
+export async function finishAthleteSignUp({ name = '' } = {}) {
+  const { error: claimErr, status } = await supabase.rpc('claim_athlete_role');
+  if (claimErr) {
+    if (status === 401) throw Object.assign(new Error(SIGNED_OUT_SENTENCE), { code: 'unauthorized' });
+    if (String(claimErr.message ?? '').includes('trainer_in_use')) throw Object.assign(new Error(TRAINER_IN_USE), { code: 'trainer_in_use' });
+    throw Object.assign(new Error(SIGN_UP_FAILED), { code: 'sign_up_failed' });
+  }
+  const clean = cleanName(name);
+  const { error } = await supabase.auth.updateUser({ data: { role: 'client', ...(clean ? { name: clean } : {}) } });
+  if (error) {
+    const unauthorized = error.status === 401;
+    throw Object.assign(new Error(unauthorized ? SIGNED_OUT_SENTENCE : SIGN_UP_FAILED), { code: unauthorized ? 'unauthorized' : 'sign_up_failed' });
+  }
+}
+
+/** Remember, in this tab only, which pass an Apple sign-in started from. false when the browser refuses. */
+export function parkCheckout({ code, planId, name }) {
+  const value = parkedCheckoutValue({ code, planId, name });
+  if (!value) return false;
+  try { window.sessionStorage.setItem(CHECKOUT_RETURN_KEY, value); return true; } catch { return false; }
+}
+/** Read and forget the parked checkout: { code, planId, name } or null. */
+export function takeParkedCheckout() {
+  let raw = null;
+  try { raw = window.sessionStorage.getItem(CHECKOUT_RETURN_KEY); window.sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch { /* none */ }
+  return readParkedCheckout(raw);
+}
+export function clearParkedCheckout() { try { window.sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch { /* none */ } }
 
 /**
  * "Start another season": the signed-in person's most recent season with this

@@ -1,16 +1,22 @@
-// /coach — the coach on the web: sign-in by email code, existing accounts
-// only (sign-up happens in the app); then a role gate: only a coach account
-// sees the editor (2026-10-21; it used to open for any signed-in account).
+// /coach — the coach on the web: sign-in by email code or (when this build
+// offers it) Sign in with Apple, existing accounts only (sign-up happens in
+// the app); then a role gate: only a coach account sees the editor
+// (2026-10-21; it used to open for any signed-in account).
 // The header has what exists on the web (Seasons, Public page, Open the app);
 // Home, Athletes and Money stay in the app until they are built here.
 import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { supabase, APP_SCHEME } from './supabase';
-import { currentUser, leaveUnfinishedAppleSignUp, myRole, signOutLocal, standingInvite, takeAuthReturnNote } from './api';
 import {
-  appleSignUpUnfinished, usedApple, APPLE_NOT_COACH, CHECKING_ACCOUNT, NOT_COACH, NOT_COACH_TITLE, ROLE_ERROR_TITLE,
-  TOO_MANY_CODES, noAccountMessage,
+  appleAvailableHere, currentUser, isStandaloneHere, leaveUnfinishedAppleSignUp, myRole, signInWithApple, signOutLocal,
+  standingInvite, takeAuthReturnNote,
+} from './api';
+import {
+  appleSignUpUnfinished, usedApple, APPLE_NOT_COACH, CHECKING_ACCOUNT, NOT_COACH, NOT_COACH_TITLE, OR_EMAIL, ROLE_ERROR_TITLE,
+  TOO_MANY_CODES, noAccountMessage, signInHint, siteCopy,
 } from './appleAuth';
+import { APPLE_WEB_ENABLED } from './authConfig';
+import AppleButton from './AppleButton';
 import SeasonEditor from './SeasonEditor';
 import './web.css';
 
@@ -165,6 +171,13 @@ function SignIn({ note }) {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(note);
+  const appleOk = appleAvailableHere();
+  const [appleBusy, setAppleBusy] = useState(false);
+
+  async function startApple() {
+    setError(null);
+    try { await signInWithApple('coach'); return true; } catch (e) { setError(e.message); return false; }
+  }
 
   async function send(e) {
     e.preventDefault();
@@ -173,7 +186,7 @@ function SignIn({ note }) {
     setBusy(false);
     if (err) {
       const text = String(err.message ?? '').toLowerCase();
-      if (text.includes('signups') || text.includes('not allowed')) setError(noAccountMessage('coach', false));
+      if (text.includes('signups') || text.includes('not allowed')) setError(noAccountMessage('coach', appleOk));
       else if (text.includes('rate') || err.status === 429) setError(TOO_MANY_CODES);
       else setError('Couldn’t send the code. Check the address and try again.');
       return;
@@ -193,12 +206,19 @@ function SignIn({ note }) {
     <div className="fl-signin">
       <span className="fl-kicker">FitLink · coach</span>
       <h1>{sent ? 'Check your email' : 'Sign in'}</h1>
-      <p className="fl-sub" style={{ fontSize: 16 }}>{sent ? `We sent a six-digit code to ${email}.` : 'The same account as the app. We email you a six-digit code; no password.'}</p>
+      <p className="fl-sub" style={{ fontSize: 16 }}>{sent ? `We sent a six-digit code to ${email}.` : siteCopy(appleOk).coachSignInSub}</p>
+      {!sent && appleOk && (
+        <>
+          <AppleButton onPress={startApple} disabled={busy} onBusyChange={setAppleBusy} />
+          <p className="fl-or">{OR_EMAIL}</p>
+        </>
+      )}
       {!sent ? (
         <form onSubmit={send} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="fl-field"><label htmlFor="si-email">Email</label><input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></div>
+          <div className="fl-field"><label htmlFor="si-email">Email</label><input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" disabled={busy || appleBusy} /></div>
+          <p className="fl-note">{signInHint('coach', { available: appleOk, enabled: APPLE_WEB_ENABLED, standalone: isStandaloneHere() })}</p>
           {error && <div className="fl-error" role="alert">{error}</div>}
-          <button type="submit" className="fl-btn accent lg" disabled={busy}>{busy ? 'Sending…' : 'Email me a code'}</button>
+          <button type="submit" className="fl-btn accent lg" disabled={busy || appleBusy}>{busy ? 'Sending…' : 'Email me a code'}</button>
         </form>
       ) : (
         <form onSubmit={verify} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
