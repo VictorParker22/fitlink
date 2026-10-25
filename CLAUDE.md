@@ -101,7 +101,8 @@ from `plans`.
   edit legal text.
 - **The coach-page illustration (launch plan W6, 2026-10-25; branch `launch/w6-coach-page-mock`).** Beside "From link to
   first payout." a second phone shows a coach's page as `/c/<handle>` draws it (`Home.jsx CoachPageScreen`,
-  aria-hidden, nothing focusable): `<SITE_HOST>/c/your-name`, "Your name" / "What you coach" (a placeholder, never a
+  aria-hidden, nothing focusable): `<SITE_HOST>/c/<your-name>` (the brackets drawn literally: outside the handle
+  rule, so no coach can claim the example's address; review 2026-10-25), "Your name" / "What you coach" (a placeholder, never a
   real or realistic coach), the Founding badge, an undated block of `BLOCK_DEFAULT_WEEKS` at 6 × `MINIMUM_CHARGE_USD`
   a month with the real page's price line ("$150 / month · 2 payments ($300 in all)"), a session at 2 × the minimum
   and the 24-hour cancel line, "Coached on <name>". Every value is `site/coachPageSample.js` (pure; the real page's
