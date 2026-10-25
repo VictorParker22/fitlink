@@ -5,7 +5,7 @@ import { useBodyClass, usePageMeta } from './meta';
 import '../web.css';
 import './site.css';
 import { BRAND_NAME } from './brand';
-import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
+import FoundingCta from './FoundingCta';
 
 export default function NotFound() {
   usePageMeta('Page not found', 'This page took a rest day.');
@@ -19,7 +19,7 @@ export default function NotFound() {
           <p>If you followed a coach’s link, ask them to send it again. It may have changed.</p>
           <div className="s-actions">
             <Link className="fl-btn accent" to="/">Go to {BRAND_NAME}</Link>
-            <Link className="fl-btn ghost-dark" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
+            <FoundingCta className="fl-btn ghost-dark" />
             <Link className="fl-btn ghost-dark" to="/support">Get help</Link>
           </div>
         </main>

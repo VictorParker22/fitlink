@@ -56,6 +56,9 @@ export const FOUNDING_CONTINUE_TITLE = 'This isn’t a coach account yet';
 export const FOUNDING_CONTINUE_BODY = 'Founding spots are for coach accounts. Continue as a coach to set this account up as one; nothing about your application is sent until you apply.';
 export const FOUNDING_CONTINUE = 'Continue as a coach';
 export const FOUNDING_CONTINUING = 'Setting up your coach account…';
+/** /founding once Founding is full or closed (owner decision R4): the same sign-in, on standard pricing, no application. */
+export const JOIN_CONTINUE_BODY = 'Continue as a coach to set this account up as one. Nothing else is sent.';
+export const JOIN_ATHLETE_ACCOUNT = 'This account was made as an athlete account, so it can’t be set up as a coach account here. To coach, sign out and use the email you coach with, or a new one.';
 export const FOUNDING_FINISH_FAILED = 'We couldn’t finish setting up your coach account. Nothing was sent. Try again in a moment.';
 export const TRAINER_IN_USE = `This Apple ID already has a coach account on ${BRAND_NAME}. To train with this coach, open the link in the ${BRAND_NAME} app.`;
 export const RESUME_PASS_GONE = 'The pass you chose isn’t for sale any more. Pick another pass below.';
@@ -193,6 +196,12 @@ export const HINTS = Object.freeze({
     apple: 'Signed up in the app with Sign in with Apple and hid your email? Use Continue with Apple.',
     safari: `Signed up in the app with Sign in with Apple? Open ${SITE_HOST}/founding in Safari to continue with Apple.`,
     off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page) and the application is taken by email.',
+  }),
+  /** /founding once Founding is full or closed (owner decision R4): the coach sign-up on standard pricing. */
+  join: Object.freeze({
+    apple: 'Signed up in the app with Sign in with Apple and hid your email? Use Continue with Apple.',
+    safari: `Signed up in the app with Sign in with Apple? Open ${SITE_HOST}/founding in Safari to continue with Apple.`,
+    off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page).',
   }),
   checkout: Object.freeze({
     apple: 'Signed up in the app with Sign in with Apple? Use Continue with Apple, so the pass lands on that account.',
