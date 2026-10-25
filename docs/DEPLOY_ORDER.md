@@ -130,3 +130,6 @@ change the site only; each says below what it waits for.
 - **W5 pricing** (`launch/w5-pricing`): the Elite copy says US on the web, elsewhere the App Store or the web. It is
   true once the fee engine's `elite-checkout` is live (above) AND the iOS build that routes Elite by storefront is the
   one in the App Store; before that, ship it only with that build. Terms §6 still says Apple (rename-day Terms).
+- **W6 coach-page illustration** (`launch/w6-coach-page-mock`): no server dependency (a picture with numbers from
+  the config copy). It shows blocks, sessions and the Founding badge, so ship it with or after the site of those
+  features (blocks and coach page above).

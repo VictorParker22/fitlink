@@ -188,6 +188,23 @@ body.fl-site-body-dark { background: #0B0C0F; }
 
 /* ── steps, trust, proof ────────────────────────────────────────────── */
 .s-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 16px; }
+/* W6: the steps beside a phone showing a coach's page (an illustration with a placeholder name). */
+.s-steps-split { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 48px; align-items: center; }
+.s-steps-split .s-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 600px) { .s-steps-split .s-steps { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 960px) { .s-steps-split { grid-template-columns: minmax(0, 1fr); } }
+.s-cp-figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.s-cp-figure figcaption { font-size: 14px; color: var(--s-text-3); text-align: center; max-width: 30ch; }
+.s-cp-screen { gap: 8px; padding-top: 44px; }
+.s-cp-url { align-self: center; font-size: 10px; color: var(--s-text-3); background: var(--fl-raised, #EEEAE3); border-radius: 999px; padding: 3px 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-cp-hero { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.s-cp-hero b { font-size: 16px; }
+.s-cp-hero .mini-pill { margin-top: 3px; }
+.s-cp-photo { width: 44px; height: 44px; border-radius: 50%; background: var(--fl-raised-2, #E4DFD6); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+.s-cp-price { display: flex; align-items: baseline; gap: 4px; }
+.s-cp-price small { font-size: 12px; color: var(--s-text-3); }
+.s-cp-screen .mini-big { font-size: 22px; }
+.s-cp-foot { margin-top: auto; text-align: center; font-size: 10px; color: var(--s-text-3); }
 .s-step { background: var(--fl-surface); border-radius: 28px; padding: 24px; display: flex; flex-direction: column; gap: 10px; }
 .s-num { width: 40px; height: 40px; border-radius: 50%; background: var(--fl-ink); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .s-step b { font-size: 20px; font-weight: 700; }

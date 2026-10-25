@@ -18,6 +18,7 @@ import { todayIso, useFoundingSlots } from './useFoundingSlots';
 import { foundingPhase } from '../founding';
 import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
 import { ELITE_WHERE, PLAN_LINES } from './planLines';
+import { coachPageSample } from './coachPageSample';
 import AppStoreLink from './AppStoreLink';
 
 
@@ -33,6 +34,8 @@ const SAMPLE_PASS_PRICE = 245;
 const sampleGross = SAMPLE_PASSES * SAMPLE_PASS_PRICE;
 const sampleFee = sampleGross * STANDARD_FEE_PERCENT / 100;
 const samplePayout = sampleGross - sampleFee;
+
+const COACH_PAGE_SAMPLE = coachPageSample();
 
 function CoachHomeScreen() {
   return (
@@ -51,6 +54,39 @@ function CoachHomeScreen() {
         <span className="sub">{SAMPLE_PASSES} passes · fee on every line</span>
       </div>
       <div className="mini-tabs"><span className="on">Home</span><span>Athletes</span><span>Seasons</span><span>Money</span></div>
+    </div>
+  );
+}
+
+/**
+ * A coach's own page (/c/<handle>), as illustration (launch plan W6): a placeholder name, the real page's shape, every
+ * number from pricing.js through coachPageSample.js. aria-hidden; the caption under the phone says it is an example.
+ */
+function CoachPageScreen() {
+  const s = COACH_PAGE_SAMPLE;
+  return (
+    <div className="s-screen s-cp-screen" aria-hidden="true">
+      <span className="notch" />
+      <span className="s-cp-url">{s.address}</span>
+      <div className="s-cp-hero">
+        <span className="s-cp-photo">{s.initials}</span>
+        <b>{s.name}</b>
+        <span className="sub">{s.sport}</span>
+        <span className="mini-pill accent">{s.badge}</span>
+      </div>
+      <div className="mini-card">
+        <b>{s.block.title}</b>
+        <span className="sub">{s.block.schedule}</span>
+        <span className="s-cp-price"><span className="mini-big">{s.block.amount}</span> <small>{s.block.unit}</small></span>
+        <span className="sub">{s.block.line}</span>
+        <span className="mini-btn">{s.block.button}</span>
+      </div>
+      <div className="mini-card">
+        <b>{s.session.title}</b>
+        <span className="sub">{s.session.line}</span>
+        <span className="sub">{s.cancel}</span>
+      </div>
+      <span className="s-cp-foot">{s.foot}</span>
     </div>
   );
 }
@@ -230,6 +266,7 @@ export default function Home() {
       </section>
 
       <section className="s-wrap s-section top" aria-labelledby="steps-h">
+        <div className="s-steps-split">
         <div className="s-stack" style={{ gap: 36 }}>
           <h2 id="steps-h" className="s-h2">From link to first payout.</h2>
           <ol className="s-steps">
@@ -238,6 +275,11 @@ export default function Home() {
             <li className="s-step"><span className="s-num">3</span><b>Athletes pay on the web</b><span>No download before they buy. Their plan is waiting when they open the app.</span></li>
             <li className="s-step"><span className="s-num">4</span><b>Get paid</b><span>Stripe sends the money to your bank. You see every fee before it lands.</span></li>
           </ol>
+        </div>
+        <figure className="s-cp-figure">
+          <div className="s-phone" aria-hidden="true"><CoachPageScreen /></div>
+          <figcaption>An example of your page: your name, your passes, one link.</figcaption>
+        </figure>
         </div>
       </section>
 

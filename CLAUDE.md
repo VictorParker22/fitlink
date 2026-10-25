@@ -84,6 +84,14 @@ from `plans`.
   web, other storefronts → StoreKit) and elite-checkout, which sells to anyone on the web. Still open (founder wording,
   the rename-day Terms, decision L8): Terms §6 and the terms page's meta description (`legalMeta.js`) say Elite is
   sold through Apple, and the Privacy Policy says the same.
+- **The coach-page illustration (launch plan W6, 2026-10-25; branch `launch/w6-coach-page-mock`).** Beside "From link to
+  first payout." a second phone shows a coach's page as `/c/<handle>` draws it (`Home.jsx CoachPageScreen`,
+  aria-hidden, nothing focusable): `<SITE_HOST>/c/your-name`, "Your name" / "What you coach" (a placeholder, never a
+  real or realistic coach), the Founding badge, an undated block of `BLOCK_DEFAULT_WEEKS` at 6 × `MINIMUM_CHARGE_USD`
+  a month with the real page's price line ("$150 / month · 2 payments ($300 in all)"), a session at 2 × the minimum
+  and the 24-hour cancel line, "Coached on <name>". Every value is `site/coachPageSample.js` (pure; the real page's
+  `blocks.js` / `season.js` builders over pricing.js; `node --test src/web/site/coachPageSample.test.js`), and the
+  caption under the phone says it is an example. No date in it (the static page and the browser draw the same).
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and
@@ -399,7 +407,7 @@ from `plans`.
     payments below still show their full net. When either list hits 500 rows the page says the oldest month may be
     missing some, and that month says so too. A failed payments or refunds read says so with Try again; failed names
     or disputes say so beside the amounts.
-  - Checks: `node --test src/web/*.test.js`, eslint, build, and the headless run (390 and 1280 px; pricing at three
+  - Checks: `node --test src/web/*.test.js src/web/admin/*.test.js src/web/site/*.test.js`, eslint, build, and the headless run (390 and 1280 px; pricing at three
     volumes, seven panel states, checkout start, every refusal, the started/cancelled returns with webhook lag, five
     earnings cases) — 164/164 on 2026-10-25. After the review fixes (same day): 223/223, adding Founding before the
     first payment / in the free year (buttons, wording, firstChargeAt kept or not) / in the notice window / in the last
