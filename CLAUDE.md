@@ -68,6 +68,12 @@ from `plans`.
   and checkout's done step says "Ask <coach> how to get the <name> app" instead of "Install … from the App Store".
   Owner: add Apple's badge SVG (Apple's marketing tools) to `public/` and draw it in `AppStoreLink`, then set the flag
   on Vercel when the app is public.
+- **The home page's Founding card (launch plan W4, 2026-10-25; branch `launch/w4-founding-card`).** Where the
+  bracketed testimonials were, `Home.jsx FoundingCard`: `PLAN_LINES.founding`, the live counter, three lines of the
+  offer (numbers from pricing.js) and "Claim a Founding spot" (→ "About Founding" once full or closed). The counter is
+  the one /founding draws: `site/useFoundingSlots.js` (`founding_slots()`, undefined while loading, null on failure,
+  `retry`, `reload`, `todayIso`) + `site/FoundingCount.jsx` (nothing numeric while loading, "Couldn't load how many spots
+  are taken." with Try again, "9 of 15 taken" with the meter, "All 15 spots are taken.", "Founding spots closed on …").
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and
@@ -82,8 +88,8 @@ from `plans`.
   src/web/pricingConfig.json` and the fitlink-app commit it came from into `SERVER_CONFIG_SHA256` in
   `src/web/pricing.test.js` (pinned today: fitlink-app commit d4b0267 on `launch/4-blocks`, `201ec4c3…72d5`); a copy without a new pin fails.
   The dev `[confirm]` marker (`NEEDS_CONFIRM = import.meta.env.DEV`; production never shows it) stays only on what is
-  NOT in the config: `FOUNDING_MIN_PAYING_ATHLETES` and the founder's email promise on /founding. Quotes stay dashed
-  placeholders and the footer says `[Legal entity name]` until the founder fills them. Illustrations (phone mocks,
+  NOT in the config: `FOUNDING_MIN_PAYING_ATHLETES` and the founder's email promise on /founding. No quotes on the home page until a real coach gives one (W4
+  removed the bracketed placeholders); the footer says `[Legal entity name]` until the founder fills it. Illustrations (phone mocks,
   the money card) are `aria-hidden` and compute their sample arithmetic from the same constants.
 - **Support answers must be true for the shipped product**: iPhone only, no Android app,
   card checkout by Stripe (no Apple Pay claim), Apple Health optional and off by default (the

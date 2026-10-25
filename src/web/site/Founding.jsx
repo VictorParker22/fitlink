@@ -43,10 +43,10 @@
 // - Nothing is emailed by the server. The booking link is the build's
 //   VITE_FOUNDING_CALENDAR_URL (https only); without it the page says Victor
 //   will write.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import {
-  appleAvailableHere, applyFounding, clearFoundingReturn, finishCoachSignUp, foundingSlots, freshUser, isStandaloneHere,
+  appleAvailableHere, applyFounding, clearFoundingReturn, finishCoachSignUp, freshUser, isStandaloneHere,
   myFoundingApplication, myRole, parkFoundingReturn, signInWithApple, signOutLocal, takeAuthReturnNote, takeFoundingReturn,
 } from '../api';
 import {
@@ -59,7 +59,7 @@ import FoundingBadge from '../FoundingBadge';
 import {
   ATHLETE_BANDS, FOUNDING_SIGN_UP_DATA, NAME_MAX, PAY_METHODS, SPORT_MAX, accountStep, answersFrom, applyRefusal, bookingUrl,
   checkAnswers, closesLabel, closesLabelLong, contactOnly, foundingPhase, fullLine, isNewApplication, isOwnSession, parseSlots,
-  slotsLine, statusLine,
+  statusLine,
 } from '../founding';
 import { usePageMeta } from './meta';
 import {
@@ -68,6 +68,8 @@ import {
   STANDARD_FEE_PERCENT, usd,
 } from './pricing';
 import { BRAND_NAME, FOUNDER_FIRST_NAME, SUPPORT_EMAIL } from './brand';
+import FoundingCount from './FoundingCount';
+import { todayIso, useFoundingSlots } from './useFoundingSlots';
 
 const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Not in pricing.json: confirm with the owner before launch">[confirm]</sup> : null);
 
@@ -77,26 +79,12 @@ const BOOKING_URL = bookingUrl((import.meta.env ?? {}).VITE_FOUNDING_CALENDAR_UR
 const CLOSES = closesLabel(FOUNDING_CLOSES_ON);
 const NOTIFY_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Tell me when a Founding spot opens')}`;
 
-function todayIso() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 export default function Founding() {
   usePageMeta('Founding coaches', `${FOUNDING_SLOTS} Founding spots for independent coaches: Elite free for a year from your first paid athlete, then ${usd(FOUNDING_THEN_MONTHLY_USD)} a month. Closes ${CLOSES}.`);
 
   /** founding_slots(): undefined while loading, null when the read failed, else parseSlots()'s answer. */
-  const [slots, setSlots] = useState(undefined);
-  /** Bumped to read the counter again (after a full or closed refusal). */
-  const [slotsTick, setSlotsTick] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    foundingSlots().then((s) => { if (alive) setSlots(s); }, () => { if (alive) setSlots(null); });
-    return () => { alive = false; };
-  }, [slotsTick]);
-  const loadSlots = useCallback(() => setSlotsTick((n) => n + 1), []);
-  /** Try again after a failed read: back to "loading" (nothing numeric), then the server's answer. */
-  const retrySlots = useCallback(() => { setSlots(undefined); setSlotsTick((n) => n + 1); }, []);
+  const { slots, setSlots, reload: loadSlots, retry: retrySlots } = useFoundingSlots();
   const phase = foundingPhase(slots, todayIso());
 
   return (
@@ -106,7 +94,7 @@ export default function Founding() {
         <h1 id="f-h" className="s-h1 sm">
           {FOUNDING_SLOTS} spots. Elite free for a year. Closes {CLOSES}.
         </h1>
-        <Counter phase={phase} slots={slots} onRetry={retrySlots} />
+        <FoundingCount phase={phase} slots={slots} onRetry={retrySlots} />
       </section>
 
       <section className="s-founding-cards" aria-label="The offer">
@@ -132,28 +120,6 @@ export default function Founding() {
       </section>
 
       <Apply phase={phase} slots={slots} onSlots={(raw) => { const s = parseSlots(raw); if (s) setSlots(s); }} reloadSlots={loadSlots} />
-    </div>
-  );
-}
-
-/** The live counter: the server's numbers, or a sentence that says it couldn't load them (never a guess). */
-function Counter({ phase, slots, onRetry }) {
-  if (phase === 'loading') return <p className="s-founding-count" aria-busy="true" aria-label="Loading how many spots are taken" />;
-  if (phase === 'unknown') {
-    return (
-      <div className="s-founding-count s-founding-count-failed" role="status">
-        <span>Couldn’t load how many spots are taken.</span>
-        <button type="button" className="fl-btn quiet" onClick={onRetry}>Try again</button>
-      </div>
-    );
-  }
-  if (phase === 'full') return <p className="s-founding-count" aria-live="polite"><b>{fullLine(slots.total)}</b></p>;
-  if (phase === 'closed') return <p className="s-founding-count" aria-live="polite"><b>Founding spots closed on {closesLabelLong(slots.closesOn)}.</b></p>;
-  const pct = Math.min(100, Math.round((slots.taken / slots.total) * 100));
-  return (
-    <div className="s-founding-count" aria-live="polite">
-      <b>{slotsLine(slots)}</b>
-      <span className="s-founding-meter" aria-hidden="true"><span style={{ width: `${pct}%` }} /></span>
     </div>
   );
 }

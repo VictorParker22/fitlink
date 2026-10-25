@@ -1,16 +1,21 @@
 // / — the home page for coaches (Web-Home; Web-Home-Mobile is the same page
 // at 390 px). Every number on the page comes from pricing.js; the phone and
 // card illustrations are decoration (aria-hidden) and show the product's
-// shape, not anyone's data. Quotes stay dashed placeholders until a real coach
-// gives one.
+// shape, not anyone's data. No quotes until a real coach gives one (W4 took the
+// bracketed placeholders out); the Founding card shows the server's counter.
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { HERO_LINE } from './pageMeta';
-import { ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, usd } from './pricing';
+import {
+  ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FOUNDING_FEE_PERCENT, FOUNDING_SLOTS, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, foundingFreeWords, usd,
+} from './pricing';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
-import { BRAND_NAME } from './brand';
+import { BRAND_NAME, FOUNDER_FIRST_NAME } from './brand';
+import FoundingCount from './FoundingCount';
+import { todayIso, useFoundingSlots } from './useFoundingSlots';
+import { foundingPhase } from '../founding';
 import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
 import { PLAN_LINES } from './planLines';
 import AppStoreLink from './AppStoreLink';
@@ -79,6 +84,32 @@ const FAQ = [
   { q: 'Does the AI message my athletes?', a: 'Never on its own. With Coach Elite it drafts a reply from the check-in and the logged sets; you edit, approve and send.' },
   { q: 'Can I bring athletes I already coach?', a: 'Yes. Send them your link. They buy a pass on your page and their plan is ready in the app. Nobody lands on your roster without accepting your link, sending you a request, or buying your pass.' },
 ];
+
+/**
+ * The Founding offer with the server's live counter (launch plan W4; it replaced the bracketed testimonial
+ * placeholders). The counter is founding_slots(), the read /founding makes: nothing numeric while it loads, a sentence
+ * when it fails. Every number in the copy comes from pricing.js.
+ */
+function FoundingCard() {
+  const { slots, retry } = useFoundingSlots();
+  const phase = foundingPhase(slots, todayIso());
+  const over = phase === 'full' || phase === 'closed';
+  return (
+    <section className="s-wrap s-section" aria-labelledby="founding-h">
+      <div className="s-founding-card s-founding-home">
+        <span className="s-kicker sm">Founding coaches</span>
+        <h2 id="founding-h" className="s-h2 sm">{PLAN_LINES.founding}</h2>
+        <FoundingCount phase={phase} slots={slots} onRetry={retry} />
+        <ul className="s-bullets">
+          <li>Coach Elite free for {foundingFreeWords()}, from the first payment one of your athletes makes after your spot is granted.</li>
+          <li>A {FOUNDING_FEE_PERCENT}% fee instead of {STANDARD_FEE_PERCENT}% while the free year or Elite runs.</li>
+          <li>The “Founding {FOUNDING_SLOTS}” badge on your coach page, and a setup call with {FOUNDER_FIRST_NAME}.</li>
+        </ul>
+        <Link className={`fl-btn lg${over ? '' : ' accent'}`} to={FOUNDING_PATH}>{over ? 'About Founding' : FOUNDING_CTA}</Link>
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   usePageMeta(null, null);
@@ -222,15 +253,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="s-wrap s-section" aria-labelledby="proof-h">
-        <div className="s-stack" style={{ gap: 20 }}>
-          <h2 id="proof-h" className="s-eyebrow">From coaches using {BRAND_NAME}</h2>
-          <div className="s-proof">
-            <figure><blockquote>[Quote from a beta coach, used with permission]</blockquote><figcaption>[Name · what they coach · athletes on {BRAND_NAME}]</figcaption></figure>
-            <figure><blockquote>[Quote from a beta coach, used with permission]</blockquote><figcaption>[Name · what they coach · athletes on {BRAND_NAME}]</figcaption></figure>
-          </div>
-        </div>
-      </section>
+      <FoundingCard />
 
       <section className="s-wrap s-section" aria-labelledby="price-h">
         <div className="s-stack" style={{ gap: 28 }}>

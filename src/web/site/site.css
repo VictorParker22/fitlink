@@ -196,10 +196,6 @@ body.fl-site-body-dark { background: #0B0C0F; }
 .s-trust div { display: flex; flex-direction: column; gap: 8px; padding-top: 18px; border-top: 2px solid var(--fl-ink); }
 .s-trust b { font-size: 18px; font-weight: 700; }
 .s-trust span { font-size: 16px; line-height: 1.5; color: var(--s-text-3); }
-.s-proof { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; }
-.s-proof figure { border: 1.5px dashed #A8A398; border-radius: 28px; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
-.s-proof blockquote { font-family: var(--fl-serif); font-size: 24px; line-height: 1.35; color: var(--s-text-3); }
-.s-proof figcaption { font-size: 14px; font-weight: 600; color: var(--s-text-3); }
 
 /* ── plan cards (Home and Pricing) ──────────────────────────────────── */
 .s-split-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
@@ -394,6 +390,9 @@ body.fl-site-body-dark { background: #0B0C0F; }
 .s-founding-meter span { display: block; height: 100%; background: var(--fl-accent); border-radius: 999px; }
 .s-founding-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
 .s-founding-card { background: var(--fl-surface); border-radius: 30px; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+/* The home page's Founding card (W4): one card, the counter between the line and the bullets. */
+.s-founding-home { gap: 16px; padding: 36px; max-width: 760px; }
+.s-founding-home > .fl-btn { align-self: flex-start; margin-top: 6px; }
 .s-founding-set { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .s-founding-set legend { font-size: 15px; font-weight: 600; padding: 0; margin-bottom: 10px; }
 .s-founding-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -401,7 +400,7 @@ body.fl-site-body-dark { background: #0B0C0F; }
 .s-founding-answers { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: 16px; }
 .s-founding-answers dt { color: var(--s-text-3); }
 .s-founding-answers dd { margin: 0; overflow-wrap: anywhere; }
-@media (max-width: 480px) { .s-founding { padding-top: 28px; gap: 28px; } .s-founding-card { padding: 20px; border-radius: 24px; } }
+@media (max-width: 480px) { .s-founding { padding-top: 28px; gap: 28px; } .s-founding-card, .s-founding-home { padding: 20px; border-radius: 24px; } }
 
 /* Pricing with three plans and a three-column calculator (fee engine, 2026-10-25). */
 .s-plans.lg.three { grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
