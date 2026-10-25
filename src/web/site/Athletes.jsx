@@ -13,8 +13,10 @@ import { APPLE_WEB_ENABLED } from '../authConfig';
 import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
 import { APP_STORE_LIVE } from './flags';
 import AppStoreLink from './AppStoreLink';
+import { athletesStep3 } from './appCopy';
 
 const copy = siteCopy(APPLE_WEB_ENABLED);
+const STEP3 = athletesStep3(APP_STORE_LIVE, APPLE_WEB_ENABLED);
 
 function PlanScreen() {
   return (
@@ -71,7 +73,7 @@ export default function Athletes() {
           <ol className="s-steps">
             <li className="s-step"><span className="s-num">1</span><b>Open your coach’s link</b><span>It shows their passes and prices, and for a season how many payments it takes.</span></li>
             <li className="s-step"><span className="s-num">2</span><b>Pay on the web</b><span>{copy.athletesStep2}</span></li>
-            <li className="s-step"><span className="s-num">3</span><b>Open the app</b><span>{copy.athletesStep3}</span></li>
+            <li className="s-step"><span className="s-num">3</span><b>{STEP3.title}</b><span>{STEP3.body}</span></li>
             <li className="s-step"><span className="s-num">4</span><b>Train and check in</b><span>Log your sets, say how it felt, and your coach adjusts.</span></li>
           </ol>
           <div className="s-callout">

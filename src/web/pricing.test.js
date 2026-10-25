@@ -129,12 +129,17 @@ test('the pricing page’s owner-locked lines', async () => {
   assert.equal(PLAN_LINES.free, 'Free to try. Up to 5 athletes, 10% per pass.');
   assert.equal(PLAN_LINES.elite, '$29.99/mo. 5%, no cap, your assistant.');
   assert.equal(PLAN_LINES.founding, '15 spots. Elite free for a year. Closes Dec 31.');
-  // Where Elite is bought, per region (W5): the US on the web, elsewhere the App Store or the web; never Apple for all.
-  const { ELITE_WHERE } = await import('./site/planLines.js');
-  assert.match(ELITE_WHERE.us, /^In the US: subscribe on the web/);
-  assert.match(ELITE_WHERE.elsewhere, /^Outside the US: subscribe in the .+ iPhone app through the App Store.*, or on the web\.$/);
-  assert.match(ELITE_WHERE.short, /^In the US on the web\. Elsewhere in the app through the App Store, or on the web\.$/);
-  for (const line of Object.values(ELITE_WHERE)) assert.doesNotMatch(line, /billed through Apple|web only|only on the web/i);
+  // Where Elite is bought (W5, owner decision R3): one sentence true everywhere; the App Store clause only with
+  // VITE_APP_STORE_LIVE=on (M1). Never Apple for all, never "web only", no region clause.
+  const { ELITE_WHERE, eliteWhere } = await import('./site/planLines.js');
+  assert.equal(eliteWhere(true).buy, 'Subscribe on the web from your coach dashboard (Stripe, US dollars), or in the iPhone app through the App Store.');
+  assert.equal(eliteWhere(false).buy, 'Subscribe on the web from your coach dashboard (Stripe, US dollars).');
+  assert.equal(ELITE_WHERE.buy, eliteWhere(false).buy, 'node --test runs without VITE_APP_STORE_LIVE: the flag-off words');
+  assert.doesNotMatch(eliteWhere(false).buy, /App Store|iPhone app/);
+  for (const on of [true, false]) {
+    assert.deepEqual(Object.keys(eliteWhere(on)), ['buy', 'manage']);
+    for (const line of Object.values(eliteWhere(on))) assert.doesNotMatch(line, /billed through Apple|web only|only on the web|In the US|Outside the US|Elsewhere/i);
+  }
   assert.equal(FOUNDING_CLOSES_LABEL, 'Dec 31');
   assert.match(SIXTH_ATHLETE_RULE, /^On the free plan, your sixth paying athlete’s payment goes through and they join\. From then on you need Elite to keep changing your athletes’ plans/);
 });

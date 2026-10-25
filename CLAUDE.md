@@ -27,7 +27,7 @@ from `plans`.
 
 - **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
   is the layout route (glass header with the brand mark + Home · Pricing · Help · Sign in → `/coach` · "Claim a
-  Founding spot" → `/founding` (W3, W8; at phone width Sign in ends the nav row, `.s-nav-signin`, because the actions
+  Founding spot" (or "Join as a coach" once Founding is full or closed) → `/founding` (W3, W8; at phone width Sign in ends the nav row, `.s-nav-signin`, because the actions
   keep only the button); footer with Help · For athletes (off the header since W8; the page stays and is static) · Privacy · Terms ·
   Delete account · `SUPPORT_EMAIL`; scroll-to-top; a `body` class so overscroll is
   cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
@@ -60,41 +60,57 @@ from `plans`.
   title of the shell) and the start of `HOME_DESCRIPTION`. The features section that used to carry the line is now
   "A to-do list that empties." (the line is said once).
 - **Calls to action (launch plan W3, 2026-10-25; branch `launch/w3-founding-ctas`).** Every "get the app" call to
-  action is "Claim a Founding spot" → `/founding` (`site/flags.js` `FOUNDING_CTA` / `FOUNDING_PATH`): the header, the
-  home hero and closing band (with `PLAN_LINES.founding` beside it), the Free plan on /pricing, the 404. The App Store
+  action is `site/FoundingCta.jsx` → `/founding`: the header, the home hero and closing band, the Free plan on
+  /pricing, the 404. It reads "Claim a Founding spot" (`FOUNDING_CTA`) while Founding is open, loading or its read
+  failed (the page it opens says the truth), and "Join as a coach" (`JOIN_CTA`) once `founding.js foundingView` says
+  full or closed (review 2026-10-25 M2): the counter's `open`, or the config's close day passed in its zone
+  (`todayIn(FOUNDING_CLOSES_TZ)`), whichever says closed first. Every copy on a page shares ONE `founding_slots()` read
+  (`site/useFoundingSlots.js`: a module store under `useSyncExternalStore`, started by the first component that mounts;
+  the prerendered markup and the render that hydrates are the loading state with no date). The closing band's line is
+  `PLAN_LINES.founding`, or `PLAN_LINES.free` once Founding is over. The App Store
   is linked ONLY in a build with `VITE_APP_STORE_LIVE=on` (`APP_STORE_LIVE`), through `site/AppStoreLink.jsx`: a plain
   text link, because Apple's marketing rules allow only the official badge artwork, unaltered, and it is not in the
   repo (the old hand-drawn "Download on the App Store" look-alike is gone; never draw one). Off, nothing names the App
-  Store as where to get the app: the /athletes "Ready to train?" line is not rendered, its step 3 is "Open the app",
-  and checkout's done step says "Ask <coach> how to get the <name> app" instead of "Install … from the App Store".
+  Store as where to get the app, and nothing tells anyone to get an app they can't get (review 2026-10-25,
+  `site/appCopy.js`, `node --test src/web/site/appCopy.test.js`): the /athletes "Ready to train?" line is not rendered,
+  its step 3 is "The app comes from your coach" ("The <name> iPhone app isn't public yet; your coach sends you the link
+  when it's available."), the home FAQ and checkout's done step say the same instead of "get the app" / "Install …
+  from the App Store". With the flag on: "Open the app", "then get the app to train", "Install … from the App Store".
   Owner: add Apple's badge SVG (Apple's marketing tools) to `public/` and draw it in `AppStoreLink`, then set the flag
   on Vercel when the app is public.
 - **The home page's Founding card (launch plan W4, 2026-10-25; branch `launch/w4-founding-card`).** Where the
   bracketed testimonials were, `Home.jsx FoundingCard`: `PLAN_LINES.founding`, the live counter, three lines of the
-  offer (numbers from pricing.js) and "Claim a Founding spot" (→ "About Founding" once full or closed). The counter is
-  the one /founding draws: `site/useFoundingSlots.js` (`founding_slots()`, undefined while loading, null on failure,
-  `retry`, `reload`, `todayIso`) + `site/FoundingCount.jsx` (nothing numeric while loading, "Couldn't load how many spots
-  are taken." with Try again, "9 of 15 taken" with the meter, "All 15 spots are taken.", "Founding spots closed on …").
+  offer (numbers from pricing.js) and the site's `FoundingCta` ("Claim a Founding spot", "Join as a coach" once full or
+  closed, as everywhere). The counter is the page's one read: `site/useFoundingSlots.js` (`useFoundingView`: the
+  shared `founding_slots()`, undefined while loading, null on failure, `retry`, `reload`, `phase`, `mode`, `closesOn`) +
+  `site/FoundingCount.jsx` (while loading an empty `role="status"` paragraph with `aria-busy` and its label, nothing
+  numeric; "Couldn't load how many spots are taken." with Try again, "9 of 15 taken" with the meter, "All 15 spots are
+  taken.", "Founding spots closed on …" with the counter's day, or the config's once that day passed).
 - **Pricing and where Elite is bought (launch plan W5, 2026-10-25; branch `launch/w5-pricing`).** "Free to try.", the
   Founding column and the Founding series in the calculator were already there (PR 1 web, `launch/1-fee-engine-web`).
-  W5 adds the region-true Elite copy, ONE source: `site/planLines.js ELITE_WHERE` (`us`: on the web from the coach
-  dashboard, which the app opens; `elsewhere`: in the iPhone app through the App Store, in the local currency, or on
-  the web; `manage`: Stripe receipt link vs Apple subscriptions; `short` for the Elite cards). Used by the Elite card
-  and its question on /pricing, the Elite plan on /, and "How do I get Coach Elite?" on /support; pinned in
-  `pricing.test.js` (never "billed through Apple" for everyone, never "web only"). It mirrors the app (US storefront →
-  web, other storefronts → StoreKit) and elite-checkout, which sells to anyone on the web. Still open (founder wording,
-  the rename-day Terms, decision L8): Terms §6 and the terms page's meta description (`legalMeta.js`) say Elite is
-  sold through Apple, and the Privacy Policy says the same.
+  W5 adds where Elite is bought, ONE source and ONE sentence true everywhere (owner decision R3, 2026-10-25: the iOS
+  app offers the App Store purchase on EVERY storefront, and on the US storefront the web option beside it;
+  elite-checkout sells to anyone, Stripe, US dollars): `site/planLines.js ELITE_WHERE.buy` = "Subscribe on the web
+  from your coach dashboard (Stripe, US dollars), or in the iPhone app through the App Store.", the App Store clause
+  ONLY with `VITE_APP_STORE_LIVE=on` (`eliteWhere(storeLive)`; review M1: off, the sentence is the web part alone);
+  `manage`: Stripe receipt link vs Apple subscriptions. No region clause anywhere. Used by the Elite card and its
+  question on /pricing, the Elite plan on /, and "How do I get Coach Elite?" on /support; pinned for both flags in
+  `pricing.test.js` (never "billed through Apple" for everyone, never "web only"). /pricing's Founding plan says
+  "Apply for a spot", or "Join as a coach" once Founding is full or closed (R4). Hard gate (`docs/DEPLOY_ORDER.md`):
+  Terms §6 and the terms page's description (`legalMeta.js`) say Elite is sold through Apple, and the Privacy Policy
+  says the same, so the founder's rename-day Terms (decision L8) go live with or before W5; this branch does not
+  edit legal text.
 - **The coach-page illustration (launch plan W6, 2026-10-25; branch `launch/w6-coach-page-mock`).** Beside "From link to
   first payout." a second phone shows a coach's page as `/c/<handle>` draws it (`Home.jsx CoachPageScreen`,
-  aria-hidden, nothing focusable): `<SITE_HOST>/c/your-name`, "Your name" / "What you coach" (a placeholder, never a
+  aria-hidden, nothing focusable): `<SITE_HOST>/c/<your-name>` (the brackets drawn literally: outside the handle
+  rule, so no coach can claim the example's address; review 2026-10-25), "Your name" / "What you coach" (a placeholder, never a
   real or realistic coach), the Founding badge, an undated block of `BLOCK_DEFAULT_WEEKS` at 6 × `MINIMUM_CHARGE_USD`
   a month with the real page's price line ("$150 / month · 2 payments ($300 in all)"), a session at 2 × the minimum
   and the 24-hour cancel line, "Coached on <name>". Every value is `site/coachPageSample.js` (pure; the real page's
   `blocks.js` / `season.js` builders over pricing.js; `node --test src/web/site/coachPageSample.test.js`), and the
   caption under the phone says it is an example. No date in it (the static page and the browser draw the same).
-- **Static pages (launch plan W7, 2026-10-25; branch `launch/w7-prerender`).** Home, `/pricing`, `/athletes` and
-  `/support` (Help) are written to static HTML at build time, so a crawler, an unfurler or a slow phone reads the page
+- **Static pages (launch plan W7, 2026-10-25; branch `launch/w7-prerender`).** Home, `/pricing`, `/athletes`,
+  `/support` (Help) and `/founding` (since review 1: every coach CTA leads there and coaches share it) are written to static HTML at build time, so a crawler, an unfurler or a slow phone reads the page
   before any script. `npm run build` is three steps: `vite build` (client; `spaShell` in `vite.config.js` also emits
   `dist/spa.html`, a copy of the shell, before the service worker is generated), `vite build --ssr
   src/web/site/prerender.jsx --outDir dist-ssr` (the same tree `main.jsx` hydrates for those paths, under
@@ -104,8 +120,15 @@ from `plans`.
   `usePageMeta` reads the same entries). `/` overwrites `dist/index.html`; the others go to `dist/prerendered/*.html`.
   Pure Node (no browser), so Vercel's build runs it; `vercel.json` names `"buildCommand": "npm run build"` so the Vite
   preset's `vite build` can never skip it. **Routing:** `vercel.json` rewrites `/` → `/index.html` and `/pricing`,
-  `/athletes`, `/support` → their files BEFORE everything else; the `?spa` fallback and the SPA catch-all now serve
-  `/spa.html` (never the static home page), and the catch-all still leaves `api/` and the AASA file alone.
+  `/athletes`, `/support`, `/founding` → their files BEFORE everything else; the `?spa` fallback and the SPA catch-all
+  now serve `/spa.html` (never the static home page), and the catch-all still leaves `api/` and the AASA file alone.
+  A direct hit on a file (`/index.html`, `/prerendered/<page>.html`) is a 308 to the clean path (`redirects`, one per
+  `PRERENDERED_PAGES` entry; Vercel matches redirects on the request's own path, never on a rewrite's destination, so
+  the rewrites keep working). `/spa.html` is NOT redirected (the service worker precaches it and the coach-meta
+  function's fallback fetches it; a redirect would hand both the static home page): it answers `X-Robots-Tag:
+  noindex`. `/founding` prerenders as the application in its loading state (no counter number, no date); once Founding
+  is full or closed the browser turns it into the coach sign-up after hydrating and sets the title then; the static
+  head stays the Founding one.
   **Hydration:** `main.jsx` calls `hydrateRoot` only when `#root[data-prerendered]` equals `location.pathname`
   (`/pricing/` with a slash is the shell → `createRoot`). Nothing in those four pages may render differently on the
   server and in the browser's first render: no date (the footer's year carries `suppressHydrationWarning`), no
@@ -113,9 +136,14 @@ from `plans`.
   both builds share the env. A mismatch is React error #418 in the console (the headless check fails on it and on any
   node of `#root` replaced). **Service worker:** `navigateFallback: 'spa.html'`; `index.html`, `prerendered/**` and the
   share image are not precached (`globIgnores`); `navigateFallbackDenylist` = the AASA path, `/api/`, and the four
-  static paths (built from `PRERENDERED_PAGES`), so a visitor with the worker still gets the files. The coach page's
+  static paths (built from `PRERENDERED_PAGES`), so a visitor with the worker still gets the files. `/` is NOT
+  precached, on purpose (review 1): a precache entry is hashed before the prerender rewrites `index.html` (it would
+  never match the file served), and a precached `/` would answer the home page from the cache ahead of the network,
+  the stale-page problem the denylist exists to stop. So the installed web app's start URL needs the network; offline
+  it shows the browser's own offline page. The coach page's
   link-preview function reads `dist/spa.html` (`includeFiles`, or `<origin>/spa.html`). `node --test
-  src/web/prerender.test.js` pins the list, the rewrites, the denylist and the build command.
+  src/web/prerender.test.js` pins the list, the rewrites, the redirects, the shell's noindex, the denylist and the
+  build command.
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and
@@ -312,8 +340,19 @@ from `plans`.
   is now true for new purchases; the site still waits on the Terms §16 decision below, and the
   one unstamped live subscription is billed by the plan's current length until it is stamped.
 - **Founding (2026-10-25, launch plan Sprint 1 PR 2; `src/web/site/Founding.jsx`, rules in `src/web/founding.js`,
-  `node --test src/web/founding.test.js`).** `/founding` in the site shell, linked from nowhere yet (the "Claim a Founding
-  spot" CTA is website item W3). Server: fitlink-app migration `20261025110000` (threat model B38, A56–A58).
+  `node --test src/web/founding.test.js`).** `/founding` in the site shell, where every coach call to action leads (W3).
+  Server: fitlink-app migration `20261025110000` (threat model B38, A56–A58).
+  - **After Founding: the coach sign-up (owner decision R4, 2026-10-25).** Once `foundingView` says full or closed
+    (the counter's `open`, or the config's close day in `closes_tz`, whichever first; tests open / full / closed /
+    full-and-closed / loading / failed), the page is "Join as a coach.": the counter's full or closed line, the plan
+    (free: 10%, up to 5 paying athletes; Coach Elite optional, numbers from pricing.js), the SAME sign-in (email code
+    with `FOUNDING_SIGN_UP_DATA`, or Apple back to `/founding`) and the SAME write rules (`isOwnSession`, Continue as a
+    coach, `finishCoachSignUp`, nothing before the person acts), then "Your coach account is ready." with Open your
+    coach dashboard (`/coach`) and, with `VITE_APP_STORE_LIVE`, the App Store link. No application, no spot. An
+    application already on file (not withdrawn) keeps its status view. While the counter loads or fails before the
+    close day the page stays the application (apply_founding refuses a full or closed house). The server refuses no
+    coach sign-up when Founding is closed (read 2026-10-25: only `apply_founding` checks the close; `trainers` INSERT
+    is `trainers_insert_own` + `guard_entitlement_columns`, `handle_new_user` reads only the `founding_web` marker).
   - **Applying never takes a spot.** The form calls `apply_founding` (the caller's own application, status `pending`);
     Victor takes a spot for the coach with `grant_founding` after the setup call. Never build a web path that sets
     founding: farmed accounts would take all 15.
@@ -691,7 +730,7 @@ from `plans`.
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.
   `vite.config.js` keeps the PWA plugin (manifest, service worker); the head comes from `brand.js` + `pageMeta.js`
-  (W1), the four static pages carry their own (W7), and each page sets its own on navigation through `usePageMeta`.
+  (W1), the five static pages carry their own (W7), and each page sets its own on navigation through `usePageMeta`.
 - **Universal links.** `public/.well-known/apple-app-site-association` (JSON, no extension, no
   comments) lists `applinks` for `SCJ422P9KZ.fitlink.app` with components `/i/*` and `/live/*`,
   plus `webcredentials`. `vercel.json` gives it `Content-Type: application/json` and

@@ -3,6 +3,13 @@
   "functions": {
     "api/coach-meta/*.js": { "includeFiles": "dist/spa.html", "maxDuration": 10 }
   },
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/prerendered/pricing.html", "destination": "/pricing", "permanent": true },
+    { "source": "/prerendered/athletes.html", "destination": "/athletes", "permanent": true },
+    { "source": "/prerendered/founding.html", "destination": "/founding", "permanent": true },
+    { "source": "/prerendered/support.html", "destination": "/support", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/admin",
@@ -19,6 +26,12 @@
       ]
     },
     {
+      "source": "/spa.html",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    },
+    {
       "source": "/.well-known/apple-app-site-association",
       "headers": [
         { "key": "Content-Type", "value": "application/json" },
@@ -31,6 +44,7 @@
     { "source": "/pricing", "destination": "/prerendered/pricing.html" },
     { "source": "/athletes", "destination": "/prerendered/athletes.html" },
     { "source": "/support", "destination": "/prerendered/support.html" },
+    { "source": "/founding", "destination": "/prerendered/founding.html" },
     {
       "source": "/c/:handle",
       "has": [{ "type": "query", "key": "spa" }],
