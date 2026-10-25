@@ -42,7 +42,7 @@ fitlink-app `supabase/manual/ROLLOUT_20261025_coach_page.md`.
 4. `coach-og` deployed (`--no-verify-jwt`), then `create-subscription`, `stripe-webhook`,
    `confirm-subscription` (they bundle `_shared/pageEvents.ts`: the `paid` stage).
 5. Then this site. Vercel runs `api/coach-meta/[handle].js` (the link-preview tags for
-   `/c/:handle`, `includeFiles: dist/index.html`) ONLY for link-preview bots: `vercel.json`
+   `/c/:handle`, `includeFiles: dist/spa.html` since W7) ONLY for link-preview bots: `vercel.json`
    rewrites `/c/:handle` to `/api/coach-meta/:handle` when the user agent matches
    `src/web/linkPreviewBots.js` (a test keeps the two equal); people get the SPA from the
    CDN. The function reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` at run time
@@ -133,3 +133,14 @@ change the site only; each says below what it waits for.
 - **W6 coach-page illustration** (`launch/w6-coach-page-mock`): no server dependency (a picture with numbers from
   the config copy). It shows blocks, sessions and the Founding badge, so ship it with or after the site of those
   features (blocks and coach page above).
+- **W7 static pages** (`launch/w7-prerender`): no server dependency. `vercel.json` now sets `buildCommand` to
+  `npm run build` (three steps, see CLAUDE.md); a dashboard Build Command loses to vercel.json. After the deploy:
+  - `curl -s https://fitlink.coach/ | grep -c 'data-prerendered="/"'` prints 1, and the same for `/pricing`,
+    `/athletes`, `/support` with their paths; each shows its own `<title>` and `<link rel="canonical">`;
+  - `curl -s https://fitlink.coach/coach | grep -c 'data-prerendered'` prints 0 (the shell), and so does
+    `/c/<handle>` for a browser user agent; `curl -s -A 'facebookexternalhit/1.1' https://fitlink.coach/c/<handle>`
+    still prints ONE `og:title`, the coach's;
+  - `curl -sI https://fitlink.coach/.well-known/apple-app-site-association` is still `application/json`, and
+    `https://fitlink.coach/api/coach-meta/<handle>` still reaches the function;
+  - in a browser that had the old service worker: reload twice (autoUpdate), then `/pricing` shows the page and the
+    console has no React error #418.
