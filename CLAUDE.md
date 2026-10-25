@@ -26,8 +26,9 @@ ids (invite code, plan id, client id), never a price or a payee: the server comp
 from `plans`.
 
 - **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
-  is the layout route (glass header with the brand mark + Home / Pricing / For athletes / Help,
-  Sign in → `/coach`, "Claim a Founding spot" → `/founding` (W3); footer with Help · Privacy · Terms ·
+  is the layout route (glass header with the brand mark + Home · Pricing · Help · Sign in → `/coach` · "Claim a
+  Founding spot" → `/founding` (W3, W8; at phone width Sign in ends the nav row, `.s-nav-signin`, because the actions
+  keep only the button); footer with Help · For athletes (off the header since W8; the page stays and is static) · Privacy · Terms ·
   Delete account · `SUPPORT_EMAIL`; scroll-to-top; a `body` class so overscroll is
   cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
   `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,

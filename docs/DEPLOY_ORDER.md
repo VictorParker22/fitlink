@@ -144,3 +144,4 @@ change the site only; each says below what it waits for.
     `https://fitlink.coach/api/coach-meta/<handle>` still reaches the function;
   - in a browser that had the old service worker: reload twice (autoUpdate), then `/pricing` shows the page and the
     console has no React error #418.
+- **W8 nav** (`launch/w8-nav`): copy and layout only, no server dependency; ships with W3 (both lead to `/founding`).

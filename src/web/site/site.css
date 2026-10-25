@@ -49,6 +49,7 @@ body.fl-site-body-dark { background: #0B0C0F; }
 .s-nav a { min-height: 40px; display: flex; align-items: center; padding: 0 14px; border-radius: 999px; color: var(--fl-text); text-decoration: none; font-size: 15px; font-weight: 500; }
 .s-nav a[aria-current="page"] { background: rgba(21, 23, 28, 0.08); font-weight: 700; }
 .s-nav a:hover { color: var(--fl-text); background: rgba(21, 23, 28, 0.05); }
+.s-nav .s-nav-signin { display: none; }
 .s-header-actions { display: flex; align-items: center; gap: 4px; }
 .s-header-actions .signin { min-height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 999px; color: var(--fl-text); font-size: 15px; font-weight: 500; }
 .s-header-actions .fl-btn { min-height: 44px; padding: 0 20px; }
@@ -60,6 +61,7 @@ body.fl-site-body-dark { background: #0B0C0F; }
   .s-nav { order: 3; width: 100%; padding: 4px 0 2px; border-top: 1px solid rgba(21, 23, 28, 0.08); }
   .s-nav a { padding: 0 12px; font-size: 14px; min-height: 38px; }
   .s-header-actions .signin { display: none; }
+  .s-nav .s-nav-signin { display: flex; margin-left: auto; }
 }
 
 /* ── layout and type ────────────────────────────────────────────────── */

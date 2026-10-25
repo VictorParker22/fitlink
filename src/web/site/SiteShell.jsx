@@ -1,5 +1,6 @@
 // The shell every marketing and policy page shares: the glass header with the
-// F mark and the four-item nav, the footer with the legal links and the
+// brand mark, the nav (Home · Pricing · Help, then Sign in and "Claim a Founding
+// spot": launch plan W8; "For athletes" moved to the footer, the page stays), the footer with the legal links and the
 // support mailbox, scroll-to-top on navigation, and the body class that keeps
 // overscroll cream instead of the legacy app's dark body.
 import { useEffect } from 'react';
@@ -35,8 +36,9 @@ export function SiteHeader() {
         <nav className="s-nav" aria-label="Site">
           <NavLink to="/" end>Home</NavLink>
           <NavLink to="/pricing">Pricing</NavLink>
-          <NavLink to="/athletes">For athletes</NavLink>
           <NavLink to="/support">Help</NavLink>
+          {/* Phone width: the actions keep only the Founding button, so Sign in sits at the end of the nav row (W8). */}
+          <Link className="s-nav-signin" to="/coach">Sign in</Link>
         </nav>
         <div className="s-header-actions">
           <Link className="signin" to="/coach">Sign in</Link>
@@ -55,6 +57,7 @@ export function SiteFooter() {
           <span className="s-footer-brand"><Mark small />{BRAND_NAME}</span>
           <nav aria-label="Footer">
             <Link to="/support">Help</Link>
+            <Link to="/athletes">For athletes</Link>
             <Link to="/privacy">Privacy</Link>
             <Link to="/terms">Terms</Link>
             <Link to="/delete-account">Delete account</Link>
