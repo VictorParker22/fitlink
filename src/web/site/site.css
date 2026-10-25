@@ -389,6 +389,7 @@ body.fl-site-body-dark { background: #0B0C0F; }
 .s-founding { display: flex; flex-direction: column; gap: 40px; padding-top: 48px; padding-bottom: 72px; }
 .s-founding-count { display: flex; flex-direction: column; gap: 10px; min-height: 28px; margin: 0; font-size: 18px; }
 .s-founding-count b { font-size: 20px; }
+.s-founding-count-failed .fl-btn { align-self: flex-start; }
 .s-founding-meter { display: block; height: 10px; border-radius: 999px; background: var(--fl-raised); overflow: hidden; max-width: 360px; }
 .s-founding-meter span { display: block; height: 100%; background: var(--fl-accent); border-radius: 999px; }
 .s-founding-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }

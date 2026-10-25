@@ -46,9 +46,14 @@ export const SETTING_UP = 'Setting up your account…';
 export const SIGN_UP_FAILED = 'We couldn’t finish setting up your account. You haven’t been charged. Try again in a moment.';
 /** /founding (2026-10-25): the page is for coach accounts; an athlete account is told so and never converted. */
 export const FOUNDING_NOT_COACH_TITLE = 'This page is for coach accounts';
-export const FOUNDING_ATHLETE_ACCOUNT = 'This account trains with a coach, so it can’t apply for a Founding spot. To apply, sign out and use the email you coach with, or a new one.';
-/** /founding: a new account here (email code) is made as a coach account; an unfinished Apple sign-up is finished as one. */
+export const FOUNDING_ATHLETE_ACCOUNT = 'This account was made as an athlete account, so it can’t apply for a Founding spot. To apply, sign out and use the email you coach with, or a new one.';
+/** /founding: a new account here (email code) is made as a coach account once the code is verified; an unfinished Apple sign-up is finished as one. */
 export const FOUNDING_SIGN_IN_SUB = 'Sign in with the account you coach with. New here? The code makes your coach account; no password.';
+/** /founding (review 2026-10-25): a session this tab did not make is named, and nothing is written before this tap. */
+export const FOUNDING_CONTINUE_TITLE = 'This isn’t a coach account yet';
+export const FOUNDING_CONTINUE_BODY = 'Founding spots are for coach accounts. Continue as a coach to set this account up as one; nothing about your application is sent until you apply.';
+export const FOUNDING_CONTINUE = 'Continue as a coach';
+export const FOUNDING_CONTINUING = 'Setting up your coach account…';
 export const FOUNDING_FINISH_FAILED = 'We couldn’t finish setting up your coach account. Nothing was sent. Try again in a moment.';
 export const TRAINER_IN_USE = 'This Apple ID already has a coach account on FitLink. To train with this coach, open the link in the FitLink app.';
 export const RESUME_PASS_GONE = 'The pass you chose isn’t for sale any more. Pick another pass below.';

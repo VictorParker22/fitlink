@@ -7,7 +7,7 @@ import {
   APPLE_RETURN_PATHS, CHECKOUT_RETURN_KEY, APPLE_START_FAILED, SIGN_UP_FAILED, TRAINER_IN_USE, FOUNDING_FINISH_FAILED,
   appleAvailable, parseAuthReturn, parkedCheckoutValue, readParkedCheckout, cleanName, metadataName,
 } from './appleAuth';
-import { parseSlots } from './founding';
+import { FOUNDING_RETURN_KEY, foundingReturnValue, parseSlots, readFoundingReturn } from './founding';
 import { APPLE_WEB_ENABLED } from './authConfig';
 
 export { normalizeCode } from './codes';
@@ -195,9 +195,15 @@ export async function finishAthleteSignUp({ name = '' } = {}) {
  * /founding (2026-10-25): finish an account as a COACH, the way the iOS app's
  * AuthService.claimRole(.trainer) does it: the caller's own trainers row when it
  * is missing (RLS trainers_insert_own: id = auth.uid()), then role 'trainer' in
- * metadata. Called ONLY for appleSignUpUnfinished(await freshUser()) (no role
- * yet; never on an athlete account: the page checks myRole() first). `user` is
- * freshUser()'s answer. Throws { code: 'unauthorized' | 'finish_failed' }.
+ * metadata. Called ONLY when founding.js accountStep() says 'finish' (never on an
+ * athlete account), and ONLY for this tab's own session (a code typed here, this
+ * tab's Apple return) or after the person tapped Continue as a coach under
+ * "Signed in as …" (review 2026-10-25: a role-less session someone left in the
+ * browser was made a coach on page load). A /founding email sign-up has no
+ * trainers row (fitlink-app 20261025110000 handle_new_user skips
+ * signup 'founding_web'), so this is where the coach card is first made: after
+ * the code was verified. `user` is freshUser()'s answer. Throws
+ * { code: 'unauthorized' | 'finish_failed' }.
  */
 export async function finishCoachSignUp(user) {
   const fail = (status) => {
@@ -273,6 +279,18 @@ export async function foundingMember(trainerId) {
     return false;
   }
 }
+
+/** Remember, in this tab only, that Sign in with Apple was started on /founding. false when the browser refuses. */
+export function parkFoundingReturn() {
+  try { window.sessionStorage.setItem(FOUNDING_RETURN_KEY, foundingReturnValue()); return true; } catch { return false; }
+}
+/** Read and forget it: when this tab started Sign in with Apple on /founding (ms), or null. */
+export function takeFoundingReturn() {
+  let raw = null;
+  try { raw = window.sessionStorage.getItem(FOUNDING_RETURN_KEY); window.sessionStorage.removeItem(FOUNDING_RETURN_KEY); } catch { /* none */ }
+  return readFoundingReturn(raw);
+}
+export function clearFoundingReturn() { try { window.sessionStorage.removeItem(FOUNDING_RETURN_KEY); } catch { /* none */ } }
 
 /** Remember, in this tab only, which pass an Apple sign-in started from. false when the browser refuses. */
 export function parkCheckout({ code, planId, name }) {

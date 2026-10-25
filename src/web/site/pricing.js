@@ -36,8 +36,14 @@ export const FOUNDING_FEE_PERCENT = ELITE_FEE_PERCENT;
 export const FOUNDING_MIN_PAYING_ATHLETES = 5;
 /** The notice before the free year ends (day 335 of 365). */
 export const FOUNDING_NOTICE_DAYS_BEFORE = 30;
-/** No paid athlete payment for this many days pauses Founding pricing; the badge stays. */
-export const FOUNDING_PAUSE_DAYS = 60;
+/**
+ * Founding pricing ENDS (the server suspends it; only the operator lifts it, and
+ * whether it ever comes back by itself is not decided) when none of the coach's
+ * athletes has paid through the platform for this many days, counted from the
+ * grant or from the last athlete payment, whichever is later. The badge stays.
+ * Server: pricing.json tiers.founding.suspend_after_days_without_paid_event.
+ */
+export const FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT = 60;
 /** The last day to apply (the server closes at midnight after it, California time). */
 export const FOUNDING_CLOSES_ON = '2026-12-31';
 
@@ -46,7 +52,8 @@ export const APP_STORE_URL = 'https://apps.apple.com/app/id6779058450';
 /** The mailbox the iOS submission pack names. It must exist before launch. */
 export const SUPPORT_EMAIL = 'support@fitlink.coach';
 
-export const NEEDS_CONFIRM = Boolean(import.meta.env.DEV);
+// `?? {}`: node --test imports this file too (no Vite there, so no import.meta.env).
+export const NEEDS_CONFIRM = Boolean((import.meta.env ?? {}).DEV);
 
 /** `$1,234` or `$12.50`: whole dollars when there are no cents. */
 export function usd(amount) {

@@ -9,6 +9,87 @@
 //
 // Copy rules: sentence case, no emoji, no gendered pronouns ("you", "they"),
 // never a number the server did not say for the counter.
+import { appleSignUpUnfinished } from './appleAuth.js';
+
+/**
+ * The metadata the page's email-code sign-up sends (review 2026-10-25). NO role:
+ * signInWithOtp makes the auth user when the code is SENT, and fitlink-app
+ * migration 20261025110000's handle_new_user makes no trainers row (so nothing
+ * in the public trainers_public) for this marker. The coach row is made by the
+ * page after the code is verified (finishCoachSignUp). A role-less account
+ * opened in the iOS app goes to its role screen, which handles a missing row.
+ */
+export const FOUNDING_SIGN_UP_DATA = Object.freeze({ signup: 'founding_web' });
+
+/** sessionStorage key of a Sign in with Apple this tab started on /founding, and how long it is good for. */
+export const FOUNDING_RETURN_KEY = 'fitlink-web-founding-return';
+export const FOUNDING_RETURN_TTL_MS = 30 * 60 * 1000;
+/** How far the browser's clock may sit from the server's when the return is matched to the sign-in. */
+const CLOCK_SKEW_MS = 10 * 60 * 1000;
+
+/** The value parked before the browser leaves for Apple. */
+export function foundingReturnValue(now = Date.now()) {
+  return JSON.stringify({ v: 1, at: now });
+}
+
+/** When this tab started Sign in with Apple on /founding (ms), or null (wrong shape, older than 30 minutes, from the future). */
+export function readFoundingReturn(raw, now = Date.now()) {
+  if (typeof raw !== 'string') return null;
+  let o;
+  try { o = JSON.parse(raw); } catch { return null; }
+  if (!o || typeof o !== 'object' || o.v !== 1 || typeof o.at !== 'number' || !Number.isFinite(o.at)) return null;
+  if (o.at > now + 60_000 || now - o.at > FOUNDING_RETURN_TTL_MS) return null;
+  return o.at;
+}
+
+/**
+ * Whether the signed-in session is THIS tab's own, so the page may finish the
+ * account as a coach without asking (finding 1, review 2026-10-25). Own means
+ * one of: the code was typed in this tab for this account's email
+ * (`typedEmail`), or this tab started Sign in with Apple on /founding
+ * (`appleStartedAt`, read once from sessionStorage), the return carried no
+ * failure note, and the server says the account signed in after that start.
+ * Anything else (a session someone left in the browser) is named first and
+ * waits for a tap.
+ */
+export function isOwnSession(user, { typedEmail = null, appleStartedAt = null, note = null } = {}) {
+  if (!user) return false;
+  const email = String(user.email ?? '').trim().toLowerCase();
+  if (typedEmail && email && email === String(typedEmail).trim().toLowerCase()) return true;
+  if (appleStartedAt === null || appleStartedAt === undefined || note) return false;
+  const signedIn = Date.parse(user.last_sign_in_at ?? '');
+  return Number.isFinite(signedIn) && signedIn >= appleStartedAt - CLOCK_SKEW_MS;
+}
+
+/**
+ * What the page does with a signed-in account. `role` is myRole()'s answer
+ * (coach | athlete | none), `user` freshUser()'s.
+ *   'notCoach' — an athlete account (a clients row, or made as one: metadata
+ *                role 'client'); never converted here.
+ *   'finish'   — not a coach account yet but may become one: no rows and no
+ *                role (a /founding email sign-up), a coach role with its row
+ *                missing, or an Apple sign-up nobody finished. The coach row and
+ *                role 'trainer' are written by finishCoachSignUp, only for this
+ *                tab's own session or after the Continue tap.
+ *   'coach'    — a coach account: the application.
+ */
+export function accountStep(user, role) {
+  if (role === 'athlete') return 'notCoach';
+  if (appleSignUpUnfinished(user)) return 'finish';
+  if (role === 'coach') return 'coach';
+  if (user?.user_metadata?.role === 'client') return 'notCoach';
+  return 'finish';
+}
+
+/** A pending or booked application while the house is full or closed: only instagram and phone may change (the server keeps the rest). */
+export function contactOnly(phase, row) {
+  return (phase === 'full' || phase === 'closed') && (row?.status === 'pending' || row?.status === 'booked');
+}
+
+/** No application that counts yet: no row, or a withdrawn one (applying again is a new application). */
+export function isNewApplication(row) {
+  return !row || row.status === 'withdrawn';
+}
 
 /** The athlete-count bands apply_founding accepts, with their words. */
 export const ATHLETE_BANDS = Object.freeze([
