@@ -27,7 +27,7 @@ from `plans`.
 
 - **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
   is the layout route (glass header with the brand mark + Home / Pricing / For athletes / Help,
-  Sign in → `/coach`, "Claim a Founding spot" → `/founding` (W3); footer with Help · Privacy · Terms ·
+  Sign in → `/coach`, "Claim a Founding spot" (or "Join as a coach" once Founding is full or closed) → `/founding` (W3); footer with Help · Privacy · Terms ·
   Delete account · `SUPPORT_EMAIL`; scroll-to-top; a `body` class so overscroll is
   cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
   `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,
@@ -59,13 +59,22 @@ from `plans`.
   title of the shell) and the start of `HOME_DESCRIPTION`. The features section that used to carry the line is now
   "A to-do list that empties." (the line is said once).
 - **Calls to action (launch plan W3, 2026-10-25; branch `launch/w3-founding-ctas`).** Every "get the app" call to
-  action is "Claim a Founding spot" → `/founding` (`site/flags.js` `FOUNDING_CTA` / `FOUNDING_PATH`): the header, the
-  home hero and closing band (with `PLAN_LINES.founding` beside it), the Free plan on /pricing, the 404. The App Store
+  action is `site/FoundingCta.jsx` → `/founding`: the header, the home hero and closing band, the Free plan on
+  /pricing, the 404. It reads "Claim a Founding spot" (`FOUNDING_CTA`) while Founding is open, loading or its read
+  failed (the page it opens says the truth), and "Join as a coach" (`JOIN_CTA`) once `founding.js foundingView` says
+  full or closed (review 2026-10-25 M2): the counter's `open`, or the config's close day passed in its zone
+  (`todayIn(FOUNDING_CLOSES_TZ)`), whichever says closed first. Every copy on a page shares ONE `founding_slots()` read
+  (`site/useFoundingSlots.js`: a module store under `useSyncExternalStore`, started by the first component that mounts;
+  the prerendered markup and the render that hydrates are the loading state with no date). The closing band's line is
+  `PLAN_LINES.founding`, or `PLAN_LINES.free` once Founding is over. The App Store
   is linked ONLY in a build with `VITE_APP_STORE_LIVE=on` (`APP_STORE_LIVE`), through `site/AppStoreLink.jsx`: a plain
   text link, because Apple's marketing rules allow only the official badge artwork, unaltered, and it is not in the
   repo (the old hand-drawn "Download on the App Store" look-alike is gone; never draw one). Off, nothing names the App
-  Store as where to get the app: the /athletes "Ready to train?" line is not rendered, its step 3 is "Open the app",
-  and checkout's done step says "Ask <coach> how to get the <name> app" instead of "Install … from the App Store".
+  Store as where to get the app, and nothing tells anyone to get an app they can't get (review 2026-10-25,
+  `site/appCopy.js`, `node --test src/web/site/appCopy.test.js`): the /athletes "Ready to train?" line is not rendered,
+  its step 3 is "The app comes from your coach" ("The <name> iPhone app isn't public yet; your coach sends you the link
+  when it's available."), the home FAQ and checkout's done step say the same instead of "get the app" / "Install …
+  from the App Store". With the flag on: "Open the app", "then get the app to train", "Install … from the App Store".
   Owner: add Apple's badge SVG (Apple's marketing tools) to `public/` and draw it in `AppStoreLink`, then set the flag
   on Vercel when the app is public.
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
@@ -264,8 +273,19 @@ from `plans`.
   is now true for new purchases; the site still waits on the Terms §16 decision below, and the
   one unstamped live subscription is billed by the plan's current length until it is stamped.
 - **Founding (2026-10-25, launch plan Sprint 1 PR 2; `src/web/site/Founding.jsx`, rules in `src/web/founding.js`,
-  `node --test src/web/founding.test.js`).** `/founding` in the site shell, linked from nowhere yet (the "Claim a Founding
-  spot" CTA is website item W3). Server: fitlink-app migration `20261025110000` (threat model B38, A56–A58).
+  `node --test src/web/founding.test.js`).** `/founding` in the site shell, where every coach call to action leads (W3).
+  Server: fitlink-app migration `20261025110000` (threat model B38, A56–A58).
+  - **After Founding: the coach sign-up (owner decision R4, 2026-10-25).** Once `foundingView` says full or closed
+    (the counter's `open`, or the config's close day in `closes_tz`, whichever first; tests open / full / closed /
+    full-and-closed / loading / failed), the page is "Join as a coach.": the counter's full or closed line, the plan
+    (free: 10%, up to 5 paying athletes; Coach Elite optional, numbers from pricing.js), the SAME sign-in (email code
+    with `FOUNDING_SIGN_UP_DATA`, or Apple back to `/founding`) and the SAME write rules (`isOwnSession`, Continue as a
+    coach, `finishCoachSignUp`, nothing before the person acts), then "Your coach account is ready." with Open your
+    coach dashboard (`/coach`) and, with `VITE_APP_STORE_LIVE`, the App Store link. No application, no spot. An
+    application already on file (not withdrawn) keeps its status view. While the counter loads or fails before the
+    close day the page stays the application (apply_founding refuses a full or closed house). The server refuses no
+    coach sign-up when Founding is closed (read 2026-10-25: only `apply_founding` checks the close; `trainers` INSERT
+    is `trainers_insert_own` + `guard_entitlement_columns`, `handle_new_user` reads only the `founding_web` marker).
   - **Applying never takes a spot.** The form calls `apply_founding` (the caller's own application, status `pending`);
     Victor takes a spot for the coach with `grant_founding` after the setup call. Never build a web path that sets
     founding: farmed accounts would take all 15.

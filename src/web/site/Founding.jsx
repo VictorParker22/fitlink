@@ -1,6 +1,15 @@
 // /founding (launch plan Sprint 1 PR 2, 2026-10-25): the Founding offer, the
-// live counter and the application form. Linked from nowhere yet (the site's
-// "Claim a Founding spot" CTA is a later PR).
+// live counter and the application form; every "Claim a Founding spot" call to
+// action leads here (W3).
+//
+// Once Founding is full or closed (owner decision R4, 2026-10-25; founding.js
+// foundingView: the counter's `open`, or the config's close day in its zone,
+// whichever says closed first) the page is the coach sign-up on standard
+// pricing: the same sign-in and the same rules below, finishCoachSignUp, then
+// what's next (the free plan, Elite optional, /coach). No application, no spot.
+// An application already on file keeps its status view. While the counter loads
+// or fails before the close day, the page stays the application (apply_founding
+// refuses a full or closed house on the server).
 //
 // What the server does (fitlink-app migration 20261025110000): founding_slots()
 // is the counter, `{taken, total, closes_on, open}`, taken = spots the operator
@@ -43,31 +52,36 @@
 // - Nothing is emailed by the server. The booking link is the build's
 //   VITE_FOUNDING_CALENDAR_URL (https only); without it the page says Victor
 //   will write.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
 import {
-  appleAvailableHere, applyFounding, clearFoundingReturn, finishCoachSignUp, foundingSlots, freshUser, isStandaloneHere,
+  appleAvailableHere, applyFounding, clearFoundingReturn, finishCoachSignUp, freshUser, isStandaloneHere,
   myFoundingApplication, myRole, parkFoundingReturn, signInWithApple, signOutLocal, takeAuthReturnNote, takeFoundingReturn,
 } from '../api';
 import {
   accountLabel, metadataName, usedApple, FOUNDING_ATHLETE_ACCOUNT, FOUNDING_CONTINUE, FOUNDING_CONTINUE_BODY, FOUNDING_CONTINUE_TITLE,
-  FOUNDING_CONTINUING, FOUNDING_NOT_COACH_TITLE, FOUNDING_SIGN_IN_SUB, OR_EMAIL, ROLE_ERROR_TITLE, TOO_MANY_CODES, signInHint,
+  FOUNDING_CONTINUING, FOUNDING_NOT_COACH_TITLE, FOUNDING_SIGN_IN_SUB, JOIN_ATHLETE_ACCOUNT, JOIN_CONTINUE_BODY, OR_EMAIL, ROLE_ERROR_TITLE,
+  TOO_MANY_CODES, signInHint,
 } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
 import AppleButton from '../AppleButton';
 import FoundingBadge from '../FoundingBadge';
 import {
   ATHLETE_BANDS, FOUNDING_SIGN_UP_DATA, NAME_MAX, PAY_METHODS, SPORT_MAX, accountStep, answersFrom, applyRefusal, bookingUrl,
-  checkAnswers, closesLabel, closesLabelLong, contactOnly, foundingPhase, fullLine, isNewApplication, isOwnSession, parseSlots,
+  checkAnswers, closesLabel, closesLabelLong, contactOnly, fullLine, isNewApplication, isOwnSession, parseSlots,
   slotsLine, statusLine,
 } from '../founding';
 import { usePageMeta } from './meta';
 import {
-  FOUNDING_CLOSES_ON, FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT, FOUNDING_FEE_PERCENT, FOUNDING_FREE_MONTHS,
-  FOUNDING_MIN_PAYING_ATHLETES, FOUNDING_NOTICE_DAYS_BEFORE, FOUNDING_SLOTS, FOUNDING_THEN_MONTHLY_USD, FREE_ROSTER_CAP, NEEDS_CONFIRM,
-  STANDARD_FEE_PERCENT, usd,
+  ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, FOUNDING_CLOSES_ON, FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT,
+  FOUNDING_FEE_PERCENT, FOUNDING_FREE_MONTHS, FOUNDING_MIN_PAYING_ATHLETES, FOUNDING_NOTICE_DAYS_BEFORE, FOUNDING_SLOTS,
+  FOUNDING_THEN_MONTHLY_USD, FREE_ROSTER_CAP, NEEDS_CONFIRM, STANDARD_FEE_PERCENT, usd,
 } from './pricing';
 import { BRAND_NAME, FOUNDER_FIRST_NAME, SUPPORT_EMAIL } from './brand';
+import AppStoreLink from './AppStoreLink';
+import { APP_STORE_LIVE } from './flags';
+import { useFoundingView } from './useFoundingSlots';
 
 const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Not in pricing.json: confirm with the owner before launch">[confirm]</sup> : null);
 
@@ -77,27 +91,49 @@ const BOOKING_URL = bookingUrl((import.meta.env ?? {}).VITE_FOUNDING_CALENDAR_UR
 const CLOSES = closesLabel(FOUNDING_CLOSES_ON);
 const NOTIFY_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Tell me when a Founding spot opens')}`;
 
-function todayIso() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+const FOUNDING_META = [
+  'Founding coaches',
+  `${FOUNDING_SLOTS} Founding spots for independent coaches: Elite free for a year from your first paid athlete, then ${usd(FOUNDING_THEN_MONTHLY_USD)} a month. Closes ${CLOSES}.`,
+];
+const JOIN_META = [
+  'Join as a coach',
+  `Make your ${BRAND_NAME} coach account: free to start, ${STANDARD_FEE_PERCENT}% per pass with up to ${FREE_ROSTER_CAP} paying athletes, Coach Elite optional.`,
+];
 
 export default function Founding() {
-  usePageMeta('Founding coaches', `${FOUNDING_SLOTS} Founding spots for independent coaches: Elite free for a year from your first paid athlete, then ${usd(FOUNDING_THEN_MONTHLY_USD)} a month. Closes ${CLOSES}.`);
+  /**
+   * founding_slots() (one read per page load, shared with the site's calls to action): undefined while loading, null
+   * when the read failed, else parseSlots()'s answer; `mode` 'join' once full or closed (R4), `phase` for the counter.
+   */
+  const { slots, setSlots, reload: loadSlots, retry: retrySlots, phase, mode, closesOn } = useFoundingView();
+  const join = mode === 'join';
+  usePageMeta(...(join ? JOIN_META : FOUNDING_META));
 
-  /** founding_slots(): undefined while loading, null when the read failed, else parseSlots()'s answer. */
-  const [slots, setSlots] = useState(undefined);
-  /** Bumped to read the counter again (after a full or closed refusal). */
-  const [slotsTick, setSlotsTick] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    foundingSlots().then((s) => { if (alive) setSlots(s); }, () => { if (alive) setSlots(null); });
-    return () => { alive = false; };
-  }, [slotsTick]);
-  const loadSlots = useCallback(() => setSlotsTick((n) => n + 1), []);
-  /** Try again after a failed read: back to "loading" (nothing numeric), then the server's answer. */
-  const retrySlots = useCallback(() => { setSlots(undefined); setSlotsTick((n) => n + 1); }, []);
-  const phase = foundingPhase(slots, todayIso());
+  if (join) {
+    return (
+      <div className="s-wrap tight s-founding">
+        <section className="s-stack" aria-labelledby="f-h" style={{ gap: 16 }}>
+          <span className="s-kicker">Coaches</span>
+          <h1 id="f-h" className="s-h1 sm">Join as a coach.</h1>
+          <Counter phase={phase} slots={slots} closesOn={closesOn} onRetry={retrySlots} />
+          <p className="s-lede">This is the standard coach sign-up: no application, no spot to wait for. Sign in, and your coach account is ready.</p>
+        </section>
+
+        <section className="s-founding-cards" aria-label="Your plan">
+          <div className="s-founding-card">
+            <h2 className="s-h3">Your plan</h2>
+            <ul className="s-bullets">
+              <li>Every coach starts on the free plan: {STANDARD_FEE_PERCENT}% of each pass you sell, up to {FREE_ROSTER_CAP} paying athletes, no monthly fee.</li>
+              <li>Coach Elite is optional: {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, a {ELITE_FEE_PERCENT}% fee, no athlete cap and the assistant.</li>
+            </ul>
+            <Link to="/pricing">See pricing</Link>
+          </div>
+        </section>
+
+        <Apply mode={mode} phase={phase} slots={slots} closesOn={closesOn} onSlots={(raw) => { const s = parseSlots(raw); if (s) setSlots(s); }} reloadSlots={loadSlots} />
+      </div>
+    );
+  }
 
   return (
     <div className="s-wrap tight s-founding">
@@ -106,7 +142,7 @@ export default function Founding() {
         <h1 id="f-h" className="s-h1 sm">
           {FOUNDING_SLOTS} spots. Elite free for a year. Closes {CLOSES}.
         </h1>
-        <Counter phase={phase} slots={slots} onRetry={retrySlots} />
+        <Counter phase={phase} slots={slots} closesOn={closesOn} onRetry={retrySlots} />
       </section>
 
       <section className="s-founding-cards" aria-label="The offer">
@@ -131,14 +167,14 @@ export default function Founding() {
         </div>
       </section>
 
-      <Apply phase={phase} slots={slots} onSlots={(raw) => { const s = parseSlots(raw); if (s) setSlots(s); }} reloadSlots={loadSlots} />
+      <Apply mode={mode} phase={phase} slots={slots} closesOn={closesOn} onSlots={(raw) => { const s = parseSlots(raw); if (s) setSlots(s); }} reloadSlots={loadSlots} />
     </div>
   );
 }
 
 /** The live counter: the server's numbers, or a sentence that says it couldn't load them (never a guess). */
-function Counter({ phase, slots, onRetry }) {
-  if (phase === 'loading') return <p className="s-founding-count" aria-busy="true" aria-label="Loading how many spots are taken" />;
+function Counter({ phase, slots, closesOn, onRetry }) {
+  if (phase === 'loading') return <p className="s-founding-count" role="status" aria-busy="true" aria-label="Loading how many spots are taken" />;
   if (phase === 'unknown') {
     return (
       <div className="s-founding-count s-founding-count-failed" role="status">
@@ -148,7 +184,7 @@ function Counter({ phase, slots, onRetry }) {
     );
   }
   if (phase === 'full') return <p className="s-founding-count" aria-live="polite"><b>{fullLine(slots.total)}</b></p>;
-  if (phase === 'closed') return <p className="s-founding-count" aria-live="polite"><b>Founding spots closed on {closesLabelLong(slots.closesOn)}.</b></p>;
+  if (phase === 'closed') return <p className="s-founding-count" aria-live="polite"><b>Founding spots closed on {closesLabelLong(closesOn)}.</b></p>;
   const pct = Math.min(100, Math.round((slots.taken / slots.total) * 100));
   return (
     <div className="s-founding-count" aria-live="polite">
@@ -166,8 +202,12 @@ const STEP = {
   coach: 'coach',
 };
 
-/** Who is signed in, then the coach's application or the form. */
-function Apply({ phase, slots, onSlots, reloadSlots }) {
+/**
+ * Who is signed in, then the coach's application or the form. In 'join' mode (R4: full or closed) the same sign-in
+ * and the same finishCoachSignUp rules, then what's next; an application already on file still shows its status.
+ */
+function Apply({ mode, phase, slots, closesOn, onSlots, reloadSlots }) {
+  const join = mode === 'join';
   const [step, setStep] = useState(STEP.checking);
   const [uid, setUid] = useState(null);
   const [user, setUser] = useState(null);
@@ -322,14 +362,18 @@ function Apply({ phase, slots, onSlots, reloadSlots }) {
   ) : null;
 
   const closedHouse = phase === 'full' || phase === 'closed';
+  /** An application on file (not withdrawn): its status view, in either mode. */
+  const filed = step === STEP.coach && app?.row && !isNewApplication(app.row);
+  const heading = filed ? 'Your application'
+    : join ? (step === STEP.coach ? 'Your coach account' : 'Make your coach account') : 'Apply for a spot';
 
   return (
     <section className="s-stack" aria-labelledby="apply-h" style={{ gap: 16 }}>
-      <h2 id="apply-h" className="s-h2 xs">{step === STEP.coach && app?.row ? 'Your application' : 'Apply for a spot'}</h2>
+      <h2 id="apply-h" className="s-h2 xs">{heading}</h2>
 
       {step === STEP.checking && <div className="s-form" aria-live="polite"><p className="s-copy">Loading…</p></div>}
 
-      {step === STEP.signin && closedHouse && !wantSignIn && (
+      {step === STEP.signin && !join && closedHouse && !wantSignIn && (
         <div className="s-form">
           {phase === 'full' ? (
             <>
@@ -337,14 +381,20 @@ function Apply({ phase, slots, onSlots, reloadSlots }) {
               <a className="fl-btn accent lg" href={NOTIFY_MAILTO}>Tell me when a spot opens</a>
             </>
           ) : (
-            <p className="s-copy">Founding spots closed on {closesLabelLong(slots.closesOn)}. The free plan and Elite are open to every coach.</p>
+            <p className="s-copy">Founding spots closed on {closesLabelLong(closesOn)}. The free plan and Elite are open to every coach.</p>
           )}
           <button type="button" className="fl-btn quiet" onClick={() => setWantSignIn(true)}>Already applied? Sign in</button>
         </div>
       )}
 
-      {step === STEP.signin && (!closedHouse || wantSignIn) && (
-        <SignIn key={note ?? ''} note={note} onCodeTyped={(email) => { ownRef.current.typedEmail = email; }} />
+      {step === STEP.signin && (join || !closedHouse || wantSignIn) && (
+        <SignIn key={note ?? ''} note={note} join={join} onCodeTyped={(email) => { ownRef.current.typedEmail = email; }} />
+      )}
+      {step === STEP.signin && join && (
+        <p className="s-small">
+          Applied for a Founding spot before? Sign in the same way; your application is kept.
+          {phase === 'full' && <> <a href={NOTIFY_MAILTO}>Tell me if a Founding spot opens</a>.</>}
+        </p>
       )}
 
       {step === STEP.role && <div className="s-form" aria-live="polite"><p className="s-copy">Checking your account…</p></div>}
@@ -362,7 +412,7 @@ function Apply({ phase, slots, onSlots, reloadSlots }) {
         <div className="s-form">
           {who}
           <b>{FOUNDING_CONTINUE_TITLE}</b>
-          <p className="s-copy">{FOUNDING_CONTINUE_BODY}</p>
+          <p className="s-copy">{join ? JOIN_CONTINUE_BODY : FOUNDING_CONTINUE_BODY}</p>
           <button type="button" className="fl-btn accent lg" onClick={continueAsCoach}>{FOUNDING_CONTINUE}</button>
         </div>
       )}
@@ -373,12 +423,14 @@ function Apply({ phase, slots, onSlots, reloadSlots }) {
         <div className="s-form">
           {who}
           <b>{FOUNDING_NOT_COACH_TITLE}</b>
-          <p className="s-copy">{FOUNDING_ATHLETE_ACCOUNT}</p>
+          <p className="s-copy">{join ? JOIN_ATHLETE_ACCOUNT : FOUNDING_ATHLETE_ACCOUNT}</p>
         </div>
       )}
 
-      {step === STEP.coach && app && (
-        <CoachApplication key={uid} user={user} who={who} app={app} setApp={setApp} phase={phase} slots={slots}
+      {step === STEP.coach && app && join && !filed && <CoachNext who={who} />}
+
+      {step === STEP.coach && app && (!join || filed) && (
+        <CoachApplication key={uid} user={user} who={who} app={app} setApp={setApp} phase={phase} slots={slots} closesOn={closesOn}
           onSlots={onSlots} reloadSlots={reloadSlots} onSignedOut={signOut}
           onRecheckRole={() => setAttempt((n) => n + 1)} />
       )}
@@ -387,7 +439,7 @@ function Apply({ phase, slots, onSlots, reloadSlots }) {
 }
 
 /** The signed-in coach: their application's status, or the form. */
-function CoachApplication({ user, who, app, setApp, phase, slots, onSlots, reloadSlots, onSignedOut, onRecheckRole }) {
+function CoachApplication({ user, who, app, setApp, phase, slots, closesOn, onSlots, reloadSlots, onSignedOut, onRecheckRole }) {
   const row = app.row;
   const [editing, setEditing] = useState(false);
   const [answers, setAnswers] = useState(() => answersFrom(row, metadataName(user)));
@@ -421,7 +473,7 @@ function CoachApplication({ user, who, app, setApp, phase, slots, onSlots, reloa
     }
     const r = !err
       ? { message: 'We couldn’t tell whether your application was saved. Check again to see.', unknown: true, code: 'unknown' }
-      : applyRefusal(err, status, { total: slots?.total, closesOn: slots?.closesOn, supportEmail: SUPPORT_EMAIL });
+      : applyRefusal(err, status, { total: slots?.total, closesOn, supportEmail: SUPPORT_EMAIL });
     if (r.code === 'not_authenticated') { await onSignedOut(r.message); return; }
     if (r.code === 'not_a_coach') { onRecheckRole(); return; }
     if (r.code === 'founding_full' || r.code === 'founding_closed') reloadSlots();
@@ -462,7 +514,7 @@ function CoachApplication({ user, who, app, setApp, phase, slots, onSlots, reloa
             <p className="s-copy">{fullLine(slots.total)}</p>
             <a className="fl-btn accent lg" href={NOTIFY_MAILTO}>Tell me when a spot opens</a>
           </>
-        ) : <p className="s-copy">Founding spots closed on {closesLabelLong(slots.closesOn)}.</p>}
+        ) : <p className="s-copy">Founding spots closed on {closesLabelLong(closesOn)}.</p>}
       </div>
     );
   }
@@ -573,8 +625,29 @@ function CoachApplication({ user, who, app, setApp, phase, slots, onSlots, reloa
   );
 }
 
+/**
+ * The coach account is there (finished here, or it already was), Founding is full or closed and nothing is on file:
+ * what's next (R4). The plan words hold for every coach account (a new one is on the free plan; an older one may hold
+ * Elite, which this page does not read), the numbers come from pricing.js.
+ */
+function CoachNext({ who }) {
+  return (
+    <div className="s-form">
+      {who}
+      <b>Your coach account is ready.</b>
+      <p className="s-copy">
+        Coach accounts start on the free plan: {STANDARD_FEE_PERCENT}% of each pass you sell, up to {FREE_ROSTER_CAP} paying athletes.
+        Coach Elite ({usd(ELITE_MONTHLY_USD)} a month, a {ELITE_FEE_PERCENT}% fee, no athlete cap) is optional, from your dashboard.
+      </p>
+      <p className="s-copy">Next: open your dashboard to set up payouts, make your first pass and share your link.</p>
+      <Link className="fl-btn accent lg" to="/coach">Open your coach dashboard</Link>
+      {APP_STORE_LIVE && <p className="s-small"><AppStoreLink>{`Get ${BRAND_NAME} for iPhone`}</AppStoreLink> and sign in the same way.</p>}
+    </div>
+  );
+}
+
 /** Email code (a new account becomes a coach account once the code is verified) or Sign in with Apple, back to /founding. */
-function SignIn({ note, onCodeTyped }) {
+function SignIn({ note, join = false, onCodeTyped }) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
@@ -634,7 +707,7 @@ function SignIn({ note, onCodeTyped }) {
         <form onSubmit={send} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <label htmlFor="f-email">Email</label>
           <input id="f-email" type="email" inputMode="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy || appleBusy} />
-          <span className="hint">{signInHint('founding', { available: appleOk, enabled: APPLE_WEB_ENABLED, standalone: isStandaloneHere() })}</span>
+          <span className="hint">{signInHint(join ? 'join' : 'founding', { available: appleOk, enabled: APPLE_WEB_ENABLED, standalone: isStandaloneHere() })}</span>
           {error && <div className="fl-error" role="alert">{error}</div>}
           <button type="submit" className="fl-btn accent lg" disabled={busy || appleBusy || !/\S+@\S+\.\S+/.test(email)}>{busy ? 'Sending…' : 'Email me a code'}</button>
         </form>

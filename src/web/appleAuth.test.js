@@ -180,6 +180,11 @@ test('signInHint and noAccountMessage: every page and state, the §5 words', () 
       safari: `Signed up in the app with Sign in with Apple? Open ${SITE_HOST}/founding in Safari to continue with Apple.`,
       off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page) and the application is taken by email.',
     },
+    join: {
+      apple: 'Signed up in the app with Sign in with Apple and hid your email? Use Continue with Apple.',
+      safari: `Signed up in the app with Sign in with Apple? Open ${SITE_HOST}/founding in Safari to continue with Apple.`,
+      off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page).',
+    },
     checkout: {
       apple: 'Signed up in the app with Sign in with Apple? Use Continue with Apple, so the pass lands on that account.',
       safari: 'Signed up in the app with Sign in with Apple? Open this page in Safari to continue with Apple, so the pass lands on that account.',

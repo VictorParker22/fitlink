@@ -25,7 +25,7 @@ import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { BRAND_NAME } from './brand';
-import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
+import FoundingCta from './FoundingCta';
 import { FOUNDING_CLOSES_LABEL, PLAN_LINES, SIXTH_ATHLETE_RULE } from './planLines';
 import {
   DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, FOUNDING_FEE_PERCENT,
@@ -76,7 +76,7 @@ export default function Pricing() {
               <li>Check-ins, messages, athlete progress</li>
             </ul>
             <p className="s-rule">{SIXTH_RULE}</p>
-            <Link className="fl-btn lg" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
+            <FoundingCta className="fl-btn lg" />
           </article>
           <article className="s-plan ink">
             <h2>Elite</h2>
