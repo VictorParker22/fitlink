@@ -1,6 +1,7 @@
 {
+  "buildCommand": "npm run build",
   "functions": {
-    "api/coach-meta/*.js": { "includeFiles": "dist/index.html", "maxDuration": 10 }
+    "api/coach-meta/*.js": { "includeFiles": "dist/spa.html", "maxDuration": 10 }
   },
   "headers": [
     {
@@ -26,10 +27,14 @@
     }
   ],
   "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/pricing", "destination": "/prerendered/pricing.html" },
+    { "source": "/athletes", "destination": "/prerendered/athletes.html" },
+    { "source": "/support", "destination": "/prerendered/support.html" },
     {
       "source": "/c/:handle",
       "has": [{ "type": "query", "key": "spa" }],
-      "destination": "/index.html"
+      "destination": "/spa.html"
     },
     {
       "source": "/c/:handle",
@@ -38,7 +43,7 @@
     },
     {
       "source": "/((?!api/|\\.well-known/apple-app-site-association$).*)",
-      "destination": "/index.html"
+      "destination": "/spa.html"
     }
   ]
 }

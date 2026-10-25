@@ -25,6 +25,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
+import { pageMetaFor } from './pageMeta';
 import { BRAND_NAME } from './brand';
 import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
 import { ELITE_WHERE, FOUNDING_CLOSES_LABEL, PLAN_LINES, SIXTH_ATHLETE_RULE } from './planLines';
@@ -50,7 +51,8 @@ const FAQ = [
 ];
 
 export default function Pricing() {
-  usePageMeta('Pricing', `${BRAND_NAME} is free to try and takes ${STANDARD_FEE_PERCENT}% of each pass sold. Coach Elite is ${usd(ELITE_MONTHLY_USD)} a month: a ${ELITE_FEE_PERCENT}% fee, no athlete cap and the assistant.`);
+  const meta = pageMetaFor('/pricing');
+  usePageMeta(meta.title, meta.description);
   const [yearly, setYearly] = useState(false);
   const [rev, setRev] = useState(3000);
   const k = keepsByTier(rev, yearly);

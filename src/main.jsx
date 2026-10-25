@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './index.css'
 import CoachPublicPage from './web/CoachPublicPage.jsx'
@@ -27,7 +27,7 @@ import NotFound from './web/site/NotFound.jsx'
 // trainer/client PWA under src/pages are kept in the tree but not routed:
 // the PWA was already unreachable (App.jsx rendered only the landing page),
 // and the new home replaces that landing page.
-createRoot(document.getElementById('root')).render(
+const app = (
   <StrictMode>
     <BrowserRouter>
       <Routes>
@@ -50,5 +50,16 @@ createRoot(document.getElementById('root')).render(
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 )
+
+// Home, pricing, for athletes and help are static HTML written at build time (launch plan W7, scripts/prerender.mjs):
+// their #root carries the page's path in data-prerendered, and React adopts that markup (hydrateRoot) when the
+// browser is on that very path. Everything else, and a static page reached at another address (a trailing slash),
+// renders from the empty shell.
+const root = document.getElementById('root')
+if (root.dataset.prerendered && root.dataset.prerendered === window.location.pathname && root.firstElementChild) {
+  hydrateRoot(root, app)
+} else {
+  createRoot(root).render(app)
+}

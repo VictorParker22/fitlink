@@ -1,19 +1,20 @@
 // GET /c/<handle> FOR LINK-PREVIEW BOTS ONLY (vercel.json rewrites /c/:handle to /api/coach-meta/:handle when the
-// user agent matches src/web/linkPreviewBots.js; every other visitor gets the SPA's index.html from the CDN, never this
-// function): the SPA's index.html with the coach's link-preview tags, because link unfurlers do not run JavaScript
+// user agent matches src/web/linkPreviewBots.js; every other visitor gets the SPA shell (spa.html) from the CDN, never this
+// function): the SPA shell with the coach's link-preview tags, because link unfurlers do not run JavaScript
 // (launch plan Sprint 1 PR 3, 2026-10-25; review 2026-10-25 M1).
 //
 // 1. The handle comes from the PATH segment (/api/coach-meta/<handle>), never from a query parameter a visitor could
 //    also send (review m3). Only if the platform hands the function the dynamic-route form (`/api/coach-meta/[handle]`
 //    with `?handle=`) is the query read, and then exactly one `handle` or the plain page.
-// 2. The template: the built dist/index.html, read from the function's own files (vercel.json `includeFiles`), else
+// 2. The template: the built dist/spa.html (the SPA shell; dist/index.html is the static home page since launch plan
+//    W7), read from the function's own files (vercel.json `includeFiles`), else
 //    fetched from this deployment's own origin (the production domain in production; never the request's Host).
 // 3. coach_page(p_handle) with the publishable key (the same anon read the page makes; 2.5 s cap), kept per instance
 //    for 60 s by normalised handle (at most 500 handles; failures are not kept), so repeat unfurls of one link spend
 //    one call of coach_page's anon budget (300 an hour per ADDRESS, and this function calls from Vercel's addresses).
 // 4. Tags from src/web/coachMeta.js, every value escaped. A retired handle answers 307 to the coach's new page (the
 //    visitor's query kept); no page answers 404 with the SPA (which draws the 404 page).
-// Any failure serves the plain index.html. Without a template at all the answer is a 307 to /c/<handle>?spa=1, which
+// Any failure serves the plain shell. Without a template at all the answer is a 307 to /c/<handle>?spa=1, which
 // vercel.json serves as the plain SPA (the page drops the marker).
 //
 // Edge cache: a page 300 s (SWR 600); a 404, a 307 and the plain fallback 30 s with no stale-while-revalidate (a
@@ -52,10 +53,10 @@ export function ownOrigin(env) {
   return typeof host === 'string' && /^[a-z0-9.-]+(:\d+)?$/i.test(host) ? `https://${host}` : null;
 }
 
-/** The built index.html: from the function's files, else from this deployment's origin. Null when neither answers. */
+/** The built SPA shell (spa.html): from the function's files, else from this deployment's origin. Null when neither answers. */
 export async function loadTemplate({ env = process.env, fetchImpl = fetch, readImpl = readFile, cookie = null } = {}) {
   if (templateCache) return templateCache;
-  for (const file of [path.join(process.cwd(), 'dist', 'index.html'), new URL('../../dist/index.html', import.meta.url)]) {
+  for (const file of [path.join(process.cwd(), 'dist', 'spa.html'), new URL('../../dist/spa.html', import.meta.url)]) {
     try {
       const html = await readImpl(file, 'utf8');
       if (typeof html === 'string' && /<\/head>/i.test(html)) { templateCache = html; return html; }
@@ -64,7 +65,7 @@ export async function loadTemplate({ env = process.env, fetchImpl = fetch, readI
   const origin = ownOrigin(env);
   if (!origin) return null;
   try {
-    const res = await withTimeout(TEMPLATE_TIMEOUT_MS, (signal) => fetchImpl(`${origin}/index.html`, {
+    const res = await withTimeout(TEMPLATE_TIMEOUT_MS, (signal) => fetchImpl(`${origin}/spa.html`, {
       signal, headers: cookie ? { cookie } : {}, redirect: 'manual',
     }));
     if (!res.ok) return null;
@@ -122,7 +123,7 @@ export async function renderCoachPage({ handle: raw, search = '', env = process.
   const html = await loadTemplate({ env, fetchImpl, readImpl, cookie });
   const handle = pageHandle(raw);
   if (!html) {
-    // No template to serve: hand the visitor to the plain SPA (vercel.json serves /c/<h>?spa=1 as index.html).
+    // No template to serve: hand the visitor to the plain SPA (vercel.json serves /c/<h>?spa=1 as spa.html).
     const q = new URLSearchParams(typeof search === 'string' ? search : '');
     q.set('spa', '1');
     const target = handle ? `/c/${handle}?${q}` : '/404';
@@ -164,7 +165,7 @@ export function requestHandle(reqUrl) {
   return { raw: null, search };
 }
 
-/** The plain index.html (cached 30 s), or a 307 to the 404 page when there is no template. */
+/** The plain shell (cached 30 s), or a 307 to the 404 page when there is no template. */
 async function plainPage(deps = {}) {
   const html = await loadTemplate(deps);
   return html

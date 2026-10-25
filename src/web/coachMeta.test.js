@@ -79,7 +79,7 @@ test('the head: tags escaped, the template\'s title and description replaced, no
   assert.ok(nf.includes('<meta name="robots" content="noindex" />') && nf.includes(`<title>${BRAND_NAME} — Home</title>`));
 });
 
-/** A fetch stub: coach_page answers `rpc`; /index.html answers `page` (or fails). */
+/** A fetch stub: coach_page answers `rpc`; /spa.html answers `page` (or fails). */
 function stubFetch({ rpc, rpcStatus = 200, page = null, throwRpc = false } = {}) {
   const calls = [];
   const f = async (url, init = {}) => {
@@ -88,7 +88,7 @@ function stubFetch({ rpc, rpcStatus = 200, page = null, throwRpc = false } = {})
       if (throwRpc) throw new Error('offline');
       return new Response(JSON.stringify(rpc), { status: rpcStatus, headers: { 'Content-Type': 'application/json' } });
     }
-    if (String(url).endsWith('/index.html') && page !== null) return new Response(page, { status: 200 });
+    if (String(url).endsWith('/spa.html') && page !== null) return new Response(page, { status: 200 });
     return new Response('nope', { status: 401 });
   };
   f.calls = calls;
@@ -150,7 +150,7 @@ test('function: the template from the deployment\'s own origin, never the reques
   const { loadTemplate } = await import(`../../api/coach-meta/[handle].js?fresh=${Date.now()}`);
   const f = stubFetch({ rpc: found(), page: TEMPLATE });
   assert.equal(await loadTemplate({ env: { VERCEL_URL: 'x-abc.vercel.app' }, fetchImpl: f, readImpl: readNone }), TEMPLATE);
-  assert.equal(f.calls[0].url, 'https://x-abc.vercel.app/index.html');
+  assert.equal(f.calls[0].url, 'https://x-abc.vercel.app/spa.html');
   const { renderCoachPage: fresh } = await import(`../../api/coach-meta/[handle].js?fresh2=${Date.now()}`);
   const none = await fresh({ handle: 'Dana-Ruiz', search: '?utm_source=ig', env: {}, fetchImpl: stubFetch({ rpc: found() }), readImpl: readNone, nowMs: NOW });
   assert.equal(none.status, 307);
@@ -266,7 +266,10 @@ test('vercel.json: only link-preview bots reach the function; people get the SPA
   assert.ok(rule, 'the path form, not ?handle=');
   assert.deepEqual(rule.has, [{ type: 'header', key: 'user-agent', value: LINK_PREVIEW_UA_PATTERN }], 'vercel.json carries linkPreviewBots.js exactly');
   assert.ok(!/\(\?i\)|\(\?[=!<]/.test(rule.has[0].value), 'no inline flags or lookaround in the has value');
-  assert.ok(VERCEL.rewrites.indexOf(rule) === 1 && VERCEL.rewrites[0].has[0].key === 'spa', 'the ?spa fallback still comes first');
+  // The static pages' rewrites (launch plan W7) come first; among the /c/:handle rules the ?spa fallback still does.
+  const i = VERCEL.rewrites.indexOf(rule);
+  assert.ok(i >= 1 && VERCEL.rewrites[i - 1].source === '/c/:handle' && VERCEL.rewrites[i - 1].has?.[0]?.key === 'spa', 'the ?spa fallback still comes first');
+  assert.ok(!VERCEL.rewrites.slice(0, i - 1).some((r) => r.source.startsWith('/c/')), 'nothing earlier catches /c/');
   assert.ok(VERCEL.functions['api/coach-meta/*.js'], 'the function config matches the moved file');
   for (const [who, ua] of Object.entries(UA)) {
     assert.ok(isLinkPreviewBot(ua), who);
@@ -275,11 +278,11 @@ test('vercel.json: only link-preview bots reach the function; people get the SPA
   for (const [who, ua] of Object.entries(HUMANS)) assert.ok(!isLinkPreviewBot(ua), who);
 
   for (const ua of Object.values(HUMANS)) {
-    assert.equal(route('/c/dana-ruiz', 'utm_source=ig&fbclid=abc', ua), '/index.html?utm_source=ig&fbclid=abc');
+    assert.equal(route('/c/dana-ruiz', 'utm_source=ig&fbclid=abc', ua), '/spa.html?utm_source=ig&fbclid=abc');
   }
-  assert.equal(route('/c/dana-ruiz', 'spa=1', UA.facebook), '/index.html?spa=1', 'the no-template fallback never loops');
+  assert.equal(route('/c/dana-ruiz', 'spa=1', UA.facebook), '/spa.html?spa=1', 'the no-template fallback never loops');
   assert.equal(route('/.well-known/apple-app-site-association', '', UA.facebook), '/.well-known/apple-app-site-association');
-  assert.equal(route('/i/ABC123', '', UA.facebook), '/index.html');
+  assert.equal(route('/i/ABC123', '', UA.facebook), '/spa.html');
   // The catch-all must not swallow the function itself (seen on the preview deploy 2026-10-25: /api/coach-meta/x
   // came back as the static index.html).
   assert.equal(route('/api/coach-meta/dana-ruiz', '', UA.facebook), '/api/coach-meta/dana-ruiz');

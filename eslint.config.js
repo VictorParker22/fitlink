@@ -23,4 +23,9 @@ export default defineConfig([
     files: ['api/**/*.js'],
     languageOptions: { globals: globals.node },
   },
+  {
+    // Build scripts (scripts/prerender.mjs, scripts/og-image.mjs) run on Node.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: globals.node },
+  },
 ])

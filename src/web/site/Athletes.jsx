@@ -7,6 +7,7 @@
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
+import { pageMetaFor } from './pageMeta';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
 import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
@@ -49,7 +50,8 @@ const FAQ = [
 ];
 
 export default function Athletes() {
-  usePageMeta('For athletes', `Got a link from your coach? Open it, pay on the web, sign in to the ${BRAND_NAME} app the same way, and train. Here is how it works.`);
+  const meta = pageMetaFor('/athletes');
+  usePageMeta(meta.title, meta.description);
   return (
     <>
       <section className="s-wrap s-hero" aria-labelledby="a-h" style={{ paddingBottom: 72 }}>

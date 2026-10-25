@@ -62,7 +62,8 @@ export function SiteFooter() {
           </nav>
         </div>
         <div className="s-footer-row legal">
-          <span>© {new Date().getFullYear()} [Legal entity name]</span>
+          {/* The static pages are written at build time (W7): a year that turned since then is the one difference allowed. */}
+          <span suppressHydrationWarning>© {new Date().getFullYear()} [Legal entity name]</span>
           <span>Payments processed by Stripe. Apple, iPhone and App Store are trademarks of Apple Inc.</span>
         </div>
       </div>

@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
+import { pageMetaFor } from './pageMeta';
 import { DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, MINIMUM_CHARGE_USD, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { ELITE_WHERE, SIXTH_ATHLETE_RULE } from './planLines';
 import { siteCopy } from '../appleAuth';
@@ -119,7 +120,8 @@ function matches(item, needle) {
 }
 
 export default function Support() {
-  usePageMeta('Help', `Answers for coaches and athletes on ${BRAND_NAME}: payouts and Stripe, passes, refunds, the assistant, paying and cancelling, finding your plan. Or write to us.`);
+  const meta = pageMetaFor('/support');
+  usePageMeta(meta.title, meta.description);
   const [query, setQuery] = useState('');
   const [role, setRole] = useState('Coach');
   const [email, setEmail] = useState('');
