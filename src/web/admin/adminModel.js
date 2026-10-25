@@ -80,8 +80,9 @@ export function monthOptions(now = Date.now(), first = '2025-01-01') {
 const get = (o, path) => path.reduce((x, k) => (x && typeof x === 'object' ? x[k] : undefined), o);
 
 /**
- * One scorecard month's five numbers as display parts. Each metric: {key, label, value (string|null), detail
- * (string|null), empty (why there is no value, when value is null)}.
+ * One scorecard month's five numbers as display parts. Each metric: {key, label, value (string|null), qualifier
+ * (string|null), detail (string|null), notes (sentences about this month's number), empty (why there is no value, when
+ * value is null)}.
  */
 export function monthMetrics(numbers) {
   const n = numbers && typeof numbers === 'object' ? numbers : {};
@@ -90,6 +91,7 @@ export function monthMetrics(numbers) {
   const perCoach = num(get(n, ['paying_athletes_per_coach', 'per_coach']));
   const athletes = num(get(n, ['paying_athletes_per_coach', 'athletes']));
   const coaches = num(get(n, ['paying_athletes_per_coach', 'coaches']));
+  const withAthletes = num(get(n, ['paying_athletes_per_coach', 'coaches_with_athletes']));
   const gmv = dollars(get(n, ['gmv', 'gross_cents']));
   const payments = num(get(n, ['gmv', 'payments']));
   const refunds = num(get(n, ['gmv', 'refunds_cents']));
@@ -97,22 +99,36 @@ export function monthMetrics(numbers) {
   const pct = percent(get(n, ['month2_retention', 'pct']));
   const cohort = num(get(n, ['month2_retention', 'cohort']));
   const retained = num(get(n, ['month2_retention', 'retained']));
-  const fees = dollars(get(n, ['platform_revenue', 'fees_cents']));
+  const fees = num(get(n, ['platform_revenue', 'fees_cents']));
   const booking = num(get(n, ['platform_revenue', 'booking_fees_cents']));
   const commission = num(get(n, ['platform_revenue', 'commission_cents']));
   const unknown = num(get(n, ['platform_revenue', 'fee_unknown_payments']));
   const unknownGross = num(get(n, ['platform_revenue', 'fee_unknown_gross_cents']));
-  const subs = get(n, ['platform_revenue', 'subscriptions_cents']);
+  const elite = num(get(n, ['platform_revenue', 'subscriptions_cents']));
+  const eliteCount = num(get(n, ['platform_revenue', 'subscription_payments']));
+  const eliteRefunded = num(get(n, ['platform_revenue', 'subscriptions_refunded_cents']));
+  const total = num(get(n, ['platform_revenue', 'total_cents']));
+  const revenueAnswered = n.platform_revenue && typeof n.platform_revenue === 'object';
 
   const plural = (k, one, many) => `${count(k)} ${k === 1 ? one : many}`;
+  const verb = (k) => (k === 1 ? 'was' : 'were');
+
   const revenueParts = [];
   if (commission !== null) revenueParts.push(`${dollars(commission)} commission`);
   if (booking !== null && booking > 0) revenueParts.push(`${dollars(booking)} booking fees`);
-  const revenueNotes = [];
-  if (unknown !== null && unknown > 0) {
-    revenueNotes.push(`${plural(unknown, 'payment', 'payments')} (${dollars(unknownGross) ?? 'amount unknown'}) were recorded before fees were tracked and are not in this number.`);
+  if (elite !== null) {
+    revenueParts.push(eliteCount === 0 ? 'no web Elite invoices'
+      : `${dollars(elite)} web Elite${eliteCount !== null ? ` (${plural(eliteCount, 'invoice', 'invoices')})` : ''}`);
   }
-  if (!isNum(subs)) revenueNotes.push('Coach Elite subscriptions are not included (they are not in the database).');
+  const revenueNotes = [];
+  if (revenueAnswered && fees === null && unknown !== null && unknown > 0) {
+    // The server's null: the month has payments and none of them has a recorded fee. Never shown as $0.00.
+    revenueNotes.push(`No fee number: the month's ${plural(unknown, 'payment', 'payments')} (${dollars(unknownGross) ?? 'amount unknown'}) ${verb(unknown)} recorded before fees were tracked.`);
+  } else if (unknown !== null && unknown > 0) {
+    revenueNotes.push(`${plural(unknown, 'payment', 'payments')} (${dollars(unknownGross) ?? 'amount unknown'}) ${verb(unknown)} recorded before fees were tracked and ${unknown === 1 ? 'is' : 'are'} not in this number.`);
+  }
+  if (eliteRefunded !== null && eliteRefunded > 0) revenueNotes.push(`${dollars(eliteRefunded)} of web Elite was refunded (not subtracted).`);
+  if (revenueAnswered) revenueNotes.push('App Store Coach Elite is not included (it is not in the database; read RevenueCat).');
 
   return [
     {
@@ -120,6 +136,7 @@ export function monthMetrics(numbers) {
       label: 'Coaches activated',
       value: activated,
       detail: fresh === null ? null : `${count(fresh)} new this month`,
+      notes: [],
       empty: activated === null ? 'The server sent no number.' : null,
     },
     {
@@ -127,8 +144,9 @@ export function monthMetrics(numbers) {
       label: 'Paying athletes per coach',
       value: perCoach === null ? null : perCoach.toFixed(1),
       detail: athletes === null || coaches === null || coaches === 0 ? null
-        : `${plural(athletes, 'athlete', 'athletes')} across ${plural(coaches, 'coach', 'coaches')}, last 30 days`,
-      empty: perCoach === null ? 'No coach had a paying athlete in these 30 days.' : null,
+        : `${plural(athletes, 'paying athlete', 'paying athletes')} over ${plural(coaches, 'activated coach', 'activated coaches')}${withAthletes !== null ? ` (${count(withAthletes)} with one)` : ''}, last 30 days`,
+      notes: [],
+      empty: perCoach === null ? (coaches === 0 ? 'No coach was activated by then.' : 'The server sent no number.') : null,
     },
     {
       key: 'gmv',
@@ -138,6 +156,7 @@ export function monthMetrics(numbers) {
         payments === null ? null : plural(payments, 'payment', 'payments'),
         refunds !== null && refunds > 0 ? `${dollars(refunds)} refunded (${plural(refundCount ?? 0, 'refund', 'refunds')}, not subtracted)` : null,
       ].filter(Boolean).join(' · ') || null,
+      notes: [],
       empty: gmv === null ? 'The server sent no number.' : null,
     },
     {
@@ -145,16 +164,18 @@ export function monthMetrics(numbers) {
       label: 'Coach month-2 retention',
       value: pct,
       detail: pct === null || cohort === null || retained === null ? null : `${count(retained)} of ${count(cohort)}`,
+      notes: [],
       empty: pct === null ? (cohort === 0 ? 'No coach was activated the month before.' : 'The server sent no number.') : null,
     },
     {
       key: 'platform_revenue',
-      label: 'Platform revenue',
-      value: fees === null ? null : `${fees}`,
-      qualifier: fees === null ? null : 'before Stripe fees',
+      label: 'Platform revenue (fees + web Elite, before Stripe fees)',
+      value: total === null ? null : dollars(total),
+      qualifier: null,
       detail: revenueParts.length ? revenueParts.join(' · ') : null,
       notes: revenueNotes,
-      empty: fees === null ? 'The server sent no number.' : null,
+      // A month whose payments carry no recorded fee has no number: a dash and the note, never $0.00.
+      empty: total === null ? (revenueAnswered && fees === null && unknown !== null && unknown > 0 ? '—' : 'The server sent no number.') : null,
     },
   ];
 }
@@ -174,6 +195,7 @@ export function scorecardView(card, targets = SCORECARD_TARGETS) {
     targets: TARGET_COLUMNS.map((c) => ({ label: c.label, text: targets?.[m.key]?.[c.key] ?? null })).filter((t) => t.text !== null),
   }));
   const notIn = card?.not_in_data && typeof card.not_in_data === 'object' ? card.not_in_data : {};
+  const excluded = num(card?.excluded_coaches);
   return {
     month: monthLabel(card?.month),
     previousMonth: monthLabel(card?.previous_month),
@@ -181,8 +203,17 @@ export function scorecardView(card, targets = SCORECARD_TARGETS) {
     asOf: dayLabel(card?.as_of),
     rows,
     paidPayment: typeof defs.paid_payment === 'string' ? defs.paid_payment : null,
+    excluded: excludedWords(excluded),
+    testAccounts: typeof defs.test_accounts === 'string' ? defs.test_accounts : null,
     notInData: ['stripe_fees', 'subscriptions', 'venmo_leakage'].map((k) => notIn[k]).filter((s) => typeof s === 'string' && s),
   };
+}
+
+/** "2 test accounts are left out." / "1 test account is left out."; null when none (or unknown). */
+export function excludedWords(n) {
+  const k = num(n);
+  if (k === null || k <= 0) return null;
+  return k === 1 ? '1 test account is left out.' : `${count(k)} test accounts are left out.`;
 }
 
 export const STAGE_LABELS = Object.freeze({
@@ -212,6 +243,7 @@ export function funnelView(f) {
   }));
   return {
     days: num(f?.days),
+    excluded: excludedWords(f?.excluded_coaches),
     pagesViewed: count(f?.pages_viewed),
     empty: views === 0 || views === null,
     stages: stages.map((s, i) => ({
@@ -265,6 +297,10 @@ export function coachSummary(answer) {
   const total = num(answer?.total_coaches);
   if (listed === null || total === null) return null;
   const parts = [`${count(listed)} of ${count(total)} coach accounts listed (a public page, a paid payment, or a page visit${days ? ` in the last ${days} days` : ''}).`];
+  const excluded = num(answer?.excluded_coaches);
+  if (excluded !== null && excluded > 0) {
+    parts.push(`${excluded === 1 ? '1 test account is' : `${count(excluded)} test accounts are`} left out of the list and the count.`);
+  }
   if (answer?.truncated === true) parts.push('Only the first 500 are shown.');
   return parts.join(' ');
 }

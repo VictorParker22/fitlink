@@ -290,42 +290,49 @@ function Scorecard({ data }) {
       <p className="fl-note">
         {v.month}{v.inProgress ? ` so far (as of ${v.asOf ?? 'now'})` : ''} beside {v.previousMonth}. Months are UTC calendar months.
         {v.paidPayment ? ` ${v.paidPayment}` : ''}
+        {v.excluded ? ` ${v.excluded}` : ''}
       </p>
       <ul className="ad-metrics">
         {v.rows.map((r) => (
           <li key={r.key} className="ad-metric">
             <h3>{r.label}</h3>
             <div className="ad-values">
-              <div className="ad-now">
-                <span className="ad-when">{v.month}</span>
-                {r.value !== null
-                  ? <><b>{r.value}</b>{r.qualifier && <span className="ad-qual">{r.qualifier}</span>}</>
-                  : <span className="ad-none">{r.empty}</span>}
-                {r.detail && <span className="ad-detail">{r.detail}</span>}
-              </div>
-              <div className="ad-prev">
-                <span className="ad-when">{v.previousMonth}</span>
-                {r.previous.value !== null
-                  ? <b>{r.previous.value}</b>
-                  : <span className="ad-none">{r.previous.empty}</span>}
-                {r.previous.detail && <span className="ad-detail">{r.previous.detail}</span>}
-              </div>
+              <MonthValue className="ad-now" when={v.month} m={r} />
+              <MonthValue className="ad-prev" when={v.previousMonth} m={r.previous} />
             </div>
             {r.definition && <p className="ad-def">{r.definition}</p>}
-            {r.notes?.map((n) => <p key={n} className="ad-def">{n}</p>)}
             {r.targets.length > 0 && (
               <p className="ad-targets">Targets — {r.targets.map((t) => `${t.label}: ${t.text}`).join(' · ')}</p>
             )}
           </li>
         ))}
       </ul>
-      {v.notInData.length > 0 && (
+      {(v.notInData.length > 0 || v.testAccounts) && (
         <div className="ad-notin">
           <h3>Not in this data</h3>
-          <ul>{v.notInData.map((s) => <li key={s}>{s}</li>)}</ul>
+          <ul>
+            {v.testAccounts && <li>{v.testAccounts}</li>}
+            {v.notInData.map((s) => <li key={s}>{s}</li>)}
+          </ul>
         </div>
       )}
     </>
+  );
+}
+
+/** One month's value with its qualifier, detail and notes (this month and the month before alike: review 1, L1). */
+function MonthValue({ className, when, m }) {
+  return (
+    <div className={className}>
+      <span className="ad-when">{when}</span>
+      {m.value !== null
+        ? <><b>{m.value}</b>{m.qualifier && <span className="ad-qual">{m.qualifier}</span>}</>
+        : m.empty === '—'
+          ? <b aria-label="No number">—</b>
+          : <span className="ad-none">{m.empty}</span>}
+      {m.detail && <span className="ad-detail">{m.detail}</span>}
+      {m.notes?.map((n) => <span key={n} className="ad-note">{n}</span>)}
+    </div>
   );
 }
 
@@ -336,6 +343,7 @@ function Funnel({ data }) {
       <p className="fl-note">
         Last {v.days ?? '—'} days, every coach page together{v.pagesViewed ? ` (${v.pagesViewed} pages opened)` : ''}. Each stage counts
         browser sessions; Paid counts page purchases that took their payment. The first three are reported by the browser.
+        {v.excluded ? ` ${v.excluded}` : ''}
       </p>
       {v.empty && <p className="ad-none">No coach page was opened in these days.</p>}
       <ol className="ad-funnel">

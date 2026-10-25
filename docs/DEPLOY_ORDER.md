@@ -74,16 +74,24 @@ fitlink-app `supabase/manual/ROLLOUT_20261025_dashboard.md`.
 
 1. Everything above (the dashboard migration applies only after the coach page's `20261025130000`).
 2. fitlink-app migration `20261025140000_admin_dashboard.sql` (`admin_scorecard`, `admin_coaches`,
-   `admin_page_funnel`; `platform_admins` loses its grants to anon and authenticated), its Editor
-   proofs (PASS 24) and `get_advisors`.
-3. The operator inserts their own account into `platform_admins` (SQL Editor; live has no row):
+   `admin_page_funnel`; the server-only tables `dashboard_excluded_trainers` and `elite_payments`;
+   `platform_admins` loses its grants to anon and authenticated).
+3. Redeploy `stripe-billing-webhook` (`npx supabase functions deploy stripe-billing-webhook
+   --no-verify-jwt`): it now writes `elite_payments`, the web Elite half of platform revenue. After
+   step 2, before any web Elite invoice is paid (an invoice paid earlier has no row).
+4. The Editor proofs (PASS 38) and `get_advisors`.
+5. The operator inserts their own account into `platform_admins` (SQL Editor; live has no row):
    `insert into public.platform_admins (user_id, note) values ('<auth uid>', 'owner');`.
-4. Then this site. No edge function and no secret. After the deploy: `curl -sI
-   https://fitlink.coach/admin` shows `x-robots-tag: noindex, nofollow`; signed in as the operator the
-   page shows the scorecard; signed in as any other account it says "This account isn't an operator
+6. The operator lists the test coaches and their own coach accounts in `dashboard_excluded_trainers`
+   (the rollout's step 6 has the read-only SELECT that finds them; live's two $1 payments are one test
+   coach's): otherwise "Coaches activated" opens at 1 and stays there.
+7. Then this site. No edge function and no secret. After the deploy: `curl -sI
+   https://fitlink.coach/admin` and `curl -sI https://fitlink.coach/admin/` show `x-robots-tag:
+   noindex, nofollow`; signed in as the operator the page shows the scorecard (and how many test
+   accounts are left out); signed in as any other account it says "This account isn't an operator
    account."
 
-Before step 2: `/admin` says the dashboard isn't on the server yet. Before step 3: every account,
+Before step 2: `/admin` says the dashboard isn't on the server yet. Before step 5: every account,
 the operator's included, gets "This account isn't an operator account."
 
 ## Gates that hold after the deploy

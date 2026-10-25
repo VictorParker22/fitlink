@@ -2,7 +2,7 @@
 // December 31, 2026. These are the owner's numbers, not the server's: edit them here and nowhere else. They are shown
 // as plain text beside the real numbers; nothing compares, colours or scores against them.
 export const TARGET_COLUMNS = Object.freeze([
-  { key: 'week4', label: 'Week 4' },
+  { key: 'week4', label: 'Week 4 (Dec 6)' },
   { key: 'dec31', label: 'Dec 31' },
 ]);
 

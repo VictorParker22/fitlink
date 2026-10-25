@@ -15,6 +15,7 @@
 .ad .ad-none { font-size: 15px; color: var(--fl-text-2); }
 .ad .ad-muted { color: var(--fl-text-2); font-style: italic; }
 .ad .ad-detail { font-size: 13px; color: var(--fl-text-2); line-height: 1.4; }
+.ad .ad-note { font-size: 12px; color: var(--fl-text-2); line-height: 1.4; margin-top: 2px; }
 .ad h3 { margin: 0; font-size: 16px; font-weight: 700; }
 
 .ad .ad-metrics { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 12px; }
