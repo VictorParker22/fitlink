@@ -273,10 +273,10 @@ body.fl-site-body-dark { background: #0B0C0F; }
 @media (max-width: 480px) { .s-download > div { padding: 40px 24px; border-radius: 28px; } }
 .s-download h2 { font-size: clamp(36px, 5vw, 64px); line-height: 1.02; font-weight: 700; letter-spacing: -0.02em; }
 .s-download .copy { display: flex; flex-direction: column; gap: 18px; max-width: 560px; }
-.s-store { align-self: flex-start; min-height: 56px; display: inline-flex; align-items: center; gap: 12px; padding: 0 22px 0 16px; border-radius: 14px; background: #000; color: #fff; text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: 0 0 0 1px #3A3D45; }
-.s-store:hover { color: #fff; }
-.s-store small { display: block; font-size: 11px; font-weight: 500; opacity: 0.8; line-height: 1.1; }
-.s-store b { display: block; font-size: 18px; line-height: 1.1; }
+.s-download-cta { align-self: flex-start; }
+/* The App Store link (VITE_APP_STORE_LIVE only): plain text until Apple's own badge artwork is added (W3). */
+.s-download-store { align-self: flex-start; color: var(--fl-on-ink); font-size: 16px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.s-download-store:hover { color: #fff; }
 .s-download .aside { max-width: 22ch; font-size: 15px; line-height: 1.45; color: #C9CCD2; }
 .s-footer { padding: 0 16px 24px; }
 .s-footer > div { max-width: 1148px; margin: 0 auto; border-top: 1px solid var(--s-line); padding: 32px 24px 0; display: flex; flex-direction: column; gap: 20px; }

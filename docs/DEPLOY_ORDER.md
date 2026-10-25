@@ -120,3 +120,7 @@ change the site only; each says below what it waits for.
   Vercel's domain are the owner's.
 - **W2 hero** (`launch/w2-hero`): copy only, no server dependency. After the deploy the home title reads
   "<name> — Monday, handled." in the tab and in `curl -s https://fitlink.coach/ | grep '<title>'`.
+- **W3 Founding CTAs** (`launch/w3-founding-ctas`): every CTA now leads to `/founding`, so this ships only once
+  `/founding` works on live: fitlink-app migration `20261025110000` (Founding) applied and `VITE_FOUNDING_CALENDAR_URL`
+  set, as the Founding section above says. `VITE_APP_STORE_LIVE` stays unset until the app is public on the App Store
+  (then also add Apple's official badge artwork, see CLAUDE.md); with it unset no page links to the App Store.

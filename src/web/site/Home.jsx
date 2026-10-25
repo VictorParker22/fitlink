@@ -10,7 +10,10 @@ import { HERO_LINE } from './pageMeta';
 import { ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
-import { APP_STORE_URL, BRAND_NAME, SITE_HOST } from './brand';
+import { BRAND_NAME } from './brand';
+import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
+import { PLAN_LINES } from './planLines';
+import AppStoreLink from './AppStoreLink';
 
 
 const Check = () => (
@@ -87,7 +90,7 @@ export default function Home() {
           <h1 id="hero-h" className="s-h1">{HERO_LINE}</h1>
           <p className="s-lede narrow">Your athletes pay, train and check in on {BRAND_NAME}. You open it on Monday and see exactly who needs you. Nothing else.</p>
           <div className="s-actions">
-            <a className="fl-btn accent lg" href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>
+            <Link className="fl-btn accent lg" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
             <Link className="fl-btn lg" to="/pricing">See pricing</Link>
           </div>
           <span className="s-fine">Free to start. {BRAND_NAME} only earns when your athletes pay you.</span>
@@ -263,12 +266,10 @@ export default function Home() {
         <div>
           <div className="copy">
             <h2 id="dl-h">Your next athlete is one link away.</h2>
-            <a className="s-store" href={APP_STORE_URL}>
-              <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8 2.2-1.2 3-2.4c.9-1.4 1.3-2.7 1.3-2.8 0 0-2.6-1-2.6-3.8ZM14 5.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.2-.6 2.8-1.4Z" /></svg>
-              <span><small>Download on the</small><b>App Store</b></span>
-            </a>
+            <Link className="fl-btn accent lg s-download-cta" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
+            <AppStoreLink className="s-download-store" />
           </div>
-          <span className="aside">On a computer? Open {SITE_HOST} on your iPhone and tap Get the app.</span>
+          <span className="aside">{PLAN_LINES.founding}</span>
         </div>
       </section>
     </>

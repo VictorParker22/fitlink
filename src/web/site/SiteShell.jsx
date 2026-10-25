@@ -8,7 +8,8 @@ import { useBodyClass } from './meta';
 import { takeAuthReturnNote } from '../api';
 import '../web.css';
 import './site.css';
-import { APP_STORE_URL, BRAND_MARK, BRAND_NAME, SUPPORT_EMAIL } from './brand';
+import { BRAND_MARK, BRAND_NAME, SUPPORT_EMAIL } from './brand';
+import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -39,7 +40,7 @@ export function SiteHeader() {
         </nav>
         <div className="s-header-actions">
           <Link className="signin" to="/coach">Sign in</Link>
-          <a className="fl-btn accent" href={APP_STORE_URL}>Get the app</a>
+          <Link className="fl-btn accent" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
         </div>
       </div>
     </header>

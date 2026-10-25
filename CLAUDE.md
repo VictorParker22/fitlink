@@ -27,7 +27,7 @@ from `plans`.
 
 - **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
   is the layout route (glass header with the brand mark + Home / Pricing / For athletes / Help,
-  Sign in → `/coach`, Get the app → the App Store; footer with Help · Privacy · Terms ·
+  Sign in → `/coach`, "Claim a Founding spot" → `/founding` (W3); footer with Help · Privacy · Terms ·
   Delete account · `SUPPORT_EMAIL`; scroll-to-top; a `body` class so overscroll is
   cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
   `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,
@@ -58,6 +58,16 @@ from `plans`.
   handled.", `site/pageMeta.js`), and so is the home title (`HOME_TITLE` = "<name> — Monday, handled.", the share
   title of the shell) and the start of `HOME_DESCRIPTION`. The features section that used to carry the line is now
   "A to-do list that empties." (the line is said once).
+- **Calls to action (launch plan W3, 2026-10-25; branch `launch/w3-founding-ctas`).** Every "get the app" call to
+  action is "Claim a Founding spot" → `/founding` (`site/flags.js` `FOUNDING_CTA` / `FOUNDING_PATH`): the header, the
+  home hero and closing band (with `PLAN_LINES.founding` beside it), the Free plan on /pricing, the 404. The App Store
+  is linked ONLY in a build with `VITE_APP_STORE_LIVE=on` (`APP_STORE_LIVE`), through `site/AppStoreLink.jsx`: a plain
+  text link, because Apple's marketing rules allow only the official badge artwork, unaltered, and it is not in the
+  repo (the old hand-drawn "Download on the App Store" look-alike is gone; never draw one). Off, nothing names the App
+  Store as where to get the app: the /athletes "Ready to train?" line is not rendered, its step 3 is "Open the app",
+  and checkout's done step says "Ask <coach> how to get the <name> app" instead of "Install … from the App Store".
+  Owner: add Apple's badge SVG (Apple's marketing tools) to `public/` and draw it in `AppStoreLink`, then set the flag
+  on Vercel when the app is public.
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and

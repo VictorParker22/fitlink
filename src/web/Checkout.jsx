@@ -78,6 +78,7 @@ import {
 import { APPLE_WEB_ENABLED } from './authConfig';
 import AppleButton from './AppleButton';
 import { BRAND_NAME, SUPPORT_EMAIL } from './site/brand';
+import { APP_STORE_LIVE } from './site/flags';
 import { normalizeCode } from './codes';
 
 const STEP = { email: 'email', code: 'code', who: 'who', name: 'name', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
@@ -787,9 +788,7 @@ export default function Checkout({
               ? <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the {BRAND_NAME} app: sign in there with Apple.</p>
               : <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the {BRAND_NAME} app, signed in with <b>{who || email}</b>.</p>}
             <a className="fl-btn accent lg" href={joinCode ? `${APP_SCHEME}invite/${joinCode}` : APP_SCHEME}>Open the {BRAND_NAME} app</a>
-            <p className="fl-note">{apple
-              ? `No app yet? Install ${BRAND_NAME} from the App Store, sign in with Apple, and the pass is already there.`
-              : `No app yet? Install ${BRAND_NAME} from the App Store, sign in with the same email code, and the pass is already there.`}</p>
+            <p className="fl-note">{`No app yet? ${APP_STORE_LIVE ? `Install ${BRAND_NAME} from the App Store` : `Ask ${first} how to get the ${BRAND_NAME} app`}, sign in with ${apple ? 'Apple' : 'the same email code'}, and the pass is already there.`}</p>
           </div>
         )}
       </div>

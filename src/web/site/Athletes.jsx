@@ -9,7 +9,9 @@ import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
-import { APP_STORE_URL, BRAND_NAME, SUPPORT_EMAIL } from './brand';
+import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
+import { APP_STORE_LIVE } from './flags';
+import AppStoreLink from './AppStoreLink';
 
 const copy = siteCopy(APPLE_WEB_ENABLED);
 
@@ -67,7 +69,7 @@ export default function Athletes() {
           <ol className="s-steps">
             <li className="s-step"><span className="s-num">1</span><b>Open your coach’s link</b><span>It shows their passes and prices, and for a season how many payments it takes.</span></li>
             <li className="s-step"><span className="s-num">2</span><b>Pay on the web</b><span>{copy.athletesStep2}</span></li>
-            <li className="s-step"><span className="s-num">3</span><b>Get the app</b><span>{copy.athletesStep3}</span></li>
+            <li className="s-step"><span className="s-num">3</span><b>Open the app</b><span>{copy.athletesStep3}</span></li>
             <li className="s-step"><span className="s-num">4</span><b>Train and check in</b><span>Log your sets, say how it felt, and your coach adjusts.</span></li>
           </ol>
           <div className="s-callout">
@@ -81,7 +83,7 @@ export default function Athletes() {
         <div className="s-stack" style={{ gap: 20 }}>
           <h2 id="afaq-h" className="s-h2 sm">Athlete questions</h2>
           <Faq items={FAQ} labelledBy="afaq-h" />
-          <p className="s-small">Ready to train? <a href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>.</p>
+          {APP_STORE_LIVE && <p className="s-small">Ready to train? <AppStoreLink>{`Get ${BRAND_NAME} for iPhone`}</AppStoreLink>.</p>}
         </div>
       </section>
     </>

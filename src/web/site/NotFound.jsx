@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { useBodyClass, usePageMeta } from './meta';
 import '../web.css';
 import './site.css';
-import { APP_STORE_URL, BRAND_NAME } from './brand';
+import { BRAND_NAME } from './brand';
+import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
 
 export default function NotFound() {
   usePageMeta('Page not found', 'This page took a rest day.');
@@ -18,7 +19,7 @@ export default function NotFound() {
           <p>If you followed a coach’s link, ask them to send it again. It may have changed.</p>
           <div className="s-actions">
             <Link className="fl-btn accent" to="/">Go to {BRAND_NAME}</Link>
-            <a className="fl-btn ghost-dark" href={APP_STORE_URL}>Get the app</a>
+            <Link className="fl-btn ghost-dark" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
             <Link className="fl-btn ghost-dark" to="/support">Get help</Link>
           </div>
         </main>
