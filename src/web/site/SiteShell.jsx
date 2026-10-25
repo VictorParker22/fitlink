@@ -9,7 +9,7 @@ import { takeAuthReturnNote } from '../api';
 import '../web.css';
 import './site.css';
 import { BRAND_MARK, BRAND_NAME, SUPPORT_EMAIL } from './brand';
-import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
+import FoundingCta from './FoundingCta';
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -40,7 +40,7 @@ export function SiteHeader() {
         </nav>
         <div className="s-header-actions">
           <Link className="signin" to="/coach">Sign in</Link>
-          <Link className="fl-btn accent" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
+          <FoundingCta className="fl-btn accent" />
         </div>
       </div>
     </header>

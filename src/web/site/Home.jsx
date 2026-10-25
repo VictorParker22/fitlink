@@ -10,16 +10,16 @@ import { HERO_LINE } from './pageMeta';
 import {
   ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FOUNDING_FEE_PERCENT, FOUNDING_SLOTS, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, foundingFreeWords, usd,
 } from './pricing';
-import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
 import { BRAND_NAME, FOUNDER_FIRST_NAME } from './brand';
 import FoundingCount from './FoundingCount';
-import { todayIso, useFoundingSlots } from './useFoundingSlots';
-import { foundingPhase } from '../founding';
-import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
+import FoundingCta from './FoundingCta';
+import { useFoundingView } from './useFoundingSlots';
 import { ELITE_WHERE, PLAN_LINES } from './planLines';
 import { coachPageSample } from './coachPageSample';
 import AppStoreLink from './AppStoreLink';
+import { APP_STORE_LIVE } from './flags';
+import { homeNeedAppA } from './appCopy';
 
 
 const Check = () => (
@@ -114,7 +114,7 @@ function AthleteTodayScreen() {
 }
 
 const FAQ = [
-  { q: 'Do my athletes need the app to pay?', a: siteCopy(APPLE_WEB_ENABLED).homeNeedAppA },
+  { q: 'Do my athletes need the app to pay?', a: homeNeedAppA(APP_STORE_LIVE, APPLE_WEB_ENABLED) },
   { q: `Does ${BRAND_NAME} work on Android?`, a: `${BRAND_NAME} is an iPhone app today. There is no Android app, so an athlete needs an iPhone to train with you.` },
   { q: 'How do payouts work?', a: 'Payments run on Stripe. You connect a bank once, inside the app, and Stripe sends your payouts to it. Athletes can’t buy a pass until Stripe says your account can take charges.' },
   { q: 'Does the AI message my athletes?', a: 'Never on its own. With Coach Elite it drafts a reply from the check-in and the logged sets; you edit, approve and send.' },
@@ -123,28 +123,33 @@ const FAQ = [
 
 /**
  * The Founding offer with the server's live counter (launch plan W4; it replaced the bracketed testimonial
- * placeholders). The counter is founding_slots(), the read /founding makes: nothing numeric while it loads, a sentence
- * when it fails. Every number in the copy comes from pricing.js.
+ * placeholders). The counter is the page's one founding_slots() read (useFoundingView, shared with the calls to
+ * action): nothing numeric while it loads, a sentence when it fails. Its button is the site's Founding CTA ("Join as a
+ * coach" once full or closed, R4). Every number in the copy comes from pricing.js.
  */
 function FoundingCard() {
-  const { slots, retry } = useFoundingSlots();
-  const phase = foundingPhase(slots, todayIso());
-  const over = phase === 'full' || phase === 'closed';
+  const { slots, retry, phase, mode, closesOn } = useFoundingView();
   return (
     <section className="s-wrap s-section" aria-labelledby="founding-h">
       <div className="s-founding-card s-founding-home">
         <span className="s-kicker sm">Founding coaches</span>
         <h2 id="founding-h" className="s-h2 sm">{PLAN_LINES.founding}</h2>
-        <FoundingCount phase={phase} slots={slots} onRetry={retry} />
+        <FoundingCount phase={phase} slots={slots} closesOn={closesOn} onRetry={retry} />
         <ul className="s-bullets">
           <li>Coach Elite free for {foundingFreeWords()}, from the first payment one of your athletes makes after your spot is granted.</li>
           <li>A {FOUNDING_FEE_PERCENT}% fee instead of {STANDARD_FEE_PERCENT}% while the free year or Elite runs.</li>
           <li>The “Founding {FOUNDING_SLOTS}” badge on your coach page, and a setup call with {FOUNDER_FIRST_NAME}.</li>
         </ul>
-        <Link className={`fl-btn lg${over ? '' : ' accent'}`} to={FOUNDING_PATH}>{over ? 'About Founding' : FOUNDING_CTA}</Link>
+        <FoundingCta className={`fl-btn lg${mode === 'join' ? '' : ' accent'}`} />
       </div>
     </section>
   );
+}
+
+/** Beside the closing band's call to action: the Founding line while it is open, the free plan's once it is not (R4). */
+function ClosingAside() {
+  const { mode } = useFoundingView();
+  return <span className="aside">{mode === 'join' ? PLAN_LINES.free : PLAN_LINES.founding}</span>;
 }
 
 export default function Home() {
@@ -157,7 +162,7 @@ export default function Home() {
           <h1 id="hero-h" className="s-h1">{HERO_LINE}</h1>
           <p className="s-lede narrow">Your athletes pay, train and check in on {BRAND_NAME}. You open it on Monday and see exactly who needs you. Nothing else.</p>
           <div className="s-actions">
-            <Link className="fl-btn accent lg" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
+            <FoundingCta className="fl-btn accent lg" />
             <Link className="fl-btn lg" to="/pricing">See pricing</Link>
           </div>
           <span className="s-fine">Free to start. {BRAND_NAME} only earns when your athletes pay you.</span>
@@ -312,7 +317,7 @@ export default function Home() {
             <div className="s-plan ink">
               <h3>Elite</h3>
               <span className="s-price"><b>{usd(ELITE_MONTHLY_USD)}</b><span>a month · {ELITE_FEE_PERCENT}% per pass sold</span></span>
-              <p>No athlete cap, the assistant’s drafts, and half the fee on every pass. {ELITE_WHERE.short}</p>
+              <p>No athlete cap, the assistant’s drafts, and half the fee on every pass. {ELITE_WHERE.buy}</p>
             </div>
           </div>
         </div>
@@ -331,10 +336,10 @@ export default function Home() {
         <div>
           <div className="copy">
             <h2 id="dl-h">Your next athlete is one link away.</h2>
-            <Link className="fl-btn accent lg s-download-cta" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
+            <FoundingCta className="fl-btn accent lg s-download-cta" />
             <AppStoreLink className="s-download-store" />
           </div>
-          <span className="aside">{PLAN_LINES.founding}</span>
+          <ClosingAside />
         </div>
       </section>
     </>

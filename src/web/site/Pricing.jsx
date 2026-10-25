@@ -6,9 +6,10 @@
 // (src/web/pricingConfig.json = fitlink-app supabase/config/pricing.json). All-in pricing:
 // on the standard plans athletes pay exactly the price the coach sets, and Stripe's card
 // processing comes out of the platform's fee, so no figure here is a surcharge or a
-// "processing" line. Where Elite is bought is said per region (planLines.js ELITE_WHERE, W5):
-// in the US on the web (the app opens the dashboard), elsewhere in the app through the App
-// Store or on the web.
+// "processing" line. Where Elite is bought is one sentence for everyone (planLines.js
+// ELITE_WHERE, W5; owner decision R3): on the web from the coach dashboard (Stripe, US dollars),
+// or in the iPhone app through the App Store, the App Store clause only in a build with
+// VITE_APP_STORE_LIVE=on.
 //
 // Model B (a per-coach switch, off by default; server `coach_billing.model_b`) puts a
 // booking fee INSIDE the athlete's total. Every sentence here is qualified to stay true for
@@ -27,7 +28,8 @@ import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { pageMetaFor } from './pageMeta';
 import { BRAND_NAME } from './brand';
-import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
+import FoundingCta from './FoundingCta';
+import { useFoundingView } from './useFoundingSlots';
 import { ELITE_WHERE, FOUNDING_CLOSES_LABEL, PLAN_LINES, SIXTH_ATHLETE_RULE } from './planLines';
 import {
   DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, FOUNDING_FEE_PERCENT,
@@ -44,11 +46,17 @@ const FAQ = [
   { q: 'Do my athletes pay anything extra?', a: `On the standard plans, athletes pay exactly the price you set: there is no processing charge or surcharge at checkout. A coach who uses a booking fee (${usd(MODEL_B_BOOKING_FEE_USD.block_payment)} a payment) has it included in the total the athlete is shown before paying, never added after.` },
   { q: 'Is there an athlete limit?', a: `${SIXTH_RULE} Elite and Founding have no cap.` },
   { q: 'Is there a minimum price?', a: `Yes: a pass costs at least ${usd(MINIMUM_CHARGE_USD)} a payment.` },
-  { q: 'How do I start or stop Elite?', a: (<><p>{ELITE_WHERE.us} On the web it is monthly ({usd(ELITE_MONTHLY_USD)}) or yearly ({usd(ELITE_YEARLY_USD)}); your <Link to="/coach">coach dashboard</Link> has the buttons.</p><p>{ELITE_WHERE.elsewhere}</p><p>{ELITE_WHERE.manage}</p></>) },
+  { q: 'How do I start or stop Elite?', a: (<><p>{ELITE_WHERE.buy} On the web it is monthly ({usd(ELITE_MONTHLY_USD)}) or yearly ({usd(ELITE_YEARLY_USD)}); your <Link to="/coach">coach dashboard</Link> has the buttons.</p><p>{ELITE_WHERE.manage}</p></>) },
   { q: 'How does the lower fee reach my existing passes?', a: 'The fee is set on the server from your plan and applied to every pass payment, including renewals of passes your athletes already hold.' },
   { q: 'What does a dispute cost?', a: `${usd(DISPUTE_FEE_USD)} for each dispute, won or lost; an inquiry costs nothing. It comes out of what Stripe pays you for that payment or for your next ones.` },
   { q: 'What is Founding?', a: (<p>{FOUNDING_SLOTS} coaches get Elite free for {foundingFreeWords()} and a {FOUNDING_FEE_PERCENT}% fee. The free year starts with the first payment one of your athletes makes after your spot is granted. After it, Elite is {usd(FOUNDING_THEN_MONTHLY_USD)} a month if you keep it, or you move to the free plan. Applications close {CLOSES}. <Link to="/founding">Apply for a Founding spot</Link>.</p>) },
 ];
+
+/** The Founding plan's button: "Apply for a spot" while Founding is open, "Join as a coach" once it is not (R4). */
+function FoundingCardButton() {
+  const { mode } = useFoundingView();
+  return <Link className="fl-btn lg" to="/founding">{mode === 'join' ? 'Join as a coach' : 'Apply for a spot'}</Link>;
+}
 
 export default function Pricing() {
   const meta = pageMetaFor('/pricing');
@@ -79,7 +87,7 @@ export default function Pricing() {
               <li>Check-ins, messages, athlete progress</li>
             </ul>
             <p className="s-rule">{SIXTH_RULE}</p>
-            <Link className="fl-btn lg" to={FOUNDING_PATH}>{FOUNDING_CTA}</Link>
+            <FoundingCta className="fl-btn lg" />
           </article>
           <article className="s-plan ink">
             <h2>Elite</h2>
@@ -92,7 +100,7 @@ export default function Pricing() {
               <li>Replies drafted in your voice from the athlete’s check-in and their logged sets; you approve every one</li>
             </ul>
             <Link className="fl-btn lg accent" to="/coach">Subscribe on the web</Link>
-            <span className="foot">{ELITE_WHERE.short}</span>
+            <span className="foot">{ELITE_WHERE.buy}</span>
           </article>
           <article className="s-plan">
             <h2>Founding</h2>
@@ -104,7 +112,7 @@ export default function Pricing() {
               <li>The “Founding {FOUNDING_SLOTS}” badge on your coach page</li>
               <li>After the year: Elite at {usd(FOUNDING_THEN_MONTHLY_USD)} a month, or the free plan</li>
             </ul>
-            <Link className="fl-btn lg" to="/founding">Apply for a spot</Link>
+            <FoundingCardButton />
           </article>
         </div>
       </section>

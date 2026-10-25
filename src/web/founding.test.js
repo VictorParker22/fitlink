@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   ATHLETE_BANDS, FOUNDING_RETURN_TTL_MS, FOUNDING_SIGN_UP_DATA, PAY_METHODS, accountStep, answersFrom, applyRefusal, bookingUrl,
   checkAnswers, cleanInstagram, cleanPhone, cleanText, closesLabel, closesLabelLong, contactOnly, foundingPhase, foundingReturnValue,
-  fullLine, isNewApplication, isOwnSession, parseSlots, readFoundingReturn, slotsLine, statusLine,
+  foundingView, fullLine, isNewApplication, isOwnSession, parseSlots, readFoundingReturn, slotsLine, statusLine, todayIn,
 } from './founding.js';
 import { FOUNDING_ATHLETE_ACCOUNT, FOUNDING_NOT_COACH_TITLE } from './appleAuth.js';
 import {
@@ -43,6 +43,35 @@ test('foundingPhase: nothing numeric while loading, no guess on a failure, close
   assert.equal(foundingPhase(s(15, false), '2026-10-25'), 'full');
   assert.equal(foundingPhase(s(15, false), '2027-01-02'), 'closed');
   assert.equal(foundingPhase(s(3, false), '2026-12-31'), 'closed');
+});
+
+test('foundingView (R4): the application while open, the coach sign-up once full or closed', () => {
+  const s = (taken, open, closesOn = '2026-12-31') => ({ taken, total: 15, closesOn, open });
+  const v = (slots, today) => foundingView(slots, today, '2026-12-31');
+  // open
+  assert.deepEqual(v(s(9, true), '2026-10-25'), { phase: 'open', mode: 'founding', closesOn: '2026-12-31' });
+  // full (before the close day)
+  assert.deepEqual(v(s(15, false), '2026-10-25'), { phase: 'full', mode: 'join', closesOn: '2026-12-31' });
+  // closed: by the server's counter, and by the config's close day even while the counter still says open
+  assert.equal(v(s(3, false), '2026-12-01').mode, 'join');
+  assert.deepEqual(v(s(3, true), '2027-01-01'), { phase: 'closed', mode: 'join', closesOn: '2026-12-31' });
+  // full and closed: closed
+  assert.deepEqual(v(s(15, false), '2027-01-01'), { phase: 'closed', mode: 'join', closesOn: '2026-12-31' });
+  // loading or a failed read: the application before the close day, the sign-up after it
+  assert.deepEqual(v(undefined, '2026-10-25'), { phase: 'loading', mode: 'founding', closesOn: '2026-12-31' });
+  assert.deepEqual(v(null, '2026-10-25'), { phase: 'unknown', mode: 'founding', closesOn: '2026-12-31' });
+  assert.deepEqual(v(undefined, '2027-01-01'), { phase: 'closed', mode: 'join', closesOn: '2026-12-31' });
+  assert.deepEqual(v(null, '2027-01-01'), { phase: 'closed', mode: 'join', closesOn: '2026-12-31' });
+  // the close day itself is still open; no date yet (the first, prerendered render) never closes by date
+  assert.equal(v(s(9, true), '2026-12-31').mode, 'founding');
+  assert.equal(v(undefined, null).mode, 'founding');
+  assert.equal(v(s(15, false), null).mode, 'join');
+});
+
+test('todayIn: the day in the offer\'s zone (the server closes at midnight after closes_on there)', () => {
+  assert.equal(todayIn('America/Los_Angeles', new Date('2027-01-01T07:30:00Z')), '2026-12-31');
+  assert.equal(todayIn('America/Los_Angeles', new Date('2027-01-01T08:30:00Z')), '2027-01-01');
+  assert.equal(todayIn('Not/AZone', new Date()), null);
 });
 
 test('the counter says only the server numbers', () => {

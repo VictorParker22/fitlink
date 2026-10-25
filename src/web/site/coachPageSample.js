@@ -7,7 +7,11 @@ import { seasonPayments } from '../season.js';
 import { BRAND_NAME, SITE_HOST } from './brand.js';
 import { BLOCK_DEFAULT_WEEKS, FOUNDING_SLOTS, MINIMUM_CHARGE_USD, usd } from './pricing.js';
 
-export const SAMPLE_HANDLE = 'your-name';
+/**
+ * Drawn literally, brackets and all: outside the handle rule (handles.js handleWellFormed), so no coach can ever own the
+ * example's address (review 2026-10-25: `your-name` was a claimable handle).
+ */
+export const SAMPLE_HANDLE = '<your-name>';
 export const SAMPLE_NAME = 'Your name';
 /** Sample prices as multiples of the minimum charge (the least a pass may cost per payment). */
 export const SAMPLE_BLOCK_PRICE_USD = MINIMUM_CHARGE_USD * 6;
