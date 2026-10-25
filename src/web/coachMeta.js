@@ -1,5 +1,5 @@
 // Link previews for /c/<handle> (launch plan Sprint 1 PR 3, 2026-10-25). Pure: the Vercel function
-// `api/coach-meta.js` uses it, `node --test src/web/coachMeta.test.js` pins it. No JSON imports and no React, so the
+// `api/coach-meta/[handle].js` uses it, `node --test src/web/coachMeta.test.js` pins it. No JSON imports and no React, so the
 // function bundles it as plain ES modules.
 //
 // Link unfurlers (iMessage, WhatsApp, Instagram, Slack, X…) do not run JavaScript: they read the HTML the server
@@ -137,5 +137,7 @@ export function injectHead(html, { tags = null, noindex = false } = {}) {
   let out = html;
   if (tags) out = out.replace(TITLE_RE, '').replace(DESCRIPTION_RE, '');
   const add = [tags, noindex ? '<meta name="robots" content="noindex" />' : null].filter(Boolean).join('\n    ');
-  return out.replace(/<\/head>/i, `    ${add}\n  </head>`);
+  // A replacement FUNCTION: a string replacement would read `$&`, `$'`, `` $` `` and `$$` in a coach's name as
+  // patterns and copy parts of the template into the tags (review 2026-10-25).
+  return out.replace(/<\/head>/i, () => `    ${add}\n  </head>`);
 }

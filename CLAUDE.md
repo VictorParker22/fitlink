@@ -466,9 +466,12 @@ from `plans`.
   2026-10-25, no `trainers.handle`, no `coach_page`, and the fee engine / blocks migrations are not applied either).**
   Branch `launch/3-coach-page-web`, stacked on `launch/4-blocks-web`. Pure rules in `src/web/coachPage.js` +
   `src/web/handles.js` (`node --test src/web/coachPage.test.js`), link previews in `src/web/coachMeta.js` +
-  `api/coach-meta.js` (`node --test src/web/coachMeta.test.js`).
+  `api/coach-meta/[handle].js` + `src/web/linkPreviewBots.js` (`node --test src/web/coachMeta.test.js`).
   - **The page** (`CoachPage.jsx`, outside the site shell: no marketing nav). One hero (photo: `avatar_url` only when
-    `safeImageUrl` passes, https, no credentials, else initials; name; sport = `specialization`, else up to three
+    `safeImageUrl` passes: https, no credentials, AND on our own origins, this project's public Storage
+    (`<SUPABASE_URL>/storage/v1/object/public/…`, the configured URL, where every live `avatar_url` was on 2026-10-25) or
+    `SITE_ORIGIN`; anything else is not drawn (initials), so a coach cannot point the page at a host that logs visitors
+    (review m5); name; sport = `specialization`, else up to three
     `specializations`; the Founding 15 badge from `founding_member`; "Next block starts Dec 1" from
     `next_block_starts_on`), the passes, "Cancelling a session" when a session is listed (the coach's
     `cancellation_policy` from the same answer, as text), and the footer "Coached on <BRAND_NAME> · Start coaching →"
@@ -486,12 +489,14 @@ from `plans`.
   - **Buying** reuses `Checkout.jsx` (not a fork): `pageHandle` in place of `code`. The invite code comes from
     `page_invite(handle)` (it renews or makes the coach's standing link: a write) only after the person acted (their own
     code typed in the sheet, their own Apple return, or Continue under "Signed in as …") and after the page's sale checks,
-    right before the athlete-exit preview; `{ok: false, code, error}` is shown as sent + "Nothing was changed."
+    right before the athlete-exit preview; `{ok: false, code, error}` is shown as sent + "Nothing was changed.", and so is a
+    call that never reached the server (review m6)
     (`page_not_found` final, `rate_limited` Check again). Then the same flow: athlete-exit preview / confirm with
     `planId`, `create-subscription {planId, clientId, source: 'coach_page', pageSession}` (`api.js createSubscription(…,
     {fromPage, pageSession})`), PaymentElement, confirm-subscription. The sheet uses the page's total (`pageTotal`) from
     its first line, so "($640 in all)" and the title price are the server's before the card form; create-subscription's
-    answer replaces it. Apple parks `{v: 2, handle, planId, name}` (`appleAuth.js parkedCheckoutValue`; v1 still parks a
+    answer replaces it, and once it answered (a client secret) it is the ONLY total: without `amountCents` the Pay
+    button is plans.price, never the page's total read earlier (review m4). Apple parks `{v: 2, handle, planId, name}` (`appleAuth.js parkedCheckoutValue`; v1 still parks a
     code) and `/join` moves back to `/c/<handle>`, which reopens the sheet. `/i/:code` is unchanged.
   - **The funnel** (`log_page_event`, `api.js logPageEvent`: never awaited, never throws). The page session is 24 random
     bytes as 32 base64url characters in sessionStorage `fitlink-web-page-session` (one per tab, kept across reloads and
@@ -500,17 +505,32 @@ from `plans`.
     `document.referrer`'s host only (`referrerHost`), utm_source / medium / campaign from the URL, cleaned and cut at 100
     (`utmFrom`); `eventParams` builds only what the server accepts (`paid` is the server's). Nothing is logged while the
     stored session's uid is the coach's own (the coach previewing their page).
-  - **Link previews.** Unfurlers don't run JavaScript, so `vercel.json` rewrites `/c/:handle` to the Node function
-    `api/coach-meta.js` (`?handle=`): the built `dist/index.html` (from the function's own files, `includeFiles`; else
-    fetched from this deployment's own origin, `VERCEL_PROJECT_PRODUCTION_URL` in production / `VERCEL_URL` otherwise,
-    never the request's Host) with `<title>`, description, canonical, `og:*` (image = `<SUPABASE_URL>/functions/v1/
-    coach-og?handle=<h>`, 1200 × 630) and `twitter:*` from `coach_page` (publishable key, 2.5 s cap), every value
-    cleaned (`cleanText`: control / format / bidi characters out) and escaped (`escapeHtml`). A retired handle answers 307
-    to the new page (temporary: the coach can take the old name back), no page 404 + noindex with the SPA, any failure
-    the plain index.html (cached 30 s). The HTML is cached at Vercel's edge 300 s (`s-maxage`, SWR 600): coach_page paces
-    300/h per ADDRESS and this function calls from Vercel's addresses. With no template at all it answers 307 to
-    `/c/<h>?spa=1`, which the first rewrite serves as the plain SPA (the page drops the marker). The AASA header and the
-    SPA catch-all are unchanged; eslint runs on `api/` with Node globals.
+  - **Link previews, for bots only (review 2026-10-25 M1).** Unfurlers don't run JavaScript, so `vercel.json` rewrites
+    `/c/:handle` to the Node function `api/coach-meta/[handle].js` (`/api/coach-meta/:handle`) ONLY when the
+    `user-agent` matches `src/web/linkPreviewBots.js` (`LINK_PREVIEW_UA_PATTERN`: facebookexternalhit, which Apple
+    Messages also sends, Facebot, meta-external*, Twitterbot, Slackbot, Discordbot, WhatsApp, TelegramBot,
+    LinkedInBot, Pinterestbot, Applebot, Googlebot, bingbot, …; in-app BROWSERS such as Instagram's are people and left
+    out). Everyone else falls through to the SPA catch-all: a person never waits on the function, and coach_page's anon
+    budget (300/h per ADDRESS; the function calls from Vercel's addresses) is spent only on unfurls. The pattern is
+    case-sensitive with no `(?i)`, no lookaround and `.*` at both ends, because Vercel does not document whether a
+    `has` value takes inline flags or is anchored; a test keeps vercel.json's value equal to the module and simulates
+    the routing (bot → function, browser → index.html, `?spa` first). Untested on a real deployment (the `has` match
+    does not run in `vercel dev`): see `docs/DEPLOY_ORDER.md`. The handle is the PATH segment (`requestHandle`), never a
+    query parameter a visitor can add (review m3); the dynamic-route form `/api/coach-meta/[handle]?handle=` is read only
+    with exactly one `handle`, else the plain page. The function serves the built `dist/index.html` (from its own files,
+    `includeFiles`, `functions` key `api/coach-meta/*.js`; else fetched from this deployment's own origin,
+    `VERCEL_PROJECT_PRODUCTION_URL` in production / `VERCEL_URL` otherwise, never the request's Host) with `<title>`,
+    description, canonical, `og:*` (image = `<SUPABASE_URL>/functions/v1/coach-og?handle=<h>`, 1200 × 630) and
+    `twitter:*` from `coach_page` (publishable key, 2.5 s cap), every value cleaned (`cleanText`) and escaped
+    (`escapeHtml`), and put into the head with a replacement FUNCTION (a string would read `$&`, `` $` ``, `$'`, `$$` in a
+    name as patterns and copy the template's head into the tags: review m1). `coach_page` answers are kept per instance
+    60 s by normalised handle (500 handles at most, oldest out; concurrent misses share one call; a failure is not
+    kept). A retired handle answers 307 to the new page (the visitor's query kept), no page 404 + noindex with the SPA:
+    both `s-maxage=30` with no stale-while-revalidate (a coach who claims or takes down a name is seen within 30 s,
+    review m2); a page 300 s (SWR 600); any failure the plain index.html (30 s). The body never depends on the query, but
+    Vercel's CDN keys on the full URL, so `fbclid` still splits the edge cache: the in-memory answers cover the cost.
+    With no template at all the answer is a 307 to `/c/<h>?spa=1`, which the first rewrite serves as the plain SPA (the
+    page drops the marker). The AASA header and the SPA catch-all are unchanged; eslint runs on `api/` with Node globals.
   - **Your page on /coach** (`CoachPagePanel.jsx`, under the Elite panel): the current `trainers.handle` (own row; 42703 →
     "Coach pages aren't available on the server yet."), the address `<SITE_HOST>/c/<handle>` (`brand.js SITE_HOST` /
     `SITE_ORIGIN`), Copy link, Open page; the field lower-cases as typed and drops a leading @ (`handleFieldValue`), says
@@ -518,7 +538,9 @@ from `plans`.
     (`setHandleOutcome`: refusals as sent, `changed: false` → "That's already your page's name.", a change says the old
     link sends people to the new one for a year); an answer that never came → "isn't clear whether your page's name
     changed" + Check again. "Take my page down" asks a second time, then `set_handle(null)`. Nothing is suggested or saved
-    for the coach. Last 30 days from `my_page_stats(30)`: Opened your page / Tapped a pass / Reached the card form /
+    for the coach. Under the field, `PAGE_INVITE_NOTE`: the page uses the coach's standing invite link, and if the
+    coach revoked it, `page_invite` makes a new one the first time an athlete starts to join (threat model A64; review
+    m7). Last 30 days from `my_page_stats(30)`: Opened your page / Tapped a pass / Reached the card form /
     Paid (distinct browser sessions; paid = subscriptions), with the note that the first three are browser-reported.
   - Checks (2026-10-25): `node --test src/web/*.test.js` 112/112 in UTC, Asia/Tokyo, Pacific/Honolulu,
     America/Los_Angeles, Pacific/Kiritimati; eslint clean (`npx eslint src/web src/main.jsx vite.config.js api`); build;
@@ -529,6 +551,13 @@ from `plans`.
     page_invite refusals, events (once, referrer host only, same key on reload, none for the coach), dashboard set /
     taken / invalid / rate-limited / no answer / create / take down / stats / stats refused / before the migration, and
     `/i/CODE` unchanged.
+    After review 1 (same day): `node --test src/web/*.test.js` 117/117 in UTC, Pacific/Kiritimati and
+    America/Los_Angeles (adding `$` patterns in the head, the answer cache, the path handle, 30 s on 404/307, the photo
+    origins, vercel.json's bot rule with a routing simulation: a bot reaches the function, a browser and Instagram's
+    in-app browser get index.html); the function with the built template for iMessage / WhatsApp vs Safari / Instagram
+    UAs (one coach_page call for two unfurls); headless 92/92 (adding a tracker photo not drawn or requested, a Storage
+    photo drawn, the Pay label after a create-subscription without `amountCents`, page_invite with no connection, the
+    panel's invite note).
   - **Deploy order (`docs/DEPLOY_ORDER.md`):** after fitlink-app migration `20261025130000` and `coach-og` (and
     create-subscription / stripe-webhook / confirm-subscription with `_shared/pageEvents.ts`), AND after the operator
     inserted the new product name and its variants into `reserved_handles` (rollout step 2): this site is what lets a

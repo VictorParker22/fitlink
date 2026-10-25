@@ -19,7 +19,7 @@ export default defineConfig([
     },
   },
   {
-    // Vercel functions (api/coach-meta.js: the coach page's link-preview tags) run on Node.
+    // Vercel functions (api/coach-meta/[handle].js: the coach page's link-preview tags) run on Node.
     files: ['api/**/*.js'],
     languageOptions: { globals: globals.node },
   },

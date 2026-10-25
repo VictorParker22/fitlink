@@ -27,6 +27,7 @@ import { coachPolicyIntro, freeCancelLine, passKind } from './blocks';
 import { eventParams, isSessionKey, nextBlockLine, pageModel, passCard, sessionKeyFrom, PAGE_SESSION_KEY } from './coachPage';
 import { pageHandle } from './handles';
 import { BRAND_NAME } from './site/brand';
+import { SUPABASE_URL } from './supabase';
 import Checkout from './Checkout';
 import FoundingBadge from './FoundingBadge';
 import NotFound from './site/NotFound';
@@ -97,7 +98,7 @@ export default function CoachPage() {
     const setState = (v) => setLoaded({ key: loadKey, ...v });
     coachPage(handle).then((answer) => {
       if (!alive) return;
-      const model = pageModel(answer);
+      const model = pageModel(answer, { supabaseUrl: SUPABASE_URL });
       if (model.kind === 'redirect') {
         const q = new URLSearchParams(location.search);
         q.delete('spa');

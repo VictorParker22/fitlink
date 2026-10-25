@@ -41,13 +41,22 @@ fitlink-app `supabase/manual/ROLLOUT_20261025_coach_page.md`.
    handle, and a reserved row added later never evicts a coach who already holds the name.
 4. `coach-og` deployed (`--no-verify-jwt`), then `create-subscription`, `stripe-webhook`,
    `confirm-subscription` (they bundle `_shared/pageEvents.ts`: the `paid` stage).
-5. Then this site. Vercel runs `api/coach-meta.js` (the link-preview tags for `/c/:handle`)
-   with `includeFiles: dist/index.html`; it reads `VITE_SUPABASE_URL` /
-   `VITE_SUPABASE_PUBLISHABLE_KEY` at run time when set (else the same defaults as the
-   browser). After the deploy: `curl -s https://fitlink.coach/c/<a real handle> | grep og:`
-   shows the coach's tags, `curl -sI https://fitlink.coach/c/nobody-xyz` answers 404
-   `text/html`, `/.well-known/apple-app-site-association` is still `application/json`, and
-   a link pasted into iMessage shows the coach-og card.
+5. Then this site. Vercel runs `api/coach-meta/[handle].js` (the link-preview tags for
+   `/c/:handle`, `includeFiles: dist/index.html`) ONLY for link-preview bots: `vercel.json`
+   rewrites `/c/:handle` to `/api/coach-meta/:handle` when the user agent matches
+   `src/web/linkPreviewBots.js` (a test keeps the two equal); people get the SPA from the
+   CDN. The function reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` at run time
+   when set (else the same defaults as the browser). After the deploy:
+   - `curl -s -A 'facebookexternalhit/1.1' https://fitlink.coach/c/<a real handle> | grep og:`
+     shows the coach's tags (the `has` header match runs only on a deployment, not in
+     `vercel dev`, and whether Vercel's matcher is case-sensitive is undocumented, so check
+     this one on the deployment);
+   - `curl -s https://fitlink.coach/c/<a real handle> | grep og:` (curl's own user agent, a
+     "person") prints nothing: the plain SPA;
+   - `curl -sI -A 'Twitterbot/1.0' https://fitlink.coach/c/nobody-xyz` answers 404 `text/html`
+     with `s-maxage=30`;
+   - `/.well-known/apple-app-site-association` is still `application/json`, and a link pasted
+     into iMessage shows the coach-og card.
 
 Before step 2: `/c/*` says coach pages aren't available yet, and `/coach`'s "Your page"
 panel says the same.

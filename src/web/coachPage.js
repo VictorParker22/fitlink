@@ -18,6 +18,8 @@ import {
   buyLabel, dayWords, passKind, paymentsFor, priceLine, saleLine, saleOpensDay, scheduleLine,
 } from './blocks.js';
 import { billingPeriod, usdFromCents } from './season.js';
+import { SITE_ORIGIN } from './site/brand.js';
+import { DEFAULT_SUPABASE_URL } from './supabaseDefaults.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -31,17 +33,34 @@ export function firstWord(name) {
   return String(name ?? '').trim().split(/\s+/)[0] || 'your coach';
 }
 
+/** Where a coach photo may come from: this project's public Storage, and the site itself. */
+const STORAGE_PUBLIC_PATH = '/storage/v1/object/public/';
+
 /**
- * A photo URL the page may load: https, a host, no credentials, at most 2048 characters; else null (no photo is
- * drawn, never a broken frame). The URL is the coach's own write, so it is never put anywhere but an <img src>.
+ * A photo URL the page may load: https, no credentials, at most 2048 characters, AND on one of our own origins: this
+ * project's public Storage (`<supabaseUrl>/storage/v1/object/public/…`, where the apps upload `avatars`; read on live
+ * 2026-10-25: every `trainers.avatar_url` is there) or the site's own origin. Anything else is null: no photo is
+ * drawn (initials instead), so a coach cannot point the page at a host that logs every visitor's address and browser
+ * (review 2026-10-25 m5). The URL is the coach's own write, so it is never put anywhere but an <img src>.
  */
-export function safeImageUrl(raw) {
+export function safeImageUrl(raw, { supabaseUrl = DEFAULT_SUPABASE_URL, siteOrigin = SITE_ORIGIN } = {}) {
   if (typeof raw !== 'string' || raw.length > 2048) return null;
   let u;
   try { u = new URL(raw); } catch { return null; }
   if (u.protocol !== 'https:' || !u.hostname || u.username || u.password) return null;
-  return u.href;
+  const originOf = (v) => { try { return new URL(v).origin; } catch { return null; } };
+  const storage = originOf(supabaseUrl);
+  // The parsed pathname: `..` and `%2e%2e` segments are already resolved, so the prefix test cannot be walked out of.
+  if (storage && u.origin === storage && u.pathname.startsWith(STORAGE_PUBLIC_PATH) && u.pathname.length > STORAGE_PUBLIC_PATH.length) return u.href;
+  if (u.origin === originOf(siteOrigin)) return u.href;
+  return null;
 }
+
+/**
+ * Under the name field on /coach (review 2026-10-25 m7; fitlink-app threat model A64): a purchase from the page joins
+ * through the coach's standing invite link, and `page_invite` makes a new one when the coach had revoked theirs.
+ */
+export const PAGE_INVITE_NOTE = 'Your page uses your standing invite link: athletes who join from it join through that link. If you revoked that link, your page makes a new one the first time an athlete starts to join from it.';
 
 /** The coach's sport: `specialization`, else up to three `specializations` (the share image's rule). */
 export function sportLine(coach) {
@@ -94,7 +113,7 @@ function pagePass(p, coachId) {
  * `{ kind: 'redirect', handle }` (a retired handle of a coach who has a new one), `{ kind: 'not_found' }`, or
  * `{ kind: 'error' }` (an answer that is not one of those).
  */
-export function pageModel(answer) {
+export function pageModel(answer, { supabaseUrl = DEFAULT_SUPABASE_URL } = {}) {
   if (!answer || typeof answer !== 'object' || Array.isArray(answer)) return { kind: 'error' };
   if (answer.found === false) {
     const to = pageHandle(answer.redirect);
@@ -108,7 +127,7 @@ export function pageModel(answer) {
     id: c.id,
     name: name ?? 'Your coach',
     first: name ? firstWord(name) : 'your coach',
-    photo: safeImageUrl(c.avatar_url),
+    photo: safeImageUrl(c.avatar_url, { supabaseUrl }),
     sport: sportLine(c),
     founding: c.founding_member === true,
     takesCards: c.takes_cards === true,

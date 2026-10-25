@@ -6,7 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleFieldValue, handleHint, handleWellFormed, normalizeHandle, pageHandle } from './handles.js';
 import {
-  eventParams, isSessionKey, nextBlockLine, pageModel, passCard, referrerHost, safeImageUrl, sessionKeyFrom, setHandleOutcome,
+  eventParams, isSessionKey, nextBlockLine, PAGE_INVITE_NOTE, pageModel, passCard, referrerHost, safeImageUrl, sessionKeyFrom, setHandleOutcome,
   sportLine, statsView, utmFrom, FUNNEL_STAGES,
 } from './coachPage.js';
 import { parkedCheckoutValue, readParkedCheckout } from './appleAuth.js';
@@ -52,7 +52,7 @@ const pass = (o) => ({
 const answer = (o = {}, coach = {}) => ({
   found: true, handle: 'dana-ruiz', model_b: false, minimum_charge_cents: 2500, next_block_starts_on: '2026-12-01',
   coach: {
-    id: COACH, name: 'Dana Ruiz', avatar_url: 'https://cdn.example.com/a.jpg', cover_url: null, specialization: 'Strength',
+    id: COACH, name: 'Dana Ruiz', avatar_url: 'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/public/avatars/dana/a.jpg', cover_url: null, specialization: 'Strength',
     specializations: ['Strength', 'Rowing'], bio: 'x', cancellation_policy: null, founding_member: true, takes_cards: true, ...coach,
   },
   passes: [pass()],
@@ -70,7 +70,7 @@ test('page model: found / redirect / not found / unreadable', () => {
   assert.equal(m.kind, 'found');
   assert.equal(m.handle, 'dana-ruiz');
   assert.equal(m.coach.first, 'Dana');
-  assert.equal(m.coach.photo, 'https://cdn.example.com/a.jpg');
+  assert.equal(m.coach.photo, 'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/public/avatars/dana/a.jpg');
   assert.equal(m.coach.sport, 'Strength');
   assert.equal(m.coach.founding, true);
   assert.equal(m.nextBlock, '2026-12-01');
@@ -84,6 +84,29 @@ test('page model: hostile or odd values are left out', () => {
   for (const bad of ['http://x.com/a.jpg', 'javascript:alert(1)', 'data:image/png;base64,AA', 'https://u:p@x.com/a.jpg', `https://x.com/${'a'.repeat(2100)}`, 42]) {
     assert.equal(safeImageUrl(bad), null, String(bad).slice(0, 40));
   }
+  // Only our own origins (review m5): this project's public Storage, and the site. A tracker host is never loaded.
+  const STORE = 'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/public/avatars/u1/a.jpg';
+  assert.equal(safeImageUrl(STORE), STORE);
+  assert.equal(safeImageUrl('https://fitlink.coach/apple/logo.png'), 'https://fitlink.coach/apple/logo.png');
+  assert.equal(safeImageUrl('https://proj.supabase.co/storage/v1/object/public/avatars/a.jpg', { supabaseUrl: 'https://proj.supabase.co/' }),
+    'https://proj.supabase.co/storage/v1/object/public/avatars/a.jpg', 'the configured project, not a literal');
+  for (const bad of [
+    'https://tracker.example/pixel.gif',
+    'https://images.example.com/a.jpg',
+    'https://qcmtaskhyhwzyoegtfpw.supabase.co/rest/v1/rpc/coach_page',
+    'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/sign/avatars/a.jpg',
+    'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/public/../../../functions/v1/x',
+    'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/public/%2e%2e/%2e%2e/%2e%2e/functions/v1/x',
+    'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/public/',
+    'https://qcmtaskhyhwzyoegtfpw.supabase.co.evil.com/storage/v1/object/public/a.jpg',
+    'https://qcmtaskhyhwzyoegtfpw.supabase.co:8443/storage/v1/object/public/a.jpg',
+    'https://other.supabase.co/storage/v1/object/public/avatars/a.jpg',
+    'https://fitlink.coach.evil.com/a.png',
+  ]) assert.equal(safeImageUrl(bad), null, bad);
+  const tracked = pageModel(answer({ coach: { ...answer().coach, avatar_url: 'https://tracker.example/p.gif' } }));
+  assert.equal(tracked.coach.photo, null, 'a photo on another host is not drawn');
+  const ours = pageModel(answer({ coach: { ...answer().coach, avatar_url: STORE } }));
+  assert.equal(ours.coach.photo, STORE);
   const m = pageModel(answer({
     next_block_starts_on: 'soon',
     passes: [
@@ -209,4 +232,11 @@ test('the Apple return parks a coach page by its handle (v2), an invite link by 
   assert.equal(parkedCheckoutValue({ code: 'ABC', handle: 'dana', planId: plan, name: '' }, now), null, 'a bad code is not quietly swapped for the handle');
   assert.equal(readParkedCheckout(JSON.stringify({ v: 2, handle: 'Dana', planId: plan, name: '', at: now }), now), null);
   assert.equal(readParkedCheckout(JSON.stringify({ v: 2, handle: 'dana', planId: plan, name: '', at: now - 31 * 60_000 }), now), null);
+});
+
+test('the panel says a page uses the standing invite link, and remakes a revoked one (review m7)', () => {
+  assert.match(PAGE_INVITE_NOTE, /standing invite link/);
+  assert.match(PAGE_INVITE_NOTE, /revoked/);
+  assert.match(PAGE_INVITE_NOTE, /makes a new one/);
+  assert.doesNotMatch(PAGE_INVITE_NOTE, /\b(he|she|him|her|his|hers)\b/i, 'no gendered pronouns');
 });

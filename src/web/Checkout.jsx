@@ -428,7 +428,11 @@ export default function Checkout({
     try {
       answer = await pageInvite(pageHandle);
     } catch (err) {
-      throw stop(err?.code === 'unauthorized' ? err.message : `${err?.message || 'Something went wrong.'}`, err?.code === 'unauthorized' ? 'unauthorized' : null);
+      if (err?.code === 'unauthorized') throw stop(err.message, 'unauthorized');
+      // Every other failure (no connection included: review 2026-10-25 m6) says that nothing ended or was bought; the
+      // athlete-exit preview has not run yet.
+      const said = `${err?.message || 'Something went wrong.'}`.trim();
+      throw stop(/Nothing was changed\./.test(said) ? said : `${said} Nothing was changed.`, null);
     }
     if (answer?.ok === true && normalizeCode(answer.invite_code)) {
       codeRef.current = normalizeCode(answer.invite_code);
@@ -595,7 +599,10 @@ export default function Checkout({
   // Model B: create-subscription's own total (the booking fee inside it) replaces plans.price on every line from the
   // card form on; the booking fee is named as part of that total, never as a surcharge line of its own.
   // From a coach page, coach_page's total_cents is the server's per-payment total before create-subscription answers.
-  const total = owing ? null : (chargedTotal(purchase) ?? validPageTotal(pageTotal));
+  // Once it answered (a client secret exists) its answer is the only total: without `amountCents` it charges
+  // plans.price, so the page's total (read when the page loaded; the coach may have turned Model B off since) never
+  // labels the Pay button (review 2026-10-25 m4).
+  const total = owing ? null : purchase?.clientSecret ? chargedTotal(purchase) : validPageTotal(pageTotal);
   // How many payments this purchase makes: create-subscription's seasonPayments once it answered, else the page's
   // count from when the sheet opened (a dated block's from now; a session 1; an open pass null).
   const payments = paymentsFor(plan, openedAt, owing ? null : purchase);

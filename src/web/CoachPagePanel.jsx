@@ -5,7 +5,7 @@
 // coach: a handle is the coach's act. Taking the page down asks a second time.
 import { useEffect, useState } from 'react';
 import { myHandle, myPageStats, session, setHandle } from './api';
-import { FUNNEL_NOTE, pageAddress, setHandleOutcome, statsView } from './coachPage';
+import { FUNNEL_NOTE, PAGE_INVITE_NOTE, pageAddress, setHandleOutcome, statsView } from './coachPage';
 import { handleFieldValue, handleHint, normalizeHandle } from './handles';
 import { SITE_HOST, SITE_ORIGIN } from './site/brand';
 
@@ -121,12 +121,13 @@ export default function CoachPagePanel() {
         <div className="fl-handle-field">
           <span aria-hidden="true">{SITE_HOST}/c/</span>
           <input id="page-handle" value={field} onChange={(e) => { setField(handleFieldValue(e.target.value)); setResult(null); }}
-            autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={64} aria-describedby="page-handle-hint" disabled={busy} />
+            autoComplete="off" autoCapitalize="none" spellCheck={false} maxLength={64} aria-describedby="page-handle-hint page-invite-note" disabled={busy} />
         </div>
         <p id="page-handle-hint" className="fl-note">
           {hint ?? (typed && !unchanged ? `Preview: ${pageAddress(SITE_HOST, typed)}` : '3 to 30 letters, digits or hyphens.')}
           {h && typed && !unchanged && !hint ? ' Your current link keeps working for a year and sends people to the new one.' : ''}
         </p>
+        <p id="page-invite-note" className="fl-note">{PAGE_INVITE_NOTE}</p>
         <div className="fl-btnrow">
           <button type="submit" className="fl-btn accent" disabled={busy || !typed || Boolean(hint) || unchanged}>{busy ? 'Saving…' : h ? 'Change name' : 'Create my page'}</button>
         </div>
