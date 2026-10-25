@@ -95,11 +95,6 @@ export const MODEL_B_BOOKING_FEE_USD = Object.freeze({
 export const STRIPE_ESTIMATE_PERCENT = bpsToPercent(CONFIG.stripe_processing_estimate.percent_bps);
 export const STRIPE_ESTIMATE_FIXED_USD = centsToUsd(CONFIG.stripe_processing_estimate.fixed_cents);
 
-/** App Store Connect app 6779058450 (bundle id fitlink.app). */
-export const APP_STORE_URL = 'https://apps.apple.com/app/id6779058450';
-/** The mailbox the iOS submission pack names. It must exist before launch. */
-export const SUPPORT_EMAIL = 'support@fitlink.coach';
-
 // `?? {}`: node --test imports this file too (no Vite there, so no import.meta.env).
 export const NEEDS_CONFIRM = Boolean((import.meta.env ?? {}).DEV);
 

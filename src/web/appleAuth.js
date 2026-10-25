@@ -8,9 +8,10 @@
 // button's title is always "Continue with Apple" (one of the three Apple allows).
 import { normalizeCode } from './codes.js';
 import { pageHandle } from './handles.js';
+import { BRAND_NAME, SITE_HOST, SITE_ORIGIN } from './site/brand.js';
 
 /** Where Sign in with Apple can come back to this browser: Supabase Auth allows these return URLs (a Vercel preview's falls back to production, where this browser's verifier is missing). */
-export const APPLE_ORIGINS = Object.freeze(['https://fitlink.coach', 'http://localhost:5173', 'http://localhost:4173']);
+export const APPLE_ORIGINS = Object.freeze([SITE_ORIGIN, 'http://localhost:5173', 'http://localhost:4173']);
 /** The fixed return page per caller; never under /i/* or /live/* (the paths the installed app may claim), never from a query. */
 export const APPLE_RETURN_PATHS = Object.freeze({ coach: '/coach', delete: '/delete-account', checkout: '/join', founding: '/founding' });
 /** sessionStorage key of the checkout an Apple sign-in started from, and how long it is good for. */
@@ -32,17 +33,17 @@ export const APPLE_START_FAILED = 'Sign in with Apple isn’t available right no
 export const APPLE_PARK_FAILED = 'This browser wouldn’t let the page remember your pass while you sign in with Apple. Get a code by email instead.';
 export const AUTH_RETURN_FAILED = 'That sign-in didn’t finish, so this page isn’t signed in. Try again.';
 export const APPLE_CANCELLED = 'Sign in with Apple was cancelled. Nothing changed.';
-export const APPLE_NOT_COACH = 'This Apple ID isn’t a FitLink coach account yet. Create your account in the FitLink app with Sign in with Apple, then sign in here again.';
+export const APPLE_NOT_COACH = `This Apple ID isn’t a ${BRAND_NAME} coach account yet. Create your account in the ${BRAND_NAME} app with Sign in with Apple, then sign in here again.`;
 export const NOT_COACH_TITLE = 'Not a coach account';
-export const NOT_COACH = 'This account isn’t a coach account. The season editor is for coaches; open the FitLink app to train.';
+export const NOT_COACH = `This account isn’t a coach account. The season editor is for coaches; open the ${BRAND_NAME} app to train.`;
 export const ROLE_ERROR_TITLE = 'Couldn’t check your account';
 export const CHECKING_ACCOUNT = 'Checking your account…';
 export const TOO_MANY_CODES = 'Too many codes sent. Wait a minute and try again.';
 export const DELETE_CODE_HINT = 'We’ll email a code to confirm it’s you.';
-export const UNFINISHED_DELETE_INTRO = 'This Apple ID never finished setting up a FitLink account. Deleting removes the empty account and signs this browser out.';
+export const UNFINISHED_DELETE_INTRO = `This Apple ID never finished setting up a ${BRAND_NAME} account. Deleting removes the empty account and signs this browser out.`;
 /** The iPhone path to the Sign in with Apple list (iPhone User Guide, iOS 26). */
-export const APPLE_SETTINGS_PATH = 'Settings, then your name, then Sign in with Apple, then FitLink';
-export const APPLE_STILL_LISTED = `FitLink may still be listed under Sign in with Apple on your iPhone. To remove it, open ${APPLE_SETTINGS_PATH}, then tap Delete, then Stop Using.`;
+export const APPLE_SETTINGS_PATH = `Settings, then your name, then Sign in with Apple, then ${BRAND_NAME}`;
+export const APPLE_STILL_LISTED = `${BRAND_NAME} may still be listed under Sign in with Apple on your iPhone. To remove it, open ${APPLE_SETTINGS_PATH}, then tap Delete, then Stop Using.`;
 export const SETTING_UP = 'Setting up your account…';
 export const SIGN_UP_FAILED = 'We couldn’t finish setting up your account. You haven’t been charged. Try again in a moment.';
 /** /founding (2026-10-25): the page is for coach accounts; an athlete account is told so and never converted. */
@@ -56,7 +57,7 @@ export const FOUNDING_CONTINUE_BODY = 'Founding spots are for coach accounts. Co
 export const FOUNDING_CONTINUE = 'Continue as a coach';
 export const FOUNDING_CONTINUING = 'Setting up your coach account…';
 export const FOUNDING_FINISH_FAILED = 'We couldn’t finish setting up your coach account. Nothing was sent. Try again in a moment.';
-export const TRAINER_IN_USE = 'This Apple ID already has a coach account on FitLink. To train with this coach, open the link in the FitLink app.';
+export const TRAINER_IN_USE = `This Apple ID already has a coach account on ${BRAND_NAME}. To train with this coach, open the link in the ${BRAND_NAME} app.`;
 export const RESUME_PASS_GONE = 'The pass you chose isn’t for sale any more. Pick another pass below.';
 export const JOIN_NOTHING_TITLE = 'Nothing to finish here';
 export const JOIN_NOTHING_BODY = 'This page finishes a sign-in that started on a coach’s page. Open your coach’s link again to choose a pass.';
@@ -170,33 +171,33 @@ export function parseAuthReturn(search, hash) {
 
 /** "No account with that email", for a page that offers Apple (`available`) or not. */
 export function noAccountMessage(page, available) {
-  if (available) return 'No FitLink account uses that email. If you signed up with Apple, use Continue with Apple.';
+  if (available) return `No ${BRAND_NAME} account uses that email. If you signed up with Apple, use Continue with Apple.`;
   return page === 'coach'
-    ? 'No FitLink account uses that email. Check the address, or sign up in the FitLink app first.'
-    : 'No FitLink account uses that email. Check the address, or the one you used in the app.';
+    ? `No ${BRAND_NAME} account uses that email. Check the address, or sign up in the ${BRAND_NAME} app first.`
+    : `No ${BRAND_NAME} account uses that email. Check the address, or the one you used in the app.`;
 }
 
 /** The line under the email field for someone who signed up with Apple: use the button, open Safari, or use the app. */
 export const HINTS = Object.freeze({
   coach: Object.freeze({
     apple: 'Signed up with Sign in with Apple and hid your email? Use Continue with Apple.',
-    safari: 'Signed up with Sign in with Apple? Open fitlink.coach/coach in Safari to continue with Apple.',
-    off: 'Signed up with Sign in with Apple and hid your email? Sign in in the FitLink app instead.',
+    safari: `Signed up with Sign in with Apple? Open ${SITE_HOST}/coach in Safari to continue with Apple.`,
+    off: `Signed up with Sign in with Apple and hid your email? Sign in in the ${BRAND_NAME} app instead.`,
   }),
   delete: Object.freeze({
     apple: 'Signed up with Sign in with Apple and hid your email? Use Continue with Apple.',
-    safari: 'Signed up with Sign in with Apple? Open fitlink.coach/delete-account in Safari to continue with Apple.',
-    off: 'Signed up with Sign in with Apple and hid your email? Delete from the FitLink app instead: Profile, then Delete account.',
+    safari: `Signed up with Sign in with Apple? Open ${SITE_HOST}/delete-account in Safari to continue with Apple.`,
+    off: `Signed up with Sign in with Apple and hid your email? Delete from the ${BRAND_NAME} app instead: Profile, then Delete account.`,
   }),
   founding: Object.freeze({
     apple: 'Signed up in the app with Sign in with Apple and hid your email? Use Continue with Apple.',
-    safari: 'Signed up in the app with Sign in with Apple? Open fitlink.coach/founding in Safari to continue with Apple.',
+    safari: `Signed up in the app with Sign in with Apple? Open ${SITE_HOST}/founding in Safari to continue with Apple.`,
     off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page) and the application is taken by email.',
   }),
   checkout: Object.freeze({
     apple: 'Signed up in the app with Sign in with Apple? Use Continue with Apple, so the pass lands on that account.',
     safari: 'Signed up in the app with Sign in with Apple? Open this page in Safari to continue with Apple, so the pass lands on that account.',
-    off: 'Signed up in the app with Sign in with Apple? Open this link in the FitLink app instead, so the pass lands on that account.',
+    off: `Signed up in the app with Sign in with Apple? Open this link in the ${BRAND_NAME} app instead, so the pass lands on that account.`,
   }),
 });
 
@@ -213,8 +214,8 @@ const SITE_COPY = Object.freeze({
     coachSignInSub: 'The same account as the app. No password.',
     checkoutIntro: 'One account for the pass and the app; no password.',
     supportSignInA: 'With Sign in with Apple or a six-digit code sent to your email. There are no passwords. The season editor on the web signs in the same two ways.',
-    supportHidEmailA: `Use Continue with Apple on the website too. It opens the same account, so you never need the hidden address. To see the address FitLink has for you, on your iPhone open ${APPLE_SETTINGS_PATH}.`,
-    supportBuyA: 'Open your coach’s link and pick a pass. Continue with Apple, or enter your email and the six-digit code we send, then pay by card. Stripe handles the card; FitLink never sees the number. Sign in to the app the same way. If you signed up in the app with Sign in with Apple, choose Continue with Apple, so the pass lands on that account.',
+    supportHidEmailA: `Use Continue with Apple on the website too. It opens the same account, so you never need the hidden address. To see the address ${BRAND_NAME} has for you, on your iPhone open ${APPLE_SETTINGS_PATH}.`,
+    supportBuyA: `Open your coach’s link and pick a pass. Continue with Apple, or enter your email and the six-digit code we send, then pay by card. Stripe handles the card; ${BRAND_NAME} never sees the number. Sign in to the app the same way. If you signed up in the app with Sign in with Apple, choose Continue with Apple, so the pass lands on that account.`,
     supportPaidNoPlanLead: 'Sign in to the app the same way you paid: with Apple, or with the same email.',
     athletesStep2: 'Card checkout, handled by Stripe. Continue with Apple or get a six-digit code by email; no password.',
     athletesStep3: 'Sign in the same way you paid. Your plan is already there.',
@@ -225,8 +226,8 @@ const SITE_COPY = Object.freeze({
     coachSignInSub: 'The same account as the app. We email you a six-digit code; no password.',
     checkoutIntro: 'One account for the pass and the app. We email you a six-digit code; no password.',
     supportSignInA: 'With Sign in with Apple or a six-digit code sent to your email. There are no passwords. The season editor on the web signs in with the same email code.',
-    supportHidEmailA: `Sign in in the FitLink app with Sign in with Apple; it opens the same account. To see the address FitLink has for you, on your iPhone open ${APPLE_SETTINGS_PATH}.`,
-    supportBuyA: 'Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; FitLink never sees the number. The same email signs you in to the app.',
+    supportHidEmailA: `Sign in in the ${BRAND_NAME} app with Sign in with Apple; it opens the same account. To see the address ${BRAND_NAME} has for you, on your iPhone open ${APPLE_SETTINGS_PATH}.`,
+    supportBuyA: `Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; ${BRAND_NAME} never sees the number. The same email signs you in to the app.`,
     supportPaidNoPlanLead: 'Sign in to the app with the same email you paid with.',
     athletesStep2: 'Card checkout, handled by Stripe. We email you a six-digit code; no password.',
     athletesStep3: 'Sign in with the email you paid with. Your plan is already there.',

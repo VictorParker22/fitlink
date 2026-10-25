@@ -171,7 +171,7 @@ function Shell({ session, children }) {
 function RoleError({ message, onRetry }) {
   return (
     <div className="fl-signin">
-      <span className="fl-kicker">FitLink · coach</span>
+      <span className="fl-kicker">{BRAND_NAME} · coach</span>
       <h1>{ROLE_ERROR_TITLE}</h1>
       <p className="fl-sub" style={{ fontSize: 16 }} role="alert">{message}</p>
       <button type="button" className="fl-btn accent lg" onClick={onRetry}>Check again</button>
@@ -184,11 +184,11 @@ function RoleError({ message, onRetry }) {
 function NotCoach({ email, apple }) {
   return (
     <div className="fl-signin">
-      <span className="fl-kicker">FitLink · coach</span>
+      <span className="fl-kicker">{BRAND_NAME} · coach</span>
       <h1>{NOT_COACH_TITLE}</h1>
       <p className="fl-sub" style={{ fontSize: 16 }}>{NOT_COACH}</p>
       {email && <p className="fl-note">Signed in as <b>{email}</b>{apple ? ' with Apple' : ''}.</p>}
-      <a className="fl-btn accent lg" href={APP_SCHEME}>Open the FitLink app</a>
+      <a className="fl-btn accent lg" href={APP_SCHEME}>Open the {BRAND_NAME} app</a>
       <button type="button" className="fl-btn quiet" onClick={signOutHere}>Sign out</button>
     </div>
   );
@@ -233,7 +233,7 @@ function SignIn({ note }) {
 
   return (
     <div className="fl-signin">
-      <span className="fl-kicker">FitLink · coach</span>
+      <span className="fl-kicker">{BRAND_NAME} · coach</span>
       <h1>{sent ? 'Check your email' : 'Sign in'}</h1>
       <p className="fl-sub" style={{ fontSize: 16 }}>{sent ? `We sent a six-digit code to ${email}.` : siteCopy(appleOk).coachSignInSub}</p>
       {!sent && appleOk && (

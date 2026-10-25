@@ -106,3 +106,15 @@ the operator's included, gets "This account isn't an operator account."
 - `src/web/pricingConfig.json` is pinned by sha256 to fitlink-app
   `supabase/config/pricing.json` at a named commit (`src/web/pricing.test.js`); a server
   price change is a new copy, a new pin, and a site deploy after the server's.
+
+## Website launch items W1–W8 (launch plan Track F, 2026-10-25)
+
+Branches, stacked in order on `launch/6-funnel-dashboard-web`: `launch/w1-brand-config` … `launch/w8-nav`. They
+change the site only; each says below what it waits for.
+
+- **W1 brand config** (`launch/w1-brand-config`): no server dependency. After the deploy:
+  `curl -s https://fitlink.coach/ | grep -E 'og:(image|site_name)'` shows `https://<host>/og-image.png` and the
+  name, `curl -sI https://fitlink.coach/og-image.png` answers `200 image/png`, and the coach page check above
+  (`facebookexternalhit`) still prints ONE `og:title`, the coach's. The rename (Track A) is `src/web/site/brand.js`
+  plus `node scripts/og-image.mjs`; the AASA file, the Apple Services ID return URLs, Supabase's redirect URLs and
+  Vercel's domain are the owner's.

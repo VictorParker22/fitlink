@@ -47,6 +47,7 @@ import {
   blocksFromWeeks, buildProtectedSnapshot, describeChanges, diffTracks, emptyDays, liveHoldersFor,
   nodeKey, seasonToTrack, trackToSeason,
 } from './passTrack';
+import { BRAND_NAME } from './site/brand';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -333,8 +334,8 @@ export default function SeasonEditor({ session }) {
             {[`${weeks.length} week${weeks.length === 1 ? '' : 's'}`, daysPerWeek ? `${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} a week` : null, `${holdersHere} athlete${holdersHere === 1 ? '' : 's'} on it`].filter(Boolean).join(' · ')}
           </span>
           <span className="fl-meta">{isSession
-            ? (passBilling(plan).priced ? `${usdFromCents(passBilling(plan).priceCents)} · one payment` : 'No price yet. Set one in the FitLink app; nobody can buy this pass until then.')
-            : (coachPriceLine(plan) ?? 'No price yet. Set one in the FitLink app; nobody can buy this pass until then.')}</span>
+            ? (passBilling(plan).priced ? `${usdFromCents(passBilling(plan).priceCents)} · one payment` : `No price yet. Set one in the ${BRAND_NAME} app; nobody can buy this pass until then.`)
+            : (coachPriceLine(plan) ?? `No price yet. Set one in the ${BRAND_NAME} app; nobody can buy this pass until then.`)}</span>
           <div className="fl-pass-details" aria-label="Pass details">
             <span className="fl-meta">{editorKindLine(plan, now)}</span>
             {(isSession || passBilling(plan).kind === 'season') && (
@@ -443,7 +444,7 @@ export default function SeasonEditor({ session }) {
           })}
         </div>
         {data.workouts.length === 0 && (
-          <p className="fl-note">No workouts yet. Build one in the FitLink app (Seasons → New workout); it appears here to drag onto days.</p>
+          <p className="fl-note">No workouts yet. Build one in the {BRAND_NAME} app (Seasons → New workout); it appears here to drag onto days.</p>
         )}
         </>)}
       </main>

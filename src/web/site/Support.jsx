@@ -18,10 +18,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
-import { DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, MINIMUM_CHARGE_USD, STANDARD_FEE_PERCENT, SUPPORT_EMAIL, usd } from './pricing';
+import { DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, MINIMUM_CHARGE_USD, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { SIXTH_ATHLETE_RULE } from './planLines';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
+import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
 
 const copy = siteCopy(APPLE_WEB_ENABLED);
 
@@ -29,8 +30,8 @@ const GROUPS = [
   {
     id: 'coach-payouts', audience: 'For coaches', title: 'Getting paid and Stripe',
     items: [
-      { q: 'How do I get paid?', a: 'Connect payouts in the app (Profile, then Payouts). Stripe opens inside the app, asks for your identity and bank details, and tells FitLink when your account can take charges. Until then nobody can buy your pass. Stripe sends payouts to that bank.' },
-      { q: 'What does FitLink take?', a: (<p>{STANDARD_FEE_PERCENT}% of each pass payment, or {ELITE_FEE_PERCENT}% while Coach Elite or a Founding free year is active. On the standard plans your athlete pays exactly the price you set; that amount minus the FitLink fee goes to your Stripe balance. A booking fee, when a coach uses one, is included in the total the athlete is shown before paying. Stripe’s card processing fee comes out of FitLink’s share. See <Link to="/pricing">Pricing</Link>.</p>) },
+      { q: 'How do I get paid?', a: `Connect payouts in the app (Profile, then Payouts). Stripe opens inside the app, asks for your identity and bank details, and tells ${BRAND_NAME} when your account can take charges. Until then nobody can buy your pass. Stripe sends payouts to that bank.` },
+      { q: `What does ${BRAND_NAME} take?`, a: (<p>{STANDARD_FEE_PERCENT}% of each pass payment, or {ELITE_FEE_PERCENT}% while Coach Elite or a Founding free year is active. On the standard plans your athlete pays exactly the price you set; that amount minus the {BRAND_NAME} fee goes to your Stripe balance. A booking fee, when a coach uses one, is included in the total the athlete is shown before paying. Stripe’s card processing fee comes out of {BRAND_NAME}’s share. See <Link to="/pricing">Pricing</Link>.</p>) },
       { q: 'Where do I see what I earned?', a: (<p>The Money tab in the app, or <Link to="/coach/earnings">Earnings</Link> on the web: every pass payment with the fees on it and what reached you, by month. The payout date and the bank it goes to live in Stripe; the app opens your Stripe account from Payouts.</p>) },
       { q: 'Why does Payouts say “in progress” or “paused”?', a: 'Stripe still needs something from you (a document, a bank detail) or has paused payouts. Open Payouts in the app: it lists what is due and takes you to Stripe to finish it.' },
     ],
@@ -71,7 +72,7 @@ const GROUPS = [
       { q: 'How do I sign in?', a: copy.supportSignInA },
       { q: 'I signed up with Sign in with Apple and hid my email.', a: copy.supportHidEmailA },
       { q: 'Can I also train with a coach?', a: 'Yes. From Profile, a coach can turn on training and open another coach’s link or enter their code. The account then has two modes, Coaching and Training, each with its own Home, messages and notifications; your athletes never see your own training, and you cannot coach yourself.' },
-      { q: 'How old do I have to be?', a: 'FitLink is for people aged 16 and over. We ask for your date of birth at sign-up.' },
+      { q: 'How old do I have to be?', a: `${BRAND_NAME} is for people aged 16 and over. We ask for your date of birth at sign-up.` },
     ],
   },
   {
@@ -90,7 +91,7 @@ const GROUPS = [
     items: [
       { q: 'I paid but can’t see my plan.', a: `${copy.supportPaidNoPlanLead} Your first week is written by your coach; Today says it is on its way while they do. If it has been a while, message your coach in the app.` },
       { q: 'Do I need the app?', a: 'To train, yes. Buying works in any browser; the plan, the timer, check-ins and messages are in the iPhone app.' },
-      { q: 'I have an Android phone.', a: 'FitLink is an iPhone app today; there is no Android app. Check with your coach before you pay.' },
+      { q: 'I have an Android phone.', a: `${BRAND_NAME} is an iPhone app today; there is no Android app. Check with your coach before you pay.` },
     ],
   },
   {
@@ -104,7 +105,7 @@ const GROUPS = [
   {
     id: 'athlete-privacy', audience: 'For athletes', title: 'Privacy and your account',
     items: [
-      { q: 'What does my coach see?', a: 'Your plan, the sets you log, your check-ins, your messages and what you send in the chat. Apple Health is optional and off by default: if you turn it on, FitLink can save finished workouts to Apple Health and read resting heart rate and sleep, and your coach sees those two numbers only if you also turn on sharing.' },
+      { q: 'What does my coach see?', a: `Your plan, the sets you log, your check-ins, your messages and what you send in the chat. Apple Health is optional and off by default: if you turn it on, ${BRAND_NAME} can save finished workouts to Apple Health and read resting heart rate and sleep, and your coach sees those two numbers only if you also turn on sharing.` },
       { q: 'Is my coach’s reply written by AI?', a: 'Coaches can use an assistant that drafts a reply. Your coach reads, edits and sends every message.' },
       { q: 'How do I delete my account?', a: (<p>From Profile in the app, or <Link to="/delete-account">on the web</Link>. You see which passes end before you confirm. Any pass you hold ends that day and stops billing; time already paid isn’t refunded. It is immediate and cannot be undone; payment records are kept where the law requires it.</p>) },
     ],
@@ -118,7 +119,7 @@ function matches(item, needle) {
 }
 
 export default function Support() {
-  usePageMeta('Help', 'Answers for coaches and athletes on FitLink: payouts and Stripe, passes, refunds, the assistant, paying and cancelling, finding your plan. Or write to us.');
+  usePageMeta('Help', `Answers for coaches and athletes on ${BRAND_NAME}: payouts and Stripe, passes, refunds, the assistant, paying and cancelling, finding your plan. Or write to us.`);
   const [query, setQuery] = useState('');
   const [role, setRole] = useState('Coach');
   const [email, setEmail] = useState('');
@@ -130,7 +131,7 @@ export default function Support() {
     .filter((g) => g.items.length > 0), [needle]);
   const total = visible.reduce((n, g) => n + g.items.length, 0);
 
-  const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`FitLink help · ${role}`)}&body=${encodeURIComponent(`${message}\n\n— ${email || 'my email'}`)}`;
+  const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${BRAND_NAME} help · ${role}`)}&body=${encodeURIComponent(`${message}\n\n— ${email || 'my email'}`)}`;
 
   return (
     <div className="s-wrap s-help">
@@ -169,7 +170,7 @@ export default function Support() {
         <div className="s-contact-copy">
           <h2 id="c-h" className="s-h2 xs">Still stuck? Write to us.</h2>
           <p className="s-copy">A person reads every message. Send opens your email app with the message addressed to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
-          <p className="s-small">Want to leave FitLink? <Link to="/delete-account">Delete your account</Link>.</p>
+          <p className="s-small">Want to leave {BRAND_NAME}? <Link to="/delete-account">Delete your account</Link>.</p>
         </div>
         <form className="s-form" onSubmit={(e) => { e.preventDefault(); window.location.href = mailto; }}>
           <label htmlFor="cf-email">Email</label>

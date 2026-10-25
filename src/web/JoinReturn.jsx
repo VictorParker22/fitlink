@@ -15,6 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { freshUser, leaveUnfinishedAppleSignUp, session, signOutLocal, takeAuthReturnNote, takeParkedCheckout } from './api';
 import { accountLabel, appleSignUpUnfinished, usedApple, JOIN_NOTHING_TITLE, JOIN_NOTHING_BODY, JOIN_SIGNED_OUT } from './appleAuth';
 import './web.css';
+import { BRAND_NAME } from './site/brand';
 
 export default function JoinReturn() {
   const navigate = useNavigate();
@@ -66,7 +67,7 @@ export default function JoinReturn() {
         <p className="fl-note">Signed in{nothing.who ? <> as <b>{nothing.who}</b></> : ''}{nothing.apple ? ' with Apple' : ''}.</p>
       )}
       <div className="fl-actions">
-        <Link className="fl-btn accent lg" to="/">FitLink home</Link>
+        <Link className="fl-btn accent lg" to="/">{BRAND_NAME} home</Link>
         {signedIn && <button type="button" className="fl-btn lg" disabled={busy} onClick={signOut}>Sign out</button>}
       </div>
     </div></div>

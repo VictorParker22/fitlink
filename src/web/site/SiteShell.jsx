@@ -4,11 +4,11 @@
 // overscroll cream instead of the legacy app's dark body.
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { APP_STORE_URL, SUPPORT_EMAIL } from './pricing';
 import { useBodyClass } from './meta';
 import { takeAuthReturnNote } from '../api';
 import '../web.css';
 import './site.css';
+import { APP_STORE_URL, BRAND_MARK, BRAND_NAME, SUPPORT_EMAIL } from './brand';
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -23,14 +23,14 @@ function ScrollToTop() {
 }
 
 export function Mark({ small }) {
-  return <span aria-hidden="true" className={`s-mark${small ? ' sm' : ''}`}>F</span>;
+  return <span aria-hidden="true" className={`s-mark${small ? ' sm' : ''}`}>{BRAND_MARK}</span>;
 }
 
 export function SiteHeader() {
   return (
     <header className="fl-header">
       <div className="fl-header-bar fl-glass">
-        <Link className="s-brand" to="/" aria-label="FitLink home"><Mark />FitLink</Link>
+        <Link className="s-brand" to="/" aria-label={`${BRAND_NAME} home`}><Mark />{BRAND_NAME}</Link>
         <nav className="s-nav" aria-label="Site">
           <NavLink to="/" end>Home</NavLink>
           <NavLink to="/pricing">Pricing</NavLink>
@@ -51,7 +51,7 @@ export function SiteFooter() {
     <footer className="s-footer">
       <div>
         <div className="s-footer-row">
-          <span className="s-footer-brand"><Mark small />FitLink</span>
+          <span className="s-footer-brand"><Mark small />{BRAND_NAME}</span>
           <nav aria-label="Footer">
             <Link to="/support">Help</Link>
             <Link to="/privacy">Privacy</Link>

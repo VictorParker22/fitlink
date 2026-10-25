@@ -65,9 +65,9 @@ import { usePageMeta } from './meta';
 import {
   FOUNDING_CLOSES_ON, FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT, FOUNDING_FEE_PERCENT, FOUNDING_FREE_MONTHS,
   FOUNDING_MIN_PAYING_ATHLETES, FOUNDING_NOTICE_DAYS_BEFORE, FOUNDING_SLOTS, FOUNDING_THEN_MONTHLY_USD, FREE_ROSTER_CAP, NEEDS_CONFIRM,
-  STANDARD_FEE_PERCENT, SUPPORT_EMAIL, usd,
+  STANDARD_FEE_PERCENT, usd,
 } from './pricing';
-import { BRAND_NAME, FOUNDER_FIRST_NAME } from './brand';
+import { BRAND_NAME, FOUNDER_FIRST_NAME, SUPPORT_EMAIL } from './brand';
 
 const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Not in pricing.json: confirm with the owner before launch">[confirm]</sup> : null);
 

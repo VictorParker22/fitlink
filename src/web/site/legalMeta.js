@@ -1,3 +1,4 @@
+import { BRAND_NAME } from './brand.js';
 // Title, meta description, date and the "On this page" list for each legal
 // document. The text itself is privacyContent.jsx / termsContent.jsx.
 export const LEGAL_UPDATED = '21 October 2026';
@@ -23,7 +24,7 @@ const PRIVACY_SECTIONS = [
 const TERMS_SECTIONS = [
   { id: 'plain', label: 'In plain words' },
   { id: 's1', label: '1. Who we are' },
-  { id: 's2', label: '2. Coaches, athletes and FitLink' },
+  { id: 's2', label: `2. Coaches, athletes and ${BRAND_NAME}` },
   { id: 's3', label: '3. Your account' },
   { id: 's4', label: '4. Passes and subscriptions' },
   { id: 's5', label: '5. Payments, fees, refunds, disputes' },
@@ -44,13 +45,13 @@ const TERMS_SECTIONS = [
 export const LEGAL_DOCS = {
   privacy: {
     title: 'Privacy Policy',
-    description: 'What FitLink collects, why, who sees it (your coach, Stripe, Apple, Supabase, Google for the coach’s assistant) and how to delete it. No ads, no tracking, no selling of data.',
+    description: `What ${BRAND_NAME} collects, why, who sees it (your coach, Stripe, Apple, Supabase, Google for the coach’s assistant) and how to delete it. No ads, no tracking, no selling of data.`,
     updated: LEGAL_UPDATED,
     sections: PRIVACY_SECTIONS,
   },
   terms: {
     title: 'Terms of Service',
-    description: 'The terms for using FitLink: coaches sell training passes, athletes buy them, payments run through Stripe, Coach Elite is sold through Apple.',
+    description: `The terms for using ${BRAND_NAME}: coaches sell training passes, athletes buy them, payments run through Stripe, Coach Elite is sold through Apple.`,
     updated: TERMS_UPDATED,
     sections: TERMS_SECTIONS,
   },

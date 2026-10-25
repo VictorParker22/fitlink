@@ -9,6 +9,7 @@ import {
   saleState, scheduleLine, sessionCancelNote, sessionCardLine, sessionWhen, blockLastDay, BLOCK_DEFAULT_WEEKS,
   belowMinimum, saleCheck, timeZoneNote, lengthBreaksSignUpWindow, lengthWriteError, LENGTH_BREAKS_WINDOW,
 } from './blocks.js';
+import { BRAND_NAME } from './site/brand.js';
 
 const L = { locale: 'en-US', timeZone: 'America/New_York' };
 const NOW = Date.UTC(2026, 9, 25, 15); // 2026-10-25 15:00 UTC
@@ -130,7 +131,7 @@ test('the cancellation words: the platform rule from the config, the coach\'s ow
   assert.equal(freeCancelLine(), 'Cancel up to 24 hours before for a full refund.');
   assert.equal(coachPolicyIntro('Dana', 'No refunds inside 24 hours.'), 'Inside 24 hours, or for a session with no time set, Dana’s own cancellation policy applies:');
   assert.match(coachPolicyIntro('Dana', '  '), /Dana hasn’t written one here yet, so ask them before you book\.$/);
-  assert.equal(sessionCancelNote({ kind: 'session', session_at: '2026-12-03T23:00:00Z' }, 'Dana'), 'Cancel up to 24 hours before for a full refund. Cancel in the FitLink app; inside 24 hours Dana’s own policy applies (it’s on this page).');
+  assert.equal(sessionCancelNote({ kind: 'session', session_at: '2026-12-03T23:00:00Z' }, 'Dana'), `Cancel up to 24 hours before for a full refund. Cancel in the ${BRAND_NAME} app; inside 24 hours Dana’s own policy applies (it’s on this page).`);
   assert.match(sessionCancelNote({ kind: 'session', session_at: null }, 'Dana'), /^No time is set yet: you arrange it with Dana/);
   assert.equal(sessionCancelNote(winter, 'Dana'), null);
 });

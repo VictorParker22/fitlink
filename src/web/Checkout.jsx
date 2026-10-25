@@ -77,8 +77,7 @@ import {
 } from './appleAuth';
 import { APPLE_WEB_ENABLED } from './authConfig';
 import AppleButton from './AppleButton';
-import { SUPPORT_EMAIL } from './site/pricing';
-import { BRAND_NAME } from './site/brand';
+import { BRAND_NAME, SUPPORT_EMAIL } from './site/brand';
 import { normalizeCode } from './codes';
 
 const STEP = { email: 'email', code: 'code', who: 'who', name: 'name', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
