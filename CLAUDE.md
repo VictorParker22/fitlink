@@ -87,14 +87,18 @@ from `plans`.
   taken.", "Founding spots closed on …" with the counter's day, or the config's once that day passed).
 - **Pricing and where Elite is bought (launch plan W5, 2026-10-25; branch `launch/w5-pricing`).** "Free to try.", the
   Founding column and the Founding series in the calculator were already there (PR 1 web, `launch/1-fee-engine-web`).
-  W5 adds the region-true Elite copy, ONE source: `site/planLines.js ELITE_WHERE` (`us`: on the web from the coach
-  dashboard, which the app opens; `elsewhere`: in the iPhone app through the App Store, in the local currency, or on
-  the web; `manage`: Stripe receipt link vs Apple subscriptions; `short` for the Elite cards). Used by the Elite card
-  and its question on /pricing, the Elite plan on /, and "How do I get Coach Elite?" on /support; pinned in
-  `pricing.test.js` (never "billed through Apple" for everyone, never "web only"). It mirrors the app (US storefront →
-  web, other storefronts → StoreKit) and elite-checkout, which sells to anyone on the web. Still open (founder wording,
-  the rename-day Terms, decision L8): Terms §6 and the terms page's meta description (`legalMeta.js`) say Elite is
-  sold through Apple, and the Privacy Policy says the same.
+  W5 adds where Elite is bought, ONE source and ONE sentence true everywhere (owner decision R3, 2026-10-25: the iOS
+  app offers the App Store purchase on EVERY storefront, and on the US storefront the web option beside it;
+  elite-checkout sells to anyone, Stripe, US dollars): `site/planLines.js ELITE_WHERE.buy` = "Subscribe on the web
+  from your coach dashboard (Stripe, US dollars), or in the iPhone app through the App Store.", the App Store clause
+  ONLY with `VITE_APP_STORE_LIVE=on` (`eliteWhere(storeLive)`; review M1: off, the sentence is the web part alone);
+  `manage`: Stripe receipt link vs Apple subscriptions. No region clause anywhere. Used by the Elite card and its
+  question on /pricing, the Elite plan on /, and "How do I get Coach Elite?" on /support; pinned for both flags in
+  `pricing.test.js` (never "billed through Apple" for everyone, never "web only"). /pricing's Founding plan says
+  "Apply for a spot", or "Join as a coach" once Founding is full or closed (R4). Hard gate (`docs/DEPLOY_ORDER.md`):
+  Terms §6 and the terms page's description (`legalMeta.js`) say Elite is sold through Apple, and the Privacy Policy
+  says the same, so the founder's rename-day Terms (decision L8) go live with or before W5; this branch does not
+  edit legal text.
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and

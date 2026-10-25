@@ -15,6 +15,14 @@ no `founding_slots`, no `founding_applications`, no `trainers.handle`, no `reser
   there), the home page's Founding card says it couldn't load how many spots are taken, and the live
   `handle_new_user` ignores the `founding_web` marker, so an email sign-up there would publish the address's local
   part. Check: `select to_regprocedure('public.founding_slots()') is not null` on live.
+- **W5 (`launch/w5-pricing` and every branch stacked on it) needs the rename-day Terms (decision L8) live FIRST.** W5's
+  Elite sentence says Coach Elite is bought on the web from the coach dashboard (Stripe, US dollars), and with
+  `VITE_APP_STORE_LIVE=on` also in the iPhone app through the App Store. The live Terms §6 ("Coach Elite and the App
+  Store", `src/web/site/termsContent.jsx` lines 93–95) say Elite is "sold as an in-app purchase through Apple", billed
+  to the Apple Account and refunded only by Apple, and the terms page's description (`src/web/site/legalMeta.js`) says
+  "Coach Elite is sold through Apple"; the Privacy Policy says the same. The pages and the Terms would contradict each
+  other. These branches do NOT edit legal text: the founder's rename-day Terms (with `TERMS_UPDATED` and §16's notice)
+  land with or before this deploy. The fee engine's `elite-checkout` must be live too (section below).
 
 ## Fee engine + Founding (launch plan PR 1 and PR 2, 2026-10-25)
 
@@ -142,6 +150,10 @@ change the site only; each says below what it waits for.
 - **W4 Founding card** (`launch/w4-founding-card`): the home page reads `founding_slots()` (anon), so it needs
   fitlink-app migration `20261025110000` on live; before it the card says it couldn't load how many spots are taken
   (no number is ever guessed).
-- **W5 pricing** (`launch/w5-pricing`): the Elite copy says US on the web, elsewhere the App Store or the web. It is
-  true once the fee engine's `elite-checkout` is live (above) AND the iOS build that routes Elite by storefront is the
-  one in the App Store; before that, ship it only with that build. Terms §6 still says Apple (rename-day Terms).
+- **W5 pricing** (`launch/w5-pricing`): ONE Elite sentence everywhere (owner decision R3: the iOS app offers the App
+  Store purchase on every storefront, and on the US storefront the web option beside it; `elite-checkout` sells to
+  anyone in USD): "Subscribe on the web from your coach dashboard (Stripe, US dollars)", plus ", or in the iPhone app
+  through the App Store" only in a build with `VITE_APP_STORE_LIVE=on`. Hard gate (top of this file): the rename-day
+  Terms first, since Terms §6 says Elite is sold through Apple; and the fee engine's `elite-checkout` live (above).
+  After the deploy: `/pricing`'s Elite card, its "How do I start or stop Elite?", the home Elite plan and /support's
+  "How do I get Coach Elite?" say the sentence; without the flag, no "App Store" on those four.

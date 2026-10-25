@@ -275,7 +275,7 @@ export default function Home() {
             <div className="s-plan ink">
               <h3>Elite</h3>
               <span className="s-price"><b>{usd(ELITE_MONTHLY_USD)}</b><span>a month · {ELITE_FEE_PERCENT}% per pass sold</span></span>
-              <p>No athlete cap, the assistant’s drafts, and half the fee on every pass. {ELITE_WHERE.short}</p>
+              <p>No athlete cap, the assistant’s drafts, and half the fee on every pass. {ELITE_WHERE.buy}</p>
             </div>
           </div>
         </div>

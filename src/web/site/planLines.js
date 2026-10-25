@@ -2,7 +2,7 @@
 // words are fixed, every number comes from pricing.js (the server's config). Pinned by
 // `node --test src/web/pricing.test.js`.
 import { closesLabel } from '../founding.js';
-import { BRAND_NAME } from './brand.js';
+import { APP_STORE_LIVE } from './flags.js';
 import {
   ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FOUNDING_CLOSES_ON, FOUNDING_SLOTS, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT,
   foundingFreeWords, usd,
@@ -26,13 +26,20 @@ const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seven
 export const SIXTH_ATHLETE_RULE = `On the free plan, your ${ORDINALS[FREE_ROSTER_CAP] ?? `${FREE_ROSTER_CAP + 1}th`} paying athlete’s payment goes through and they join. From then on you need Elite to keep changing your athletes’ plans; their payments keep coming either way.`;
 
 /**
- * Where Coach Elite is bought, true per region (launch plan W5; the app's ElitePaywallView: a US storefront opens the
- * web dashboard, any other storefront sells Elite through the App Store). The web sells it to everyone, from the
- * coach dashboard (elite-checkout, Stripe, US dollars). Never "billed through Apple" for everyone, never "web only".
+ * Where Coach Elite is bought (launch plan W5; owner decision R3, 2026-10-25): the iOS app offers the App Store purchase
+ * on EVERY storefront (and on the US storefront the web option beside it), and the web checkout (elite-checkout,
+ * Stripe, US dollars) sells to anyone. So one sentence is true everywhere, with no region clause. The App Store clause
+ * is said only in a build with VITE_APP_STORE_LIVE=on (`storeLive`): until the app is public, no page sends anyone to
+ * the App Store (review 2026-10-25, M1). Never "billed through Apple" for everyone, never "web only".
  */
-export const ELITE_WHERE = Object.freeze({
-  us: 'In the US: subscribe on the web, from your coach dashboard (the app opens it). You pay on Stripe’s page.',
-  elsewhere: `Outside the US: subscribe in the ${BRAND_NAME} iPhone app through the App Store, where Apple shows the price in your currency, or on the web.`,
-  manage: 'A web subscription is managed or cancelled from the link in your Stripe receipt and stays on until the end of the period you paid for. An App Store subscription is managed in your Apple subscriptions.',
-  short: 'In the US on the web. Elsewhere in the app through the App Store, or on the web.',
-});
+export function eliteWhere(storeLive) {
+  return Object.freeze({
+    buy: storeLive
+      ? 'Subscribe on the web from your coach dashboard (Stripe, US dollars), or in the iPhone app through the App Store.'
+      : 'Subscribe on the web from your coach dashboard (Stripe, US dollars).',
+    manage: 'A web subscription is managed or cancelled from the link in your Stripe receipt and stays on until the end of the period you paid for. An App Store subscription is managed in your Apple subscriptions.',
+  });
+}
+
+/** This build's words (flags.js APP_STORE_LIVE). */
+export const ELITE_WHERE = eliteWhere(APP_STORE_LIVE);
