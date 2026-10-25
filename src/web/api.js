@@ -664,7 +664,7 @@ export async function earningsData(uid) {
   const [cl, pl, disp] = await Promise.all([
     clientIds.length ? supabase.from('clients').select('id, name').in('id', clientIds) : Promise.resolve({ data: [] }),
     planIds.length ? supabase.from('plans').select('id, name').in('id', planIds) : Promise.resolve({ data: [] }),
-    supabase.from('payment_disputes').select('id, status').eq('trainer_id', uid).limit(EARNINGS_LIMIT),
+    supabase.from('payment_disputes').select('id, status, amount_cents, currency, created_at, updated_at').eq('trainer_id', uid).order('created_at', { ascending: false }).limit(EARNINGS_LIMIT),
   ]);
   const names = Object.fromEntries((cl.data ?? []).map((c) => [c.id, c.name]));
   const passes = Object.fromEntries((pl.data ?? []).map((p) => [p.id, p.name]));

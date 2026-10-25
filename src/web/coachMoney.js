@@ -21,7 +21,10 @@
 //
 // Copy rules: real data or omitted, the server's sentence for every refusal, never "You're on
 // Elite" before coach_fee_terms says so.
-import { ELITE_PAST_DUE_GRACE_DAYS, FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, usd } from './site/pricing.js';
+import {
+  ELITE_FEE_PERCENT, ELITE_PAST_DUE_GRACE_DAYS, FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT, FOUNDING_NOTICE_DAYS_BEFORE,
+  ELITE_MONTHLY_USD, ELITE_YEARLY_USD, MODEL_B_BOOKING_FEE_USD, usd,
+} from './site/pricing.js';
 
 const DAY_MS = 86_400_000;
 
@@ -45,6 +48,24 @@ export const ELITE_BUTTONS = Object.freeze([
   { interval: 'month', label: `Subscribe monthly · ${usd(ELITE_MONTHLY_USD)}` },
   { interval: 'year', label: `Yearly · ${usd(ELITE_YEARLY_USD)}` },
 ]);
+
+/** A Founding coach in the free year sets Elite up for after it: the same prices, nothing charged until then. */
+export const FOUNDING_ELITE_BUTTONS = Object.freeze([
+  { interval: 'month', label: `Monthly · ${usd(ELITE_MONTHLY_USD)}` },
+  { interval: 'year', label: `Yearly · ${usd(ELITE_YEARLY_USD)}` },
+]);
+
+/**
+ * elite-checkout's founding_active sentence (fitlink-app `elite-checkout/handler.ts`), word for word: before the
+ * first paid athlete the free year has no end date, so there is nothing to set Elite up after yet.
+ */
+export const FOUNDING_BEFORE_FIRST_PAYMENT = 'Your Founding spot already includes Elite. Your free year starts with your first paid athlete; you can set up Elite for after it then.';
+
+/** Stripe Checkout needs a trial end at least 48 hours ahead (server `_shared/pricing.ts` MIN_TRIAL_LEAD_MS). */
+const MIN_TRIAL_LEAD_MS = 48 * 3_600_000;
+
+/** The booking fee create-subscription adds today: every pass sold is a block payment (`bookingKindFor`). */
+export const MODEL_B_BOOKING_FEE_TODAY_USD = MODEL_B_BOOKING_FEE_USD.block_payment;
 
 const TIER_LABEL = Object.freeze({ free: 'Free plan', elite: 'Coach Elite', founding: 'Founding' });
 
@@ -71,12 +92,24 @@ export function eliteView(terms, nowMs = Date.now()) {
   let blocks = false;
 
   // ── Fee and athletes ──
-  const feeLine = feeBps === null ? null : `${feeBps / 100}% of each pass you sell${t.org_seat ? ' (your gym’s seat)' : ''}`;
+  const orgSeat = t.org_seat === true;
+  const modelB = t.model_b === true;
+  const modelBBps = Number.isFinite(Number(t.model_b_fee_bps)) ? Number(t.model_b_fee_bps) : null;
+  let feeLine = null;
+  if (modelB && modelBBps !== null) {
+    // Model B: the coach's own rate is model_b_fee_bps whatever the tier, and the athlete's booking fee is inside
+    // the total the athlete is shown before paying (create-subscription's amountCents), never added on top.
+    feeLine = `${modelBBps / 100}% of each pass you sell. Your athletes’ total also holds a ${usd(MODEL_B_BOOKING_FEE_TODAY_USD)} booking fee on each payment, shown in the total before they pay; it goes to the platform, not to you.`;
+  } else if (feeBps !== null) {
+    feeLine = orgSeat && feeBps === 0
+      ? 'No fee on the passes you sell: your gym’s seat covers it.'
+      : `${feeBps / 100}% of each pass you sell${orgSeat ? ' (your gym’s seat)' : ''}`;
+  }
   let athletesLine = null;
   if (paying !== null) {
     athletesLine = cap !== null
       ? `${paying} of ${cap} paying athletes on the free plan`
-      : `${paying} paying athlete${paying === 1 ? '' : 's'} · no cap`;
+      : `${paying} paying athlete${paying === 1 ? '' : 's'} · no cap${orgSeat && tier === 'free' ? ' (your gym’s seat)' : ''}`;
   }
   const readOnly = t.read_only === true;
   if (readOnly) {
@@ -133,19 +166,48 @@ export function eliteView(terms, nowMs = Date.now()) {
 
   // ── Founding ──
   const freeUntilMs = ms(f.free_until);
+  const foundingActive = f.active === true && !f.suspended_at;
+  // In the free year (an athlete has paid, so the year has an end): Elite can be set up for after it (elite-checkout
+  // makes a subscription whose trial ends when the year does). Before the first payment the server refuses
+  // (founding_active) and the panel says the server's reason instead of showing buttons.
+  const inFreeYear = foundingActive && Boolean(f.first_paid_at) && freeUntilMs !== null && freeUntilMs > nowMs;
+  let noticeWindow = false;
   if (f.member === true) {
     if (f.suspended_at) {
       lines.push(`Founding pricing ended on ${dateWords(f.suspended_at)}: none of your athletes paid through the platform for ${FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT} days. Your Founding badge stays.`);
     } else if (f.active === true && !f.first_paid_at) {
-      lines.push(`Founding coach${f.granted_at ? ` since ${dateWords(f.granted_at)}` : ''}. Elite is included; your free year starts with your first athlete payment.`);
-    } else if (f.active === true && freeUntilMs !== null) {
+      lines.push(`Founding coach${f.granted_at ? ` since ${dateWords(f.granted_at)}` : ''}. ${FOUNDING_BEFORE_FIRST_PAYMENT}`);
+    } else if (inFreeYear) {
       lines.push(`Founding coach: Elite is free until ${dateWords(f.free_until)}.`);
+      // founding_daily's notice (day 335 of 365): it was sent, or the window it opens has begun.
+      noticeWindow = Boolean(f.notice_at) || nowMs >= freeUntilMs - FOUNDING_NOTICE_DAYS_BEFORE * DAY_MS;
+      if (noticeWindow && !blocks) {
+        lines.push(`Your free year ends on ${dateWords(f.free_until)}. To keep Elite and your ${ELITE_FEE_PERCENT}% fee, set up Elite before then; nothing is charged until that day.`);
+      }
     } else if (freeUntilMs !== null && freeUntilMs <= nowMs) {
       lines.push(`Your Founding free year ended on ${dateWords(f.free_until)}. Your Founding badge stays.`);
     }
   }
-  const foundingActive = f.active === true && !f.suspended_at;
-  if (foundingActive) blocks = true;
+
+  // ── What the buy buttons say, when they show ──
+  let canBuy = false;
+  let buy = null;
+  if (!blocks && inFreeYear) {
+    canBuy = true;
+    const until = dateWords(f.free_until);
+    buy = freeUntilMs - nowMs >= MIN_TRIAL_LEAD_MS
+      ? { intro: `Set up Elite for after your free year · Nothing is charged until ${until}.`, buttons: FOUNDING_ELITE_BUTTONS, defersUntil: f.free_until }
+      // Inside the last 48 hours Stripe can't hold the first charge until then (eliteTrialEndSec is null): billing
+      // starts when the coach subscribes.
+      : { intro: `Your free year ends on ${until}, so Elite started now is charged from today.`, buttons: ELITE_BUTTONS, defersUntil: null };
+  } else if (!blocks && !foundingActive && tier === 'free') {
+    canBuy = true;
+    let intro;
+    if (modelB) intro = 'Elite removes the athlete cap and drafts your replies; your booking-fee rate stays as it is. You pay on Stripe’s page.';
+    else if (orgSeat) intro = 'Your gym’s seat already covers your fee and the athlete cap. Elite adds the assistant that drafts your replies. You pay on Stripe’s page.';
+    else intro = 'Elite lowers your fee, removes the athlete cap and drafts your replies. You pay on Stripe’s page.';
+    buy = { intro, buttons: ELITE_BUTTONS, defersUntil: null };
+  }
 
   return {
     tier,
@@ -156,9 +218,22 @@ export function eliteView(terms, nowMs = Date.now()) {
     warning,
     lines,
     manage,
-    canBuy: !blocks && tier !== 'elite' && tier !== 'founding',
+    canBuy,
+    buy,
     foundingActive,
+    noticeWindow,
   };
+}
+
+/**
+ * Whether elite-checkout's answer keeps the panel's promise. A Founding coach was told nothing is charged until the
+ * free year ends; the answer carries that date as `firstChargeAt` only when Stripe will hold the first charge (the
+ * trial). Without it, or with another day, Stripe would charge at once, so the page asks again before leaving.
+ */
+export function checkoutKeepsPromise(buy, answer) {
+  if (!buy?.defersUntil) return true;
+  const promised = dateWords(buy.defersUntil);
+  return promised !== null && dateWords(answer?.firstChargeAt) === promised;
 }
 
 /** Whether coach_fee_terms shows the web subscription a checkout just started (the webhook has written it). */
@@ -244,6 +319,12 @@ export function dayWords(iso) {
  * own negative row; it is in the month's "refunded" total, not in "net payout": Stripe takes the
  * refund back from the coach's balance less the share of the platform fee it returns, and that
  * split is on the refund, not in these rows.
+ *
+ * Which payment a refund belongs to: a `pass_refunds` row names the Stripe charge and a
+ * `payments` row the payment intent, and the coach can read nothing that joins the two. So a
+ * refund is put on the latest payment of the same athlete and pass made at or before it, and a
+ * payment shows `refundState` 'part' while the refunds put on it total less than its gross,
+ * 'full' at its gross or more (or when the server marked it refunded and no refund row was found).
  */
 export function buildEarnings({ payments = [], refunds = [], names = {}, passes = {} } = {}) {
   const athlete = (clientId) => {
@@ -276,7 +357,33 @@ export function buildEarnings({ payments = [], refunds = [], names = {}, passes 
       feePercent: breakdown && int(p.fee_bps) !== null ? int(p.fee_bps) / 100 : null,
       breakdown,
       refunded: p.status === 'refunded',
+      refundedCents: 0,
+      refundState: null,
+      clientId: p.client_id ?? null,
+      planId: p.plan_id ?? null,
     });
+  }
+  // Each refund onto the latest earlier payment of the same athlete and pass.
+  const byPair = new Map();
+  for (const row of rows) {
+    const k = `${row.clientId}|${row.planId}`;
+    if (!byPair.has(k)) byPair.set(k, []);
+    byPair.get(k).push(row);
+  }
+  for (const list of byPair.values()) list.sort((a, b) => (ms(a.at) ?? 0) - (ms(b.at) ?? 0));
+  for (const r of refunds) {
+    const cents = r ? int(r.amount_cents) : null;
+    if (!cents) continue;
+    const list = byPair.get(`${r.client_id ?? null}|${r.plan_id ?? null}`);
+    const at = ms(r.created_at);
+    if (!list || at === null) continue;
+    let hit = null;
+    for (const row of list) if ((ms(row.at) ?? Infinity) <= at) hit = row;
+    if (hit) hit.refundedCents += Math.abs(cents);
+  }
+  for (const row of rows) {
+    if (row.refundedCents > 0 && row.gross !== null) row.refundState = row.refundedCents < row.gross ? 'part' : 'full';
+    else if (row.refunded) row.refundState = 'full';
   }
   for (const r of refunds) {
     if (!r) continue;
@@ -334,6 +441,55 @@ export function refundLabel(reason) {
   if (reason === 'coach_left') return 'Refund when you left';
   if (reason === 'dashboard') return 'Refund from Stripe';
   return 'Refund';
+}
+
+/** The tag on a payment with a refund on it. */
+export function refundTag(state) {
+  if (state === 'part') return 'part refunded';
+  if (state === 'full') return 'refunded';
+  return null;
+}
+
+/** How long after it closed a lost dispute is still named above the ledger. */
+export const LOST_DISPUTE_SHOWN_DAYS = 90;
+const OPEN_DISPUTE = new Set(['needs_response', 'under_review']);
+
+/**
+ * The note above the ledger about disputes, or null. Only disputes, never inquiries (`warning_*`, which cost the
+ * coach nothing and take nothing back): the open ones (needs_response, under_review) and the ones lost in the last
+ * LOST_DISPUTE_SHOWN_DAYS days. Won and refunded ones gave the money back and are left out. The payments below keep
+ * their full net (a dispute names a charge, a payment row a payment intent; nothing the coach reads joins them), so
+ * the note says what is held or taken back and that the net below does not show it.
+ */
+export function disputeNote(disputes, nowMs = Date.now()) {
+  if (!Array.isArray(disputes)) return null;
+  const open = [];
+  const lost = [];
+  for (const d of disputes) {
+    if (!d || typeof d.status !== 'string' || d.status.startsWith('warning_')) continue;
+    if (OPEN_DISPUTE.has(d.status)) open.push(d);
+    else if (d.status === 'lost') {
+      const closed = ms(d.updated_at) ?? ms(d.created_at);
+      if (closed !== null && nowMs - closed <= LOST_DISPUTE_SHOWN_DAYS * DAY_MS) lost.push(d);
+    }
+  }
+  if (open.length === 0 && lost.length === 0) return null;
+  const sum = (list) => list.reduce((n, d) => n + Math.max(0, int(d.amount_cents) ?? 0), 0);
+  const cur = (list) => list.find((d) => d.currency)?.currency ?? 'usd';
+  const parts = [];
+  if (open.length) {
+    parts.push(`${open.length === 1 ? '1 open dispute holds' : `${open.length} open disputes hold`} ${money(sum(open), cur(open))} back from your balance while the bank decides.`);
+  }
+  if (lost.length) {
+    parts.push(`${lost.length === 1 ? '1 dispute was lost' : `${lost.length} disputes were lost`} in the last ${LOST_DISPUTE_SHOWN_DAYS} days: ${money(sum(lost), cur(lost))} was taken back from your balance.`);
+  }
+  parts.push(`The disputed payments below still show their full net payout; what a dispute holds back or takes isn’t in these totals.`);
+  return parts.join(' ');
+}
+
+/** The note when a list hit its row limit: older rows were not read, so the oldest month shown may be partial. */
+export function truncatedNote(limit) {
+  return `Showing your latest ${limit} payments and refunds. Older ones weren’t loaded, so the oldest month shown may be missing some.`;
 }
 
 /** The one line under a month with payments from before the fee breakdown. */

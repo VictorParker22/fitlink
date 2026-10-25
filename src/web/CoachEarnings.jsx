@@ -6,11 +6,14 @@
 //
 // A payment from before the fee engine has no breakdown: its fees and net show "—" and it is
 // left out of the fee totals, with one line saying so. A refund is its own negative row.
+// A payment with refunds on it is tagged "part refunded" until they reach its gross. Disputes:
+// open ones and ones lost lately are named with their amounts (inquiries never). When a list
+// hits EARNINGS_LIMIT the page and the oldest month say that month may be missing some.
 // A read that fails says so, with Try again; nothing is estimated.
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { earningsData, EARNINGS_LIMIT, signOutLocal } from './api';
-import { buildEarnings, dayWords, money, noBreakdownLine, refundLabel } from './coachMoney';
+import { buildEarnings, dayWords, disputeNote, money, noBreakdownLine, refundLabel, refundTag, truncatedNote } from './coachMoney';
 import { usePageMeta } from './site/meta';
 import { BRAND_NAME } from './site/brand';
 import { DISPUTE_FEE_USD, usd } from './site/pricing';
@@ -60,25 +63,27 @@ export default function CoachEarnings({ session }) {
 
 function Ledger({ built, data }) {
   const disputes = data.disputes;
+  const dNote = disputeNote(disputes);
+  const last = built.months.length - 1;
   return (
     <>
       {data.namesFailed && <p className="fl-warn" role="note">Couldn’t load athlete or pass names; the amounts below are complete.</p>}
-      {data.truncated && <p className="fl-note">Showing your latest {EARNINGS_LIMIT} payments and refunds.</p>}
+      {data.truncated && <p className="fl-warn" role="note">{truncatedNote(EARNINGS_LIMIT)}</p>}
       {disputes === null && <p className="fl-warn" role="note">Couldn’t check for disputes on your payments.</p>}
-      {disputes && disputes.length > 0 && (
+      {dNote && (
         <p className="fl-warn" role="note">
-          {disputes.length === 1 ? '1 dispute' : `${disputes.length} disputes`} on your payments. An amount a dispute holds back or takes isn’t in these totals. A dispute costs you {usd(DISPUTE_FEE_USD)}, won or lost; an inquiry costs nothing.
+          {dNote} A dispute costs you {usd(DISPUTE_FEE_USD)}, won or lost; an inquiry costs nothing.
         </p>
       )}
       {built.months.length === 0 && (
         <div className="fl-panel"><p className="fl-elite-line">No payments yet. When an athlete pays for a pass, the payment shows here with its fees.</p></div>
       )}
-      {built.months.map((m) => <Month key={m.key} m={m} />)}
+      {built.months.map((m, i) => <Month key={m.key} m={m} partial={data.truncated && i === last} />)}
     </>
   );
 }
 
-function Month({ m }) {
+function Month({ m, partial }) {
   const cur = m.currency;
   const note = noBreakdownLine(m.noBreakdown);
   return (
@@ -92,6 +97,7 @@ function Month({ m }) {
         {m.disputeFee > 0 && <div><dt>Dispute fees</dt><dd>{money(m.disputeFee, cur)}</dd></div>}
         <div className="net"><dt>Net payout</dt><dd>{money(m.net, cur)}</dd></div>
       </dl>
+      {partial && <p className="fl-note">This month may be missing older payments or refunds: only the latest {EARNINGS_LIMIT} of each were loaded.</p>}
       {note && <p className="fl-note">{note}</p>}
       {m.refunded !== 0 && <p className="fl-note">Refunds aren’t taken out of the net payout above: Stripe takes each refund back from your balance, less the share of the platform fee it returns.</p>}
       <ul className="fl-earn-rows">
@@ -110,7 +116,7 @@ function Row({ r }) {
   return (
     <li className={`fl-earn-row${refund ? ' refund' : ''}`}>
       <div className="fl-earn-top">
-        <span><b>{r.athlete}</b>{r.pass !== '—' && <> · {r.pass}</>}{refund && <span className="fl-tag">{refundLabel(r.reason)}</span>}{r.refunded && <span className="fl-tag">refunded</span>}</span>
+        <span><b>{r.athlete}</b>{r.pass !== '—' && <> · {r.pass}</>}{refund && <span className="fl-tag">{refundLabel(r.reason)}</span>}{refundTag(r.refundState) && <span className="fl-tag">{refundTag(r.refundState)}</span>}</span>
         <time dateTime={r.at ?? undefined}>{dayWords(r.at)}</time>
       </div>
       <dl>

@@ -30,7 +30,7 @@ const GROUPS = [
     id: 'coach-payouts', audience: 'For coaches', title: 'Getting paid and Stripe',
     items: [
       { q: 'How do I get paid?', a: 'Connect payouts in the app (Profile, then Payouts). Stripe opens inside the app, asks for your identity and bank details, and tells FitLink when your account can take charges. Until then nobody can buy your pass. Stripe sends payouts to that bank.' },
-      { q: 'What does FitLink take?', a: (<p>{STANDARD_FEE_PERCENT}% of each pass payment, or {ELITE_FEE_PERCENT}% while Coach Elite or a Founding free year is active. Your athlete pays the price you set; that amount minus the FitLink fee goes to your Stripe balance. Stripe’s card processing fee comes out of FitLink’s share. See <Link to="/pricing">Pricing</Link>.</p>) },
+      { q: 'What does FitLink take?', a: (<p>{STANDARD_FEE_PERCENT}% of each pass payment, or {ELITE_FEE_PERCENT}% while Coach Elite or a Founding free year is active. On the standard plans your athlete pays exactly the price you set; that amount minus the FitLink fee goes to your Stripe balance. A booking fee, when a coach uses one, is included in the total the athlete is shown before paying. Stripe’s card processing fee comes out of FitLink’s share. See <Link to="/pricing">Pricing</Link>.</p>) },
       { q: 'Where do I see what I earned?', a: (<p>The Money tab in the app, or <Link to="/coach/earnings">Earnings</Link> on the web: every pass payment with the fees on it and what reached you, by month. The payout date and the bank it goes to live in Stripe; the app opens your Stripe account from Payouts.</p>) },
       { q: 'Why does Payouts say “in progress” or “paused”?', a: 'Stripe still needs something from you (a document, a bank detail) or has paused payouts. Open Payouts in the app: it lists what is due and takes you to Stripe to finish it.' },
     ],
@@ -62,7 +62,7 @@ const GROUPS = [
     items: [
       { q: 'What does the assistant do?', a: 'It reads an athlete’s check-in and their logged sets and drafts a reply in your voice. You edit, approve and send; nothing reaches an athlete on its own. It needs Coach Elite, and you agree to it in the app before the first draft.' },
       { q: 'Where does the text go?', a: 'The check-in text is sent to Google (Gemini) to produce the draft and for nothing else. The Privacy Policy says so, and athletes are told their coach may use an assistant.' },
-      { q: 'How do I get Coach Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens this page. You pay on Stripe’s page, {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, and manage or cancel it from the link in your Stripe receipt. If you already have Elite through the App Store, it stays managed in your Apple subscriptions.</p>) },
+      { q: 'How do I get Coach Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, and manage or cancel it from the link in your Stripe receipt. If you already have Elite through the App Store, it stays managed in your Apple subscriptions.</p>) },
     ],
   },
   {

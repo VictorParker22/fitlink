@@ -8,12 +8,18 @@
 // removed from the address bar, and the terms read again: Stripe's webhook may land after
 // the coach does, so "started" says Stripe is confirming (with Check again) until
 // coach_fee_terms shows the subscription. Never "You're on Elite" before the server says so.
+//
+// A Founding coach in the free year (an athlete has paid) sets Elite up for after it: the
+// buttons say nothing is charged until the year's end (coach_fee_terms `founding.free_until`),
+// and the page leaves for Stripe only when elite-checkout's `firstChargeAt` names that same
+// day; otherwise it says Stripe would charge today and asks again. Before the first paid
+// athlete the panel shows elite-checkout's founding_active reason and no buttons.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { coachFeeTerms, signOutLocal, startEliteCheckout } from './api';
 import {
-  ELITE_BUTTONS, REREAD_CODES, RETURN_CANCELLED, RETURN_CONFIRMED, RETURN_CONFIRMING, eliteView, isStripeCheckoutUrl,
-  readEliteReturn, webEliteConfirmed,
+  REREAD_CODES, RETURN_CANCELLED, RETURN_CONFIRMED, RETURN_CONFIRMING, checkoutKeepsPromise, dateWords, eliteView,
+  isStripeCheckoutUrl, readEliteReturn, webEliteConfirmed,
 } from './coachMoney';
 import { usePageMeta } from './site/meta';
 import { BRAND_NAME } from './site/brand';
@@ -62,6 +68,8 @@ function ElitePanel({ ret }) {
   const [terms, setTerms] = useState({ state: 'loading' });
   const [busy, setBusy] = useState(null);
   const [refusal, setRefusal] = useState(null);
+  /** elite-checkout opened a page that charges sooner than the panel said: { url, promised }. */
+  const [chargesNow, setChargesNow] = useState(null);
   const [returnState, setReturnState] = useState(ret);
   const [attempt, setAttempt] = useState(0);
   const retries = useRef(0);
@@ -91,14 +99,20 @@ function ElitePanel({ ret }) {
     return () => clearTimeout(id);
   }, [returnState, terms, confirmed, load]);
 
-  async function buy(interval) {
+  async function buy(interval, offer) {
     setBusy(interval);
     setRefusal(null);
+    setChargesNow(null);
     setReturnState(null);
     try {
       const answer = await startEliteCheckout(interval);
       if (!isStripeCheckoutUrl(answer?.url)) {
         setRefusal({ message: 'Stripe didn’t send a payment page. Nothing was charged. Try again in a moment.' });
+        setBusy(null);
+        return;
+      }
+      if (!checkoutKeepsPromise(offer, answer)) {
+        setChargesNow({ url: answer.url, promised: dateWords(offer.defersUntil), firstChargeAt: dateWords(answer?.firstChargeAt) });
         setBusy(null);
         return;
       }
@@ -155,18 +169,29 @@ function ElitePanel({ ret }) {
       {v.manage && <p className="fl-note">{v.manage}</p>}
 
       {/* While Stripe is confirming a checkout that just went through, no second one. */}
-      {v.canBuy && !(returnState === 'started' && !confirmed) && (
+      {v.canBuy && v.buy && !(returnState === 'started' && !confirmed) && (
         <>
-          <p className="fl-elite-line">Elite lowers your fee, removes the athlete cap and drafts your replies. You pay on Stripe’s page.</p>
+          <p className="fl-elite-line fl-elite-offer">{v.buy.intro}</p>
           <div className="fl-btnrow">
-            {ELITE_BUTTONS.map((b) => (
-              <button key={b.interval} type="button" className={`fl-btn lg ${b.interval === 'month' ? 'accent' : 'ink'}`} disabled={busy !== null} onClick={() => buy(b.interval)}>
+            {v.buy.buttons.map((b) => (
+              <button key={b.interval} type="button" className={`fl-btn lg ${b.interval === 'month' ? 'accent' : 'ink'}`} disabled={busy !== null} onClick={() => buy(b.interval, v.buy)}>
                 {busy === b.interval ? 'Opening Stripe…' : b.label}
               </button>
             ))}
           </div>
           <p className="fl-note"><Link to="/pricing">Compare plans</Link></p>
         </>
+      )}
+      {chargesNow && (
+        <div className="fl-warn" role="alert">
+          <p>{chargesNow.firstChargeAt
+            ? `Stripe would charge the first Elite payment on ${chargesNow.firstChargeAt}, not on ${chargesNow.promised}.`
+            : `Stripe would charge the first Elite payment today, not on ${chargesNow.promised}.`} Nothing has been charged yet.</p>
+          <div className="fl-btnrow">
+            <a className="fl-btn sm" href={chargesNow.url}>Continue to Stripe anyway</a>
+            <button type="button" className="fl-btn sm" onClick={() => { setChargesNow(null); load(); }}>Not now</button>
+          </div>
+        </div>
       )}
       {refusal && (
         <div className="fl-error" role="alert">

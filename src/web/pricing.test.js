@@ -7,18 +7,23 @@
 // sentence on the site moves with it. Update the copy, then this test, never a page.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import CONFIG from './pricingConfig.json' with { type: 'json' };
 import * as P from './site/pricing.js';
 
-test('the copy is the server file (version and shape)', () => {
+// The sha256 of fitlink-app `supabase/config/pricing.json` at commit 323786f (branch launch/2-founding, "Merge
+// launch/1-fee-engine (review fixes, a365ddd) into launch/2-founding"), the commit this copy was taken from. A re-copy
+// that does not update this pin (and the commit named here) fails, so a changed config is always a reviewed change.
+// Re-sync: copy the server file byte for byte, then `sha256sum src/web/pricingConfig.json` and paste the hash here.
+const SERVER_CONFIG_SHA256 = 'bb9da028168b13e0f509cd90a6693e94b46bb15b930dd684f183cdf397f78a8f';
+
+test('the copy is the server file at the pinned commit (sha256)', () => {
+  const raw = readFileSync(new URL('./pricingConfig.json', import.meta.url));
+  assert.equal(createHash('sha256').update(raw).digest('hex'), SERVER_CONFIG_SHA256);
   assert.equal(CONFIG.version, '2026-10-25');
   assert.equal(CONFIG.currency, 'usd');
   assert.deepEqual(Object.keys(CONFIG.tiers).sort(), ['elite', 'founding', 'free']);
-  // Byte-for-byte: the file is JSON with no trailing edits (a reformatted copy is a different file).
-  const raw = readFileSync(new URL('./pricingConfig.json', import.meta.url), 'utf8');
-  assert.ok(raw.startsWith('{\n  "_doc": "The owner\'s prices, rates and dates'));
-  assert.deepEqual(JSON.parse(raw), CONFIG);
 });
 
 test('every value the site uses, pinned', () => {

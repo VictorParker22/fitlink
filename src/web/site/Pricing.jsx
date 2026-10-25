@@ -4,10 +4,18 @@
 //
 // Every figure comes from pricing.js, which derives it from the server's own config
 // (src/web/pricingConfig.json = fitlink-app supabase/config/pricing.json). All-in pricing:
-// athletes pay the price the coach sets, and Stripe's card processing comes out of the
-// platform's fee, so no figure here is a surcharge or a "processing" line. Elite is sold
-// on the web (Stripe, from the coach dashboard; the app opens this page); a coach who
-// already holds Elite through the App Store keeps it there.
+// on the standard plans athletes pay exactly the price the coach sets, and Stripe's card
+// processing comes out of the platform's fee, so no figure here is a surcharge or a
+// "processing" line. Elite is sold on the web (Stripe, from the coach dashboard, which the
+// app opens); a coach who already holds Elite through the App Store keeps it there.
+//
+// Model B (a per-coach switch, off by default; server `coach_billing.model_b`) puts a
+// booking fee INSIDE the athlete's total. Every sentence here is qualified to stay true for
+// such a coach ("on the standard plans"; a booking fee is in the total shown before
+// paying). The gate (copy plan, review 2026-10-25): Model B must not be switched on for a
+// coach until the coach page shows the total before checkout (PR 3). Until then the web
+// shows the total only from the card form on (create-subscription's amountCents), after
+// athlete-exit's switch confirmation has already run.
 //
 // The free cap is never a refusal on the server (fee engine): a Free coach's 6th paying
 // athlete pays and joins, and the coach's roster turns read-only for their athletes'
@@ -21,7 +29,7 @@ import { FOUNDING_CLOSES_LABEL, PLAN_LINES, SIXTH_ATHLETE_RULE } from './planLin
 import {
   APP_STORE_URL, DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, FOUNDING_FEE_PERCENT,
   FOUNDING_SLOTS, FOUNDING_THEN_MONTHLY_USD, FREE_ROSTER_CAP, MINIMUM_CHARGE_USD, STANDARD_FEE_PERCENT, foundingFreeWords,
-  keepsByTier, stripeEstimateWords, usd,
+  MODEL_B_BOOKING_FEE_USD, keepsByTier, stripeEstimateWords, usd,
 } from './pricing';
 
 const CLOSES = FOUNDING_CLOSES_LABEL;
@@ -30,10 +38,10 @@ const SIXTH_RULE = SIXTH_ATHLETE_RULE;
 const FAQ = [
   { q: 'What is the fee charged on?', a: `Only on passes athletes buy through ${BRAND_NAME}. Sell nothing, pay nothing.` },
   { q: 'Are card processing fees included?', a: `Yes. A pass is charged through ${BRAND_NAME}’s Stripe account and the athlete’s payment, minus the ${BRAND_NAME} fee, is transferred to yours. Stripe’s card processing (${stripeEstimateWords()}) comes out of ${BRAND_NAME}’s fee, not out of what you keep. When you refund a payment, Stripe may keep its processing fee.` },
-  { q: 'Do my athletes pay anything extra?', a: 'No. They pay the price you set, plus any tax that applies where they live. There is no processing charge or surcharge at checkout.' },
+  { q: 'Do my athletes pay anything extra?', a: `On the standard plans, athletes pay exactly the price you set: there is no processing charge or surcharge at checkout. A coach who uses a booking fee (${usd(MODEL_B_BOOKING_FEE_USD.block_payment)} a payment) has it included in the total the athlete is shown before paying, never added after.` },
   { q: 'Is there an athlete limit?', a: `${SIXTH_RULE} Elite and Founding have no cap.` },
   { q: 'Is there a minimum price?', a: `Yes: a pass costs at least ${usd(MINIMUM_CHARGE_USD)} a payment.` },
-  { q: 'How do I start or stop Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens this page. You pay on Stripe’s page, monthly ({usd(ELITE_MONTHLY_USD)}) or yearly ({usd(ELITE_YEARLY_USD)}). Manage or cancel it from the link in your Stripe receipt; Elite stays on until the end of the period you paid for. If you already have Elite through the App Store, it stays managed in the App Store.</p>) },
+  { q: 'How do I start or stop Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, monthly ({usd(ELITE_MONTHLY_USD)}) or yearly ({usd(ELITE_YEARLY_USD)}). Manage or cancel it from the link in your Stripe receipt; Elite stays on until the end of the period you paid for. If you already have Elite through the App Store, it stays managed in the App Store.</p>) },
   { q: 'How does the lower fee reach my existing passes?', a: 'The fee is set on the server from your plan and applied to every pass payment, including renewals of passes your athletes already hold.' },
   { q: 'What does a dispute cost?', a: `${usd(DISPUTE_FEE_USD)} for each dispute, won or lost; an inquiry costs nothing. It comes out of what Stripe pays you for that payment or for your next ones.` },
   { q: 'What is Founding?', a: (<p>{FOUNDING_SLOTS} coaches get Elite free for {foundingFreeWords()} and a {FOUNDING_FEE_PERCENT}% fee. The free year starts with the first payment one of your athletes makes after your spot is granted. After it, Elite is {usd(FOUNDING_THEN_MONTHLY_USD)} a month if you keep it, or you move to the free plan. Applications close {CLOSES}. <Link to="/founding">Apply for a Founding spot</Link>.</p>) },
@@ -50,7 +58,7 @@ export default function Pricing() {
       <section className="s-wrap s-section top" aria-labelledby="p-h" style={{ paddingBottom: 48 }}>
         <div className="s-stack" style={{ gap: 14, alignItems: 'center', textAlign: 'center' }}>
           <h1 id="p-h" className="s-h1 md">Free to try.</h1>
-          <p className="s-lede">No monthly bill to start. {BRAND_NAME} takes a share of the passes you sell, and your athletes pay the price you set, with nothing added.</p>
+          <p className="s-lede">No monthly bill to start. {BRAND_NAME} takes a share of the passes you sell, and on the standard plans your athletes pay exactly the price you set.</p>
         </div>
       </section>
 
@@ -80,7 +88,7 @@ export default function Pricing() {
               <li>Replies drafted in your voice from the athlete’s check-in and their logged sets; you approve every one</li>
             </ul>
             <Link className="fl-btn lg accent" to="/coach">Subscribe on the web</Link>
-            <span className="foot">Subscribe on the web; the app opens this page.</span>
+            <span className="foot">Subscribe on the web; the app opens your dashboard.</span>
           </article>
           <article className="s-plan">
             <h2>Founding</h2>
@@ -135,7 +143,7 @@ export default function Pricing() {
               {k.breakEven !== null && ` Elite pays for itself above ${usd(k.breakEven)} a month.`}
             </span>
             <span className="s-fine s-calc-note">
-              Athletes pay the price you set, with nothing added. Stripe’s card processing ({stripeEstimateWords()}) comes out of {BRAND_NAME}’s fee, not out of what you keep. Founding is {FOUNDING_SLOTS} spots; after its first year it is Elite at {usd(FOUNDING_THEN_MONTHLY_USD)} a month or the free plan.
+              On the standard plans, athletes pay exactly the price you set. Stripe’s card processing ({stripeEstimateWords()}) comes out of {BRAND_NAME}’s fee, not out of what you keep. Founding is {FOUNDING_SLOTS} spots; after its first year it is Elite at {usd(FOUNDING_THEN_MONTHLY_USD)} a month or the free plan.
             </span>
           </div>
         </div>

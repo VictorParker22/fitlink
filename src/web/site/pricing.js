@@ -69,7 +69,11 @@ export const PAYOUT_WEEKLY_ANCHOR = CONFIG.payouts.weekly_anchor;
 
 // ── Model B (a per-coach switch, off by default) ─────────────────────────────
 // The athlete's booking fee sits INSIDE the total the athlete sees at checkout, and the
-// coach's own rate drops. Shown on a Model B coach's earnings; never advertised.
+// coach's own rate drops. Shown on a Model B coach's dashboard fee line and earnings, and at
+// checkout only as part of create-subscription's total; the public pages say only that a
+// booking fee, when a coach uses one, is included in the total shown before paying.
+// Gate: Model B must not be switched on for a coach until the coach page shows the total
+// before checkout (PR 3).
 export const MODEL_B_DEFAULT_ON = CONFIG.model_b.default_on;
 export const MODEL_B_FEE_PERCENT = bpsToPercent(CONFIG.model_b.coach_fee_bps);
 export const MODEL_B_BOOKING_FEE_USD = Object.freeze({

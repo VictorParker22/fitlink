@@ -52,7 +52,7 @@ import {
   createSubscription, finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, parkCheckout,
   planIsPriced, previewInvite, session, signInWithApple, signOutLocal,
 } from './api';
-import { checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
+import { chargedTotal, checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
 import {
   accountLabel, appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, signInHint, siteCopy, usedApple,
   whoStepBody, APPLE_PARK_FAILED, OR_EMAIL, SETTING_UP,
@@ -141,7 +141,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   /** athlete-exit's answer once the join went through: { switched, passesEnded, clientId, … }. */
   const [joined, setJoined] = useState(null);
   const [clientId, setClientId] = useState(null);
-  /** create-subscription's answer: { clientSecret, subscriptionId, payingOpenInvoice?, amountDueCents? }. */
+  /** create-subscription's answer: { clientSecret, subscriptionId, payingOpenInvoice?, amountDueCents?, amountCents?, bookingFeeCents? }. */
   const [purchase, setPurchase] = useState(null);
   const [stripePromise, setStripePromise] = useState(null);
   /** { kind: 'active' | 'already' } on done; { kind: 'not_started' | 'unconfirmed', message } after paying. */
@@ -492,16 +492,19 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     },
   }) : null, [clientSecret]);
 
-  // Per period, as create-subscription bills it; a season of one payment reads "$X for the N-week season".
-  const price = passPriceText(plan) ?? 'no price set';
-  const seasonLine = passSeasonLine(plan);
-  const billing = passBilling(plan);
   const owing = purchase?.payingOpenInvoice === true;
+  // Model B: create-subscription's own total (the booking fee inside it) replaces plans.price on every line from the
+  // card form on; the booking fee is named as part of that total, never as a surcharge line of its own.
+  const total = owing ? null : chargedTotal(purchase);
+  // Per period, as create-subscription bills it; a season of one payment reads "$X for the N-week season".
+  const price = passPriceText(plan, total) ?? 'no price set';
+  const seasonLine = passSeasonLine(plan, total);
+  const billing = passBilling(plan, total);
   // A season of one payment has nothing left to cancel once it is paid.
   const chargeLine = owing
     ? 'Charged today. Cancel any time from the app.'
-    : `${checkoutChargeLine(plan)}${billing.kind === 'season' && billing.payments === 1 ? '' : ' Cancel any time from the app.'}`;
-  const payLabel = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : (passPriceParts(plan)?.amount ?? '');
+    : `${checkoutChargeLine(plan, total)}${billing.kind === 'season' && billing.payments === 1 ? '' : ' Cancel any time from the app.'}`;
+  const payLabel = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : (passPriceParts(plan, total)?.amount ?? '');
   const ending = Array.isArray(view?.passesEnding) ? view.passesEnding.filter((p) => p && typeof p.line === 'string' && p.line) : [];
   const currentName = view?.currentCoach?.name || null;
   const passEnded = Number(joined?.passesEnded) > 0;
