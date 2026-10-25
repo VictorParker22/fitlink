@@ -69,7 +69,7 @@ import {
 } from './pricing';
 import { BRAND_NAME, FOUNDER_FIRST_NAME } from './brand';
 
-const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Confirm against pricing.json / the owner before launch">[confirm]</sup> : null);
+const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Not in pricing.json: confirm with the owner before launch">[confirm]</sup> : null);
 
 /** The build's booking link, checked once: https or nothing. */
 const BOOKING_URL = bookingUrl((import.meta.env ?? {}).VITE_FOUNDING_CALENDAR_URL);
@@ -104,7 +104,7 @@ export default function Founding() {
       <section className="s-stack" aria-labelledby="f-h" style={{ gap: 16 }}>
         <span className="s-kicker">Founding coaches</span>
         <h1 id="f-h" className="s-h1 sm">
-          {FOUNDING_SLOTS}<Confirm /> spots. Elite free for a year.<Confirm /> Closes {CLOSES}.<Confirm />
+          {FOUNDING_SLOTS} spots. Elite free for a year. Closes {CLOSES}.
         </h1>
         <Counter phase={phase} slots={slots} onRetry={retrySlots} />
       </section>
@@ -113,20 +113,20 @@ export default function Founding() {
         <div className="s-founding-card">
           <h2 className="s-h3">What you get</h2>
           <ul className="s-bullets">
-            <li>Coach Elite free for {FOUNDING_FREE_MONTHS}<Confirm /> months. The free year starts with the first payment one of your athletes makes through {BRAND_NAME} after your spot is granted, not the day you join.</li>
-            <li>A {FOUNDING_FEE_PERCENT}%<Confirm /> fee on every pass you sell while your free year or Elite runs, instead of {STANDARD_FEE_PERCENT}%<Confirm /> on the free plan.</li>
+            <li>Coach Elite free for {FOUNDING_FREE_MONTHS} months. The free year starts with the first payment one of your athletes makes through {BRAND_NAME} after your spot is granted, not the day you join.</li>
+            <li>A {FOUNDING_FEE_PERCENT}% fee on every pass you sell while your free year or Elite runs, instead of {STANDARD_FEE_PERCENT}% on the free plan.</li>
             <li>The “Founding {FOUNDING_SLOTS}” badge on your coach page, for good.</li>
             <li>A setup call with {FOUNDER_FIRST_NAME} to get your passes, payouts and first athletes in.</li>
-            <li>After the free year, Elite is {usd(FOUNDING_THEN_MONTHLY_USD)}<Confirm /> a month if you keep it. You get a notice {FOUNDING_NOTICE_DAYS_BEFORE}<Confirm /> days before the year ends; nothing is charged unless you start Elite. Without Elite you move to the free plan: a {STANDARD_FEE_PERCENT}%<Confirm /> fee and up to {FREE_ROSTER_CAP}<Confirm /> paying athletes.</li>
+            <li>After the free year, Elite is {usd(FOUNDING_THEN_MONTHLY_USD)} a month if you keep it. You get a notice {FOUNDING_NOTICE_DAYS_BEFORE} days before the year ends; nothing is charged unless you start Elite. Without Elite you move to the free plan: a {STANDARD_FEE_PERCENT}% fee and up to {FREE_ROSTER_CAP} paying athletes.</li>
           </ul>
         </div>
         <div className="s-founding-card">
           <h2 className="s-h3">Who it’s for</h2>
           <ul className="s-bullets">
-            <li>Independent coaches who will be live on {BRAND_NAME} with {FOUNDING_MIN_PAYING_ATHLETES}<Confirm /> or more paying athletes by {closesLabelLong(FOUNDING_CLOSES_ON)}.<Confirm /></li>
+            <li>Independent coaches who will be live on {BRAND_NAME} with {FOUNDING_MIN_PAYING_ATHLETES}<Confirm /> or more paying athletes by {closesLabelLong(FOUNDING_CLOSES_ON)}.</li>
             <li>Coaches who get paid today by Venmo, Zelle, cash or card and want one place for passes, payment and training.</li>
-            <li>Applications close {CLOSES}<Confirm />, or sooner when all {FOUNDING_SLOTS}<Confirm /> spots are taken.</li>
-            <li>If none of your athletes pays through {BRAND_NAME} for {FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT}<Confirm /> days (counted from your grant or your last athlete payment), Founding pricing ends. The badge stays.</li>
+            <li>Applications close {CLOSES}, or sooner when all {FOUNDING_SLOTS} spots are taken.</li>
+            <li>If none of your athletes pays through {BRAND_NAME} for {FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT} days (counted from your grant or your last athlete payment), Founding pricing ends. The badge stays.</li>
           </ul>
         </div>
       </section>

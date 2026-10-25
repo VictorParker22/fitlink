@@ -2,10 +2,13 @@
 // offers it) Sign in with Apple, existing accounts only (sign-up happens in
 // the app); then a role gate: only a coach account sees the editor
 // (2026-10-21; it used to open for any signed-in account).
-// The header has what exists on the web (Seasons, Public page, Open the app);
-// Home, Athletes and Money stay in the app until they are built here.
+// The header has what exists on the web (Dashboard with Coach Elite, Earnings,
+// Seasons, Public page, Open the app); Athletes stays in the app. /coach itself is
+// the dashboard (fee engine, 2026-10-25): web Elite checkout returns to
+// /coach?elite=started|cancelled, so the index must not redirect (a redirect drops
+// the query).
 import { useEffect, useState } from 'react';
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
 import { supabase, APP_SCHEME } from './supabase';
 import {
   appleAvailableHere, freshUser, isStandaloneHere, leaveUnfinishedAppleSignUp, myRole, signInWithApple, signOutLocal,
@@ -18,6 +21,9 @@ import {
 import { APPLE_WEB_ENABLED } from './authConfig';
 import AppleButton from './AppleButton';
 import SeasonEditor from './SeasonEditor';
+import CoachDashboard from './CoachDashboard';
+import CoachEarnings from './CoachEarnings';
+import { BRAND_NAME } from './site/brand';
 import './web.css';
 
 const Loading = ({ text = 'Loading…' }) => <div className="fl"><div className="fl-empty"><p className="fl-note" aria-live="polite">{text}</p></div></div>;
@@ -119,10 +125,11 @@ export default function CoachWeb() {
   return (
     <div className="fl">
       <Routes>
-        <Route index element={<Navigate to="seasons" replace />} />
+        <Route index element={<Shell session={sess}><CoachDashboard /></Shell>} />
+        <Route path="earnings" element={<Shell session={sess}><CoachEarnings session={sess} /></Shell>} />
         <Route path="seasons" element={<Shell session={sess}><SeasonEditor session={sess} /></Shell>} />
         <Route path="seasons/:planId" element={<Shell session={sess}><SeasonEditor session={sess} /></Shell>} />
-        <Route path="*" element={<Navigate to="seasons" replace />} />
+        <Route path="*" element={<Navigate to="/coach" replace />} />
       </Routes>
     </div>
   );
@@ -144,10 +151,12 @@ function Shell({ session, children }) {
     <>
       <header className="fl-header">
         <div className="fl-header-bar fl-glass wide">
-          <Link className="fl-brand" to="/coach/seasons">FitLink{coach?.name && <small>{coach.name}</small>}</Link>
+          <Link className="fl-brand" to="/coach">{BRAND_NAME}{coach?.name && <small>{coach.name}</small>}</Link>
           <nav className="fl-nav" aria-label="Coach">
+            <NavLink to="/coach" end>Dashboard</NavLink>
+            <NavLink to="/coach/earnings">Earnings</NavLink>
+            <NavLink to="/coach/seasons">Seasons</NavLink>
             <a href={APP_SCHEME}>Home · in the app</a>
-            <Link to="/coach/seasons" aria-current="page">Seasons</Link>
             {publicCode && <Link to={`/i/${publicCode}`}>Public page</Link>}
             <button type="button" onClick={signOutHere}>Sign out</button>
           </nav>

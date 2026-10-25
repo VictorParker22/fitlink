@@ -235,3 +235,54 @@
 .fl-founding-badge { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: 13px; font-weight: 700; letter-spacing: 0.01em; background: var(--fl-ink); color: var(--fl-on-ink); border-radius: 999px; padding: 6px 12px 6px 10px; white-space: nowrap; }
 .fl-founding-badge svg { color: #F59E0B; flex: none; }
 .fl-founding-badge.sm { font-size: 12px; padding: 4px 10px 4px 8px; }
+
+/* coach dashboard and earnings (fee engine, 2026-10-25): mobile first, one column,
+   cards that become one line per payment on a wide screen. */
+.fl-dash { max-width: 960px; margin: 0 auto; padding: 28px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
+.fl-dash-head { display: flex; flex-direction: column; gap: 6px; }
+.fl-dash-head h1 { font-size: 34px; line-height: 1.1; font-weight: 700; }
+.fl-back { font-size: 15px; font-weight: 600; text-decoration: none; }
+.fl-panel { background: var(--fl-surface); border-radius: 24px; padding: 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.fl-panel h2 { font-size: 20px; font-weight: 700; }
+.fl-elite-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.fl-tier { font-size: 13px; font-weight: 700; border-radius: 999px; padding: 4px 10px; background: var(--fl-raised); color: var(--fl-text); }
+.fl-tier.elite { background: var(--fl-ink); color: #fff; }
+.fl-tier.founding { background: var(--fl-accent-soft); color: var(--fl-accent-ink); }
+.fl-elite-line { font-size: 16px; line-height: 1.5; }
+.fl-facts, .fl-totals { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px; }
+.fl-facts div, .fl-totals div { background: var(--fl-bg); border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fl-facts dt, .fl-totals dt { font-size: 13px; color: var(--fl-text-2); }
+.fl-facts dd, .fl-totals dd { margin: 0; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fl-totals .net { background: var(--fl-ink); color: var(--fl-on-ink); }
+.fl-totals .net dt { color: var(--fl-on-ink-2); }
+.fl-warn { font-size: 15px; line-height: 1.5; color: #7A3E00; background: #FFF1DB; border-radius: 12px; padding: 10px 14px; }
+.fl-notice { font-size: 15px; line-height: 1.5; background: var(--fl-raised); border-radius: 12px; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; }
+.fl-notice p { margin: 0; }
+.fl-notice.ok { background: #E3F4E8; color: #14532D; }
+.fl-btnrow { display: flex; flex-wrap: wrap; gap: 10px; }
+.fl-btnrow .fl-btn { flex: 1 1 220px; }
+.fl-error .fl-btn { margin-left: 6px; }
+.fl-dash-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
+.fl-dash-link { text-decoration: none; color: var(--fl-text); }
+.fl .fl-dash-link:hover { color: var(--fl-text); box-shadow: 0 0 0 2px var(--fl-border); }
+.fl-dash-link b { font-size: 18px; }
+.fl-dash-link span { font-size: 15px; color: var(--fl-text-2); line-height: 1.45; }
+.fl-month h2 { font-size: 22px; }
+.fl-earn-rows { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fl-earn-row { border-top: 1px solid var(--fl-raised-2); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.fl-earn-top { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 15px; }
+.fl-earn-top .fl-tag { margin-left: 8px; }
+.fl-earn-top time { color: var(--fl-text-2); font-size: 14px; }
+.fl-earn-row dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 14px; }
+.fl-earn-row dl div { display: contents; }
+.fl-earn-row dt { color: var(--fl-text-2); min-width: 0; }
+.fl-earn-row dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.fl-earn-row .net dt, .fl-earn-row .net dd { color: var(--fl-text); font-weight: 700; }
+.fl-earn-row.refund dd { color: var(--fl-red); }
+@media (min-width: 900px) {
+  .fl-earn-row { flex-direction: row; align-items: baseline; gap: 16px; }
+  .fl-earn-top { flex: 0 0 280px; flex-direction: column; gap: 2px; }
+  .fl-earn-row dl { flex: 1; grid-auto-flow: column; grid-template-columns: none; grid-template-rows: auto auto; grid-auto-columns: minmax(0, 1fr); }
+  .fl-earn-row dd { text-align: left; }
+}
+.fl-notice .fl-btn { background: var(--fl-surface); }

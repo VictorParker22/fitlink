@@ -2,7 +2,7 @@
 // on this page; the topic cards jump to a group; the contact form composes an
 // email to the support mailbox (there is no ticket backend). Every answer is
 // true for the shipped product: coach-led passes, invites, Stripe payouts,
-// Elite through Apple, refunds at the coach's discretion through the app, two
+// Elite on the web through Stripe (fee engine, 2026-10-25; App Store Elite stays managed there), refunds at the coach's discretion through the app, two
 // modes on one account (coaching and training), and an athlete who switches
 // coach or deletes their account ends the old pass that day with no refund
 // (athlete-exit, operator decision 2026-10-17). A season is billed a fixed
@@ -18,11 +18,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
-import { ELITE_FEE_PERCENT, FREE_ROSTER_CAP, NEEDS_CONFIRM, STANDARD_FEE_PERCENT, SUPPORT_EMAIL } from './pricing';
+import { DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, MINIMUM_CHARGE_USD, STANDARD_FEE_PERCENT, SUPPORT_EMAIL, usd } from './pricing';
+import { SIXTH_ATHLETE_RULE } from './planLines';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
 
-const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Confirm against platform_config before launch">[confirm]</sup> : null);
 const copy = siteCopy(APPLE_WEB_ENABLED);
 
 const GROUPS = [
@@ -30,8 +30,8 @@ const GROUPS = [
     id: 'coach-payouts', audience: 'For coaches', title: 'Getting paid and Stripe',
     items: [
       { q: 'How do I get paid?', a: 'Connect payouts in the app (Profile, then Payouts). Stripe opens inside the app, asks for your identity and bank details, and tells FitLink when your account can take charges. Until then nobody can buy your pass. Stripe sends payouts to that bank.' },
-      { q: 'What does FitLink take?', a: (<p>{STANDARD_FEE_PERCENT}%<Confirm /> of each pass payment, or {ELITE_FEE_PERCENT}%<Confirm /> while Coach Elite is active. Your athlete pays the price you set; that amount minus the FitLink fee goes to your Stripe balance. Stripe’s card processing fee comes out of FitLink’s share. See <Link to="/pricing">Pricing</Link>.</p>) },
-      { q: 'Where do I see what I earned?', a: 'The Money tab lists every pass payment with the fee on it. The payout date and the bank it goes to live in Stripe; the app opens your Stripe account from Payouts.' },
+      { q: 'What does FitLink take?', a: (<p>{STANDARD_FEE_PERCENT}% of each pass payment, or {ELITE_FEE_PERCENT}% while Coach Elite or a Founding free year is active. Your athlete pays the price you set; that amount minus the FitLink fee goes to your Stripe balance. Stripe’s card processing fee comes out of FitLink’s share. See <Link to="/pricing">Pricing</Link>.</p>) },
+      { q: 'Where do I see what I earned?', a: (<p>The Money tab in the app, or <Link to="/coach/earnings">Earnings</Link> on the web: every pass payment with the fees on it and what reached you, by month. The payout date and the bank it goes to live in Stripe; the app opens your Stripe account from Payouts.</p>) },
       { q: 'Why does Payouts say “in progress” or “paused”?', a: 'Stripe still needs something from you (a document, a bank detail) or has paused payouts. Open Payouts in the app: it lists what is due and takes you to Stripe to finish it.' },
     ],
   },
@@ -42,7 +42,8 @@ const GROUPS = [
       { q: 'What happens when a season’s payments are done?', a: 'Nothing more is charged. The season ends when the period the last payment covered ends. The athlete keeps their copy of the season and everything they logged, stays on your roster, and is invited to start another season with you; edits you publish to the pass no longer reach them. Changing a season’s length changes the payments for athletes who buy it after the change.' },
       { q: 'How do athletes join?', a: 'Share your link: it opens your page with your passes, in any browser. Athletes buy there or in the app, or send you a request you accept. Nobody lands on your roster without doing one of those things.' },
       { q: 'Can I stop selling a pass?', a: 'Yes: Stop selling, from the pass’s menu. Athletes who hold it keep it; new athletes can’t buy it. Sell again brings it back.' },
-      { q: 'Is there a limit on athletes?', a: `The free plan holds ${FREE_ROSTER_CAP} active athletes. Coach Elite has no cap.` },
+      { q: 'Is there a limit on athletes?', a: `${SIXTH_ATHLETE_RULE} Coach Elite and Founding have no cap.` },
+      { q: 'Is there a lowest price for a pass?', a: `Yes: ${usd(MINIMUM_CHARGE_USD)} a payment.` },
       { q: 'Can I edit a season athletes are already in?', a: 'Yes, in the app or in the season editor on the web. A week an athlete has already started is protected; everything else publishes to everyone on the pass, and you can tell them what changed.' },
     ],
   },
@@ -51,7 +52,7 @@ const GROUPS = [
     items: [
       { q: 'How do I refund an athlete?', a: 'From the athlete’s page in the app: Refund last payment. Choose the full amount or half of it, and whether their pass ends now or keeps running to the end of the period they paid for. You see the amount, the date and the pass before you confirm. The refund goes back to their card through Stripe and comes out of your balance; Stripe may keep its processing fee. Payments older than 90 days can’t be refunded this way.' },
       { q: 'Does a refund end the pass?', a: 'Only if you choose that. You can end the pass with the refund, or refund as a goodwill gesture and let the pass run to the end of the period they paid for. Either way the athlete stays on your roster with their history; removing them from the roster is a separate action.' },
-      { q: 'An athlete disputed a charge with their bank.', a: 'Disputes run under Stripe’s and the card networks’ rules. While one is open the amount is held back from your payouts; if it closes in your favour the money is paid to you again.' },
+      { q: 'An athlete disputed a charge with their bank.', a: `Disputes run under Stripe’s and the card networks’ rules. While one is open the amount is held back from your payouts; if it closes in your favour the money is paid to you again. Each dispute costs you ${usd(DISPUTE_FEE_USD)}, won or lost (an inquiry costs nothing), taken from what Stripe pays you for that payment or for your next ones.` },
       { q: 'How do athletes cancel?', a: 'From the app: Profile, then Manage pass. Cancelling stops the next payment; they keep training until the period they paid for ends, and you can see the end date. After that the pass’s plan is no longer part of what they paid for. They stay on your roster with their history and can buy a pass again.' },
       { q: 'What happens if I delete my account?', a: (<p>Every pass with you ends. Time your athletes prepaid and have not had is refunded to them automatically from your balance. They keep their accounts, logs and history and can join another coach. If you also train with another coach, that pass ends the same day; time you already paid for isn’t refunded. <Link to="/delete-account">Delete your account</Link> on the web or from Profile in the app.</p>) },
     ],
@@ -61,7 +62,7 @@ const GROUPS = [
     items: [
       { q: 'What does the assistant do?', a: 'It reads an athlete’s check-in and their logged sets and drafts a reply in your voice. You edit, approve and send; nothing reaches an athlete on its own. It needs Coach Elite, and you agree to it in the app before the first draft.' },
       { q: 'Where does the text go?', a: 'The check-in text is sent to Google (Gemini) to produce the draft and for nothing else. The Privacy Policy says so, and athletes are told their coach may use an assistant.' },
-      { q: 'How do I get Coach Elite?', a: 'In the app, under Profile. It is billed through your Apple Account and renews until you cancel it in your Apple subscriptions. Refunds for Elite are Apple’s.' },
+      { q: 'How do I get Coach Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens this page. You pay on Stripe’s page, {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, and manage or cancel it from the link in your Stripe receipt. If you already have Elite through the App Store, it stays managed in your Apple subscriptions.</p>) },
     ],
   },
   {

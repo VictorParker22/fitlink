@@ -6,11 +6,10 @@
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
-import { APP_STORE_URL, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, NEEDS_CONFIRM, STANDARD_FEE_PERCENT, usd } from './pricing';
+import { APP_STORE_URL, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
 
-const Confirm = () => (NEEDS_CONFIRM ? <sup className="s-confirm" title="Confirm against platform_config / App Store Connect before launch">[confirm]</sup> : null);
 
 const Check = () => (
   <svg className="s-check" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
@@ -231,19 +230,19 @@ export default function Home() {
       <section className="s-wrap s-section" aria-labelledby="price-h">
         <div className="s-stack" style={{ gap: 28 }}>
           <div className="s-split-head">
-            <h2 id="price-h" className="s-h2 sm">Free until it works.</h2>
+            <h2 id="price-h" className="s-h2 sm">Free to try.</h2>
             <Link className="fl-btn link" to="/pricing">Full pricing and calculator</Link>
           </div>
           <div className="s-plans">
             <div className="s-plan">
               <h3>Free</h3>
-              <span className="s-price"><b>$0</b><span>a month · {STANDARD_FEE_PERCENT}%<Confirm /> per pass sold</span></span>
-              <p>Everything you need to sell passes, coach and get paid, for up to {FREE_ROSTER_CAP} active athletes.</p>
+              <span className="s-price"><b>$0</b><span>a month · {STANDARD_FEE_PERCENT}% per pass sold</span></span>
+              <p>Everything you need to sell passes, coach and get paid, for up to {FREE_ROSTER_CAP} paying athletes.</p>
             </div>
             <div className="s-plan ink">
               <h3>Elite</h3>
-              <span className="s-price"><b>{usd(ELITE_MONTHLY_USD)}</b><span>a month · {ELITE_FEE_PERCENT}%<Confirm /> per pass sold</span></span>
-              <p>No roster cap, the assistant’s drafts, and half the fee on every pass.</p>
+              <span className="s-price"><b>{usd(ELITE_MONTHLY_USD)}</b><span>a month · {ELITE_FEE_PERCENT}% per pass sold</span></span>
+              <p>No athlete cap, the assistant’s drafts, and half the fee on every pass. Subscribe on the web.</p>
             </div>
           </div>
         </div>
