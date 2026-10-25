@@ -5,8 +5,10 @@ import {
   BRAND_NAME, OG_IMAGE_ALT, OG_IMAGE_HEIGHT, OG_IMAGE_URL, OG_IMAGE_WIDTH,
 } from './brand.js';
 
-export const HOME_TITLE = `${BRAND_NAME} — Run your coaching business from one app`;
-export const HOME_DESCRIPTION = `${BRAND_NAME} is where independent coaches sell passes, build seasons and run their athletes’ weeks. Athletes pay on the web or in the app; Stripe pays the coach.`;
+/** The hero line (launch plan W2): the home page's title and the share title of the site. */
+export const HERO_LINE = 'Monday, handled.';
+export const HOME_TITLE = `${BRAND_NAME} — ${HERO_LINE}`;
+export const HOME_DESCRIPTION = `${HERO_LINE} ${BRAND_NAME} is where independent coaches sell passes and blocks, run their athletes’ weeks and get paid through Stripe. Open it on Monday and see who needs you.`;
 
 /** "Pricing — FitLink"; the home page's own title for null. */
 export function pageTitle(title) {

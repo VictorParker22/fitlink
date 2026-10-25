@@ -54,6 +54,10 @@ from `plans`.
   would sign everyone out and drop parked checkouts. **The rename:** change `brand.js`, run `node scripts/og-image.mjs`
   (Playwright, local; not part of the build) to redraw the share image, then the owner's steps outside this repo (the
   AASA app id and domain, the Apple Services ID return URLs, Supabase redirect URLs, the mailbox, Vercel's domain).
+- **The hero (launch plan W2, 2026-10-25; branch `launch/w2-hero`).** The home page's h1 is `HERO_LINE` ("Monday,
+  handled.", `site/pageMeta.js`), and so is the home title (`HOME_TITLE` = "<name> — Monday, handled.", the share
+  title of the shell) and the start of `HOME_DESCRIPTION`. The features section that used to carry the line is now
+  "A to-do list that empties." (the line is said once).
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and

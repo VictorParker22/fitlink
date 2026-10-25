@@ -6,6 +6,7 @@
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
+import { HERO_LINE } from './pageMeta';
 import { ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
@@ -83,7 +84,7 @@ export default function Home() {
       <section className="s-wrap s-hero" aria-labelledby="hero-h">
         <div className="s-hero-copy">
           <span className="s-kicker">For independent coaches</span>
-          <h1 id="hero-h" className="s-h1">Run your coaching business from one app.</h1>
+          <h1 id="hero-h" className="s-h1">{HERO_LINE}</h1>
           <p className="s-lede narrow">Your athletes pay, train and check in on {BRAND_NAME}. You open it on Monday and see exactly who needs you. Nothing else.</p>
           <div className="s-actions">
             <a className="fl-btn accent lg" href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>
@@ -107,8 +108,8 @@ export default function Home() {
 
       <section className="s-wrap s-features" aria-labelledby="monday-h">
         <div className="s-features-head">
-          <h2 id="monday-h" className="s-h2">Monday, handled.</h2>
-          <p>Most coaching software gives you a dashboard. {BRAND_NAME} gives you a to-do list that empties.</p>
+          <h2 id="monday-h" className="s-h2">A to-do list that empties.</h2>
+          <p>Most coaching software gives you a dashboard. {BRAND_NAME} gives you the few things that need you, and nothing else.</p>
         </div>
 
         <div className="s-feature">

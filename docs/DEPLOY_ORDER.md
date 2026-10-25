@@ -118,3 +118,5 @@ change the site only; each says below what it waits for.
   (`facebookexternalhit`) still prints ONE `og:title`, the coach's. The rename (Track A) is `src/web/site/brand.js`
   plus `node scripts/og-image.mjs`; the AASA file, the Apple Services ID return URLs, Supabase's redirect URLs and
   Vercel's domain are the owner's.
+- **W2 hero** (`launch/w2-hero`): copy only, no server dependency. After the deploy the home title reads
+  "<name> — Monday, handled." in the tab and in `curl -s https://fitlink.coach/ | grep '<title>'`.
