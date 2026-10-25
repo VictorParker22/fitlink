@@ -383,13 +383,17 @@ export function acceptInvite(code, { confirm = false } = {}) {
 
 /**
  * create-subscription. 200 answers: `{ clientSecret, customerId,
- * subscriptionId }` (a payment to confirm), `{ alreadyActive: true,
- * subscriptionId, customerId }`, or the same pass owed: `{ clientSecret, …,
- * payingOpenInvoice: true, amountDueCents }`. A refusal throws `{ status,
- * code, message }`: 400 bad_request / payouts_not_ready, 403 athlete_only,
- * 404 plan_not_found / coach_not_found, 409 plan_archived / plan_unpriced /
- * cannot_coach_yourself / live_subscription / roster_full /
- * payment_processing, 502 stripe_error, 500 db_error.
+ * subscriptionId, amountCents?, bookingFeeCents?, seasonPayments? }` (a payment
+ * to confirm; `seasonPayments` is how many payments this purchase makes: a
+ * block's P, a dated block's count from now, 1 for a session, absent for an
+ * open pass), `{ alreadyActive: true, subscriptionId, customerId }`, or the
+ * same pass owed: `{ clientSecret, …, payingOpenInvoice: true, amountDueCents }`.
+ * A refusal throws `{ status, code, message }`: 400 bad_request /
+ * payouts_not_ready, 403 athlete_only, 404 plan_not_found / coach_not_found,
+ * 409 plan_archived / plan_unpriced / below_minimum / cannot_coach_yourself /
+ * live_subscription / roster_full / payment_processing / session_over /
+ * block_closed / block_not_open (blocks, 2026-10-25: each sentence ends "You
+ * haven't been charged."), 502 stripe_error, 500 db_error.
  */
 export async function createSubscription(planId, clientId) {
   const { data, error } = await supabase.functions.invoke('create-subscription', { body: { planId, clientId } });
@@ -577,6 +581,60 @@ export async function signOutLocal() {
   if (failed) {
     try { window.localStorage.removeItem('fitlink-web'); window.localStorage.removeItem('fitlink-web-code-verifier'); } catch { /* storage blocked */ }
   }
+}
+
+// ── Blocks and single sessions (fitlink-app migration 20261025120000) ──────────
+
+/**
+ * The coach's own cancellation policy as anyone reads it (trainers_public.cancellation_policy): a string, or null when
+ * none is written. Before the migration the column is missing (42703): null as well. Any other failed read throws.
+ */
+export async function coachCancellationPolicy(coachId) {
+  const { data, error } = await supabase.from('trainers_public').select('cancellation_policy').eq('id', coachId).limit(1);
+  if (error?.code === '42703') return null;
+  if (error) throw error;
+  const v = data?.[0]?.cancellation_policy;
+  return typeof v === 'string' && v.trim() ? v : null;
+}
+
+/**
+ * The signed-in coach's own policy (trainers, their own row): `{ policy, available }`; `available` false before the
+ * migration (42703). A failed read throws.
+ */
+export async function myCancellationPolicy(uid) {
+  const { data, error } = await supabase.from('trainers').select('cancellation_policy').eq('id', uid).limit(1);
+  if (error?.code === '42703') return { policy: '', available: false };
+  if (error) throw error;
+  return { policy: typeof data?.[0]?.cancellation_policy === 'string' ? data[0].cancellation_policy : '', available: true };
+}
+
+/**
+ * Save the coach's policy on their own row (trainers_update_own; the server's CHECK keeps it to 600 characters and
+ * sync_trainer_public copies it to the public table). An empty text clears it. Returns the error or null; the row
+ * must come back, so a write the server did not make is never reported as saved.
+ */
+export async function saveCancellationPolicy(uid, text) {
+  const value = String(text ?? '').trim();
+  const { data, error } = await supabase.from('trainers').update({ cancellation_policy: value || null }).eq('id', uid).select('cancellation_policy');
+  if (error) return error;
+  if (!data?.length) return { code: 'no_row', message: 'not saved' };
+  return null;
+}
+
+/** Insert a new pass (plans_insert: the coach's own trainer_id). Answers `{ plan }` or `{ error }`. */
+export async function createPass(row) {
+  const { data, error } = await supabase.from('plans').insert(row).select('*');
+  if (error) return { error };
+  if (!data?.length) return { error: { code: 'no_row', message: 'not saved' } };
+  return { plan: data[0] };
+}
+
+/** Change a pass's details (plans_update: the coach's own). Answers `{ plan }` or `{ error }`. */
+export async function updatePass(planId, patch) {
+  const { data, error } = await supabase.from('plans').update(patch).eq('id', planId).select('*');
+  if (error) return { error };
+  if (!data?.length) return { error: { code: 'no_row', message: 'not saved' } };
+  return { plan: data[0] };
 }
 
 /** The coach's standing invite (created once, reused): the public page URL. */

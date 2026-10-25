@@ -33,6 +33,15 @@
     }
   },
   "minimum_charge_cents": 2500,
+  "blocks": {
+    "_doc": "A block (plans.kind 'block' with duration_weeks) sells as the season's monthly installments (_shared/season.ts). default_weeks is the length the apps offer a new block (no column default: an open pass is a block with no length). A dated block (plans.starts_on) goes on sale sale_opens_days_before days before it starts (90: refund-pass refunds a payment up to 90 days old, so a coach can still refund the first payment until the block starts).",
+    "default_weeks": 8,
+    "sale_opens_days_before": 90
+  },
+  "sessions": {
+    "_doc": "A single session (plans.kind 'session') is ONE payment that never renews. The athlete cancels it themselves for a full refund until free_cancel_hours before plans.session_at (cancel-session); inside that the coach's own policy applies (trainers.cancellation_policy).",
+    "free_cancel_hours": 24
+  },
   "payouts": {
     "interval": "weekly",
     "weekly_anchor": "monday"

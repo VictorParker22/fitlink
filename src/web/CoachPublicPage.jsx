@@ -20,14 +20,26 @@
 // every payment is made only when the server's 'season_complete' notice says
 // so (the athlete can mark a season complete themselves). Whether a pass is a
 // season is billing's answer (passBilling), never a truthy duration_weeks.
+//
+// Blocks and single sessions (2026-10-25, fitlink-app migration 20261025120000; words in blocks.js): a block card
+// says "Starts Dec 1 · 8 weeks" and "$320 / month · 2 payments ($640 in all)" (a dated block's payments counted from
+// today, as the server counts them: joining late pays fewer), a session card "Session · Thu, Dec 3, 6:00 PM · 60 min ·
+// $40" (or "Time arranged with <first>"). A dated block outside its sign-up window is shown with its day ("On sale from
+// Sep 2", "Sign-ups closed Nov 30") and no Buy button; a session that has started is not listed (create-subscription
+// refuses all three). Under the sessions: the platform rule (cancel up to 24 hours before for a full refund) and the
+// coach's own policy, as text, from trainers_public.cancellation_policy.
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, foundingMember, freshUser, leaveUnfinishedAppleSignUp,
+  coachCancellationPolicy, inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, foundingMember, freshUser, leaveUnfinishedAppleSignUp,
   session, takeAuthReturnNote,
 } from './api';
 import { appleSignUpUnfinished, RESUME_PASS_GONE, RESUME_SIGNED_OUT } from './appleAuth';
-import { passBilling, passPriceParts, passSeasonLine } from './season';
+import { passBilling, passPriceParts } from './season';
+import {
+  buyLabel, coachPolicyIntro, freeCancelLine, listedOnPage, passKind, paymentsFor, priceLine, saleLine, saleState,
+  scheduleLine, sessionCardLine,
+} from './blocks';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
 import FoundingBadge from './FoundingBadge';
@@ -39,14 +51,15 @@ const Check = ({ dark }) => (
   </svg>
 );
 
-/** A season by billing's rule (1..520 whole weeks), as create-subscription stamps it; anything else renews until cancelled. */
-const isSeason = (plan) => passBilling(plan).kind === 'season';
+/** A block with a length, by billing's rule (1..520 whole weeks); a session is one payment; anything else renews until cancelled. */
+const isSeason = (plan) => passKind(plan) === 'block' && passBilling(plan).kind === 'season';
 
-function startsLine(plan) {
-  if (!plan.starts_on) return null;
-  const d = new Date(`${plan.starts_on}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return `Starts ${d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}`;
+/** The big price on a card: "$320 / month", or "$40" + "one payment" for a session or a block of one payment now. */
+function cardPrice(plan, payments) {
+  const parts = passPriceParts(plan);
+  if (!parts) return null;
+  if (passKind(plan) === 'session' || payments === 1) return { amount: parts.amount, unit: 'one payment' };
+  return { amount: parts.amount, unit: `/ ${passBilling(plan).period}` };
 }
 
 export default function CoachPublicPage() {
@@ -60,6 +73,11 @@ export default function CoachPublicPage() {
   const [founding, setFounding] = useState(false);
   /** Bumped when the checkout closes, so a season bought there takes the offer away. */
   const [recheck, setRecheck] = useState(0);
+  /** The moment the page judges sale windows and payment counts by (the server judges again at purchase). */
+  const [now] = useState(() => Date.now());
+  /** The coach's own cancellation policy: undefined while loading, a string, null (none written), or false (read failed). */
+  const [policy, setPolicy] = useState(undefined);
+  const [policyTry, setPolicyTry] = useState(0);
 
   // No sign-in returns here: take any tokens or error text out of the address
   // bar, silently (Stripe's 3DS parameters stay; only auth keys go).
@@ -135,6 +153,15 @@ export default function CoachPublicPage() {
     return () => { cancelled = true; };
   }, [coachId, recheck]);
 
+  // The coach's policy, read only when a session is listed (it is shown under the sessions).
+  const hasSession = state.plans.some((p) => passKind(p) === 'session' && listedOnPage(p, now));
+  useEffect(() => {
+    if (!coachId || !hasSession) return undefined;
+    let cancelled = false;
+    coachCancellationPolicy(coachId).then((v) => { if (!cancelled) setPolicy(v); }).catch(() => { if (!cancelled) setPolicy(false); });
+    return () => { cancelled = true; };
+  }, [coachId, hasSession, policyTry]);
+
   if (state.loading) {
     return <div className="fl"><div className="fl-empty"><p className="fl-note">Loading…</p></div></div>;
   }
@@ -179,8 +206,12 @@ export default function CoachPublicPage() {
   const brand = coach.name || 'FitLink';
   const kicker = [coach.specialization, ...(Array.isArray(coach.specializations) ? coach.specializations.filter((s) => s !== coach.specialization) : [])]
     .filter(Boolean).slice(0, 2).join(' · ');
-  const forSale = plans.filter(planIsPriced);
-  const mostChosen = plans.length > 1 ? forSale.find((p) => !isSeason(p)) ?? forSale[0] ?? null : null;
+  // A session that already started is not listed; a block outside its sign-up window is listed, not buyable.
+  const listed = plans.filter((p) => listedOnPage(p, now));
+  const buyable = (p) => planIsPriced(p) && saleState(p, now).open;
+  const forSale = listed.filter(buyable);
+  const mostChosen = listed.length > 1 ? forSale.find((p) => !isSeason(p) && passKind(p) !== 'session') ?? forSale[0] ?? null : null;
+  const sessions = listed.filter((p) => passKind(p) === 'session');
 
   return (
     <div className="fl">
@@ -235,27 +266,32 @@ export default function CoachPublicPage() {
 
       <section id="passes" aria-labelledby="passes-h" className="fl-section">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <h2 id="passes-h" className="fl-h2">{forSale.length > 0 ? 'Pick a pass. Start this week.' : plans.length > 0 ? 'No pass for sale yet.' : 'No pass yet.'}</h2>
+          <h2 id="passes-h" className="fl-h2">{forSale.length > 0 ? 'Pick a pass. Start this week.' : listed.length > 0 ? 'No pass for sale yet.' : 'No pass yet.'}</h2>
           <p className="fl-sub">
             {forSale.length > 0
               ? `Pay here — no app needed to buy. Your first week comes from ${first} once you’re in, and the app is waiting when you want it.`
-              : plans.length > 0
-                ? `${first} hasn’t set a price on a pass yet. Ask them, or check back soon.`
+              : listed.length > 0
+                ? (listed.some(planIsPriced) ? `Nothing here is on sale today. Each pass says when it is, or ask ${first}.` : `${first} hasn’t set a price on a pass yet. Ask them, or check back soon.`)
                 : `${first} hasn’t published a pass. Ask them, or check back soon.`}
           </p>
           {resumeMissing && <div className="fl-error" role="alert">{RESUME_PASS_GONE}{resumeSignedOut ? ` ${RESUME_SIGNED_OUT}` : ''}</div>}
         </div>
-        {plans.length > 0 && (
+        {listed.length > 0 && (
           <div className="fl-grid">
-            {plans.map((plan) => {
+            {listed.map((plan) => {
               const dark = mostChosen && plan.id === mostChosen.id;
               // create-subscription refuses a pass without a price (plan_unpriced): never offer to buy one.
               const priced = planIsPriced(plan);
-              const price = passPriceParts(plan);
-              const lines = [startsLine(plan), ...(Array.isArray(plan.features) ? plan.features : [])].filter(Boolean);
+              const sale = saleState(plan, now);
+              const payments = paymentsFor(plan, now);
+              const price = cardPrice(plan, payments);
+              const lines = [...(Array.isArray(plan.features) ? plan.features : [])].filter((l) => typeof l === 'string' && l);
               if (lines.length === 0 && plan.description) lines.push(plan.description);
-              const season = passSeasonLine(plan);
-              if (season) lines.unshift(season);
+              // What the pass is, then how it bills, then when it can be bought (blocks.js).
+              const head = passKind(plan) === 'session'
+                ? [sessionCardLine(plan, now, { first })]
+                : [scheduleLine(plan, now, { first }), isSeason(plan) && priced ? priceLine(plan, { payments }) : null, saleLine(plan, now)];
+              lines.unshift(...head.filter(Boolean));
               return (
                 <article key={plan.id} className={`fl-pass${dark ? ' ink' : ''}`}>
                   <div className="fl-pass-head">
@@ -266,12 +302,16 @@ export default function CoachPublicPage() {
                   {lines.length > 0 && (
                     <ul>{lines.map((l, i) => <li key={i}><Check dark={dark} />{l}</li>)}</ul>
                   )}
-                  {priced ? (
-                    <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => { setResumeMissing(false); setResumeSignedOut(false); setResume(null); setBuying(plan); }}>
-                      {isSeason(plan) ? 'Join the season' : `Buy ${plan.name}`}
-                    </button>
-                  ) : (
+                  {!priced ? (
                     <p className="fl-unpriced">No price set yet, so this pass can’t be bought. Ask {first} about it.</p>
+                  ) : !sale.open ? (
+                    <p className="fl-unpriced">{sale.code === 'block_not_open'
+                      ? `Not on sale yet. Come back then, or ask ${first} about it.`
+                      : `Sign-ups have closed. Ask ${first} about the next block.`}</p>
+                  ) : (
+                    <button type="button" className={`fl-btn lg ${dark ? 'accent' : ''}`} onClick={() => { setResumeMissing(false); setResumeSignedOut(false); setResume(null); setBuying(plan); }}>
+                      {buyLabel(plan)}
+                    </button>
                   )}
                 </article>
               );
@@ -279,6 +319,23 @@ export default function CoachPublicPage() {
           </div>
         )}
       </section>
+
+      {sessions.length > 0 && (
+        <section id="cancelling" aria-labelledby="cancel-h" className="fl-section" style={{ paddingTop: 0 }}>
+          <div className="fl-policy">
+            <h2 id="cancel-h" className="fl-h3">Cancelling a session</h2>
+            <p>{freeCancelLine()}</p>
+            {policy === undefined && <p className="fl-note" aria-live="polite">Loading {first}’s cancellation policy…</p>}
+            {policy === false && (
+              <p className="fl-note" role="alert">
+                Couldn’t load {first}’s cancellation policy. <button type="button" className="fl-link" onClick={() => { setPolicy(undefined); setPolicyTry((n) => n + 1); }}>Try again</button>
+              </p>
+            )}
+            {(policy === null || typeof policy === 'string') && <p>{coachPolicyIntro(first, policy)}</p>}
+            {typeof policy === 'string' && <blockquote className="fl-policy-text">{policy}</blockquote>}
+          </div>
+        </section>
+      )}
 
       <section id="how" aria-labelledby="how-h" className="fl-section">
         <h2 id="how-h" className="fl-h2">How it works</h2>

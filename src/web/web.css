@@ -286,3 +286,13 @@
   .fl-earn-row dd { text-align: left; }
 }
 .fl-notice .fl-btn { background: var(--fl-surface); }
+
+/* Blocks and single sessions (2026-10-25): the coach's cancellation policy under the sessions, the editor's pass forms. */
+.fl-policy { background: var(--fl-surface); border-radius: 28px; padding: 24px; display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.fl-policy p { font-size: 16px; line-height: 1.5; }
+.fl-h3 { font-size: 22px; line-height: 1.2; font-weight: 700; }
+.fl-policy-text { margin: 0; padding: 12px 16px; border-left: 3px solid var(--fl-border); background: var(--fl-bg); border-radius: 0 14px 14px 0; font-size: 16px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fl-link { border: 0; background: transparent; color: var(--fl-accent-ink); font-weight: 600; padding: 0; text-decoration: underline; min-height: 32px; }
+.fl-kind { display: flex; gap: 8px; flex-wrap: wrap; }
+.fl-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: 12px; }
+.fl-pass-details { background: var(--fl-surface); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }

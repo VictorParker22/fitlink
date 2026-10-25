@@ -43,6 +43,14 @@
 // (plans.duration_weeks) is billed a fixed number of payments and then stops
 // by itself (2026-10-17; season.js holds the server's formula). The sheet
 // says which, with the number of payments and the total, before the card form.
+//
+// Blocks and single sessions (2026-10-25, fitlink-app migration 20261025120000; words in blocks.js): the sheet says
+// what is bought, "Starts Dec 1 · 8 weeks · $320 / month · 2 payments ($640 in all)" or "Session · Thu, Dec 3, 6:00 PM
+// · 60 min · $40 · one payment · nothing renews". Before create-subscription answers, a dated block's payments are the
+// page's count from now (season.js datedBlockPayments, the server's formula); once it answers, its `seasonPayments` is
+// the number on every line. A pass outside its sale window (a session that started, a dated block before its sale
+// opens or after its last sign-up day) stops the sheet before anything can end a pass; the server's own refusals
+// (409 session_over / block_closed / block_not_open) are shown in its words.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -52,7 +60,8 @@ import {
   createSubscription, finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, parkCheckout,
   planIsPriced, previewInvite, session, signInWithApple, signOutLocal,
 } from './api';
-import { chargedTotal, checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
+import { chargedTotal, passBilling, passPriceParts } from './season';
+import { chargeLine as blockChargeLine, notOnSaleSentence, passKind, paymentsFor, priceLine, saleState, scheduleLine, sessionCancelNote } from './blocks';
 import {
   accountLabel, appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, signInHint, siteCopy, usedApple,
   whoStepBody, APPLE_PARK_FAILED, OR_EMAIL, SETTING_UP,
@@ -69,6 +78,7 @@ const WHO_STEPS = new Set([STEP.who, STEP.name, STEP.switch, STEP.pay, STEP.stop
 const FINAL_CODES = new Set([
   'invite_not_found', 'invite_expired', 'invite_already_accepted', 'cannot_coach_yourself',
   'athlete_only', 'plan_archived', 'plan_not_found', 'coach_not_found', 'plan_unpriced', 'payouts_not_ready', 'trainer_in_use',
+  'below_minimum', 'session_over', 'block_closed', 'block_not_open',
 ]);
 
 function cents(amount) {
@@ -77,6 +87,8 @@ function cents(amount) {
 }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/** The clock, read when a check runs (never during render). */
+const clockNow = () => Date.now();
 
 /** A refusal this page raises itself, before it sent anything. */
 function stop(message, code = null) {
@@ -154,6 +166,8 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   const stripeKey = useRef(null);
   /** A switch confirm whose answer was lost: what it was asked to do, until a preview shows where things stand. */
   const lostSwitch = useRef(null);
+  /** When the sheet opened: the moment its payment count is predicted for (create-subscription's answer replaces it). */
+  const [openedAt] = useState(() => Date.now());
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && !busy && !appleBusy) onClose(); };
@@ -256,6 +270,11 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     if (!planIsPriced(plan)) {
       throw stop(`This pass has no price set, so it can’t be bought yet. Ask ${first} to set one. Nothing was changed.`, 'plan_unpriced');
     }
+    // A session that started, a dated block before its sale opens or after its last sign-up day (create-subscription's
+    // blockSale): judged now, before a switch could end a pass for a purchase that would be refused.
+    const nowMs = clockNow();
+    const notOnSale = notOnSaleSentence(plan, nowMs);
+    if (notOnSale) throw stop(`${notOnSale} Nothing was changed.`, saleState(plan, nowMs).code);
     let cfg;
     try {
       cfg = await appConfig();
@@ -496,14 +515,21 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   // Model B: create-subscription's own total (the booking fee inside it) replaces plans.price on every line from the
   // card form on; the booking fee is named as part of that total, never as a surcharge line of its own.
   const total = owing ? null : chargedTotal(purchase);
-  // Per period, as create-subscription bills it; a season of one payment reads "$X for the N-week season".
-  const price = passPriceText(plan, total) ?? 'no price set';
-  const seasonLine = passSeasonLine(plan, total);
+  // How many payments this purchase makes: create-subscription's seasonPayments once it answered, else the page's
+  // count from when the sheet opened (a dated block's from now; a session 1; an open pass null).
+  const payments = paymentsFor(plan, openedAt, owing ? null : purchase);
   const billing = passBilling(plan, total);
-  // A season of one payment has nothing left to cancel once it is paid.
+  const isSession = passKind(plan) === 'session';
+  // Per period, as create-subscription bills it; one payment (a session, a block of one payment) is the amount alone.
+  const amount = passPriceParts(plan, total)?.amount ?? null;
+  const price = !amount ? 'no price set' : isSession || payments === 1 ? amount : `${amount} / ${billing.period}`;
+  // What is bought: "Starts Dec 1 · 8 weeks · $320 / month · 2 payments ($640 in all)"; an open pass has no such line.
+  const what = scheduleLine(plan, openedAt, { first });
+  const seasonLine = what ? [what, priceLine(plan, { payments, total })].filter(Boolean).join(' · ') : null;
+  // One payment has nothing left to cancel once it is paid; a session says the 24-hour rule instead.
   const chargeLine = owing
     ? 'Charged today. Cancel any time from the app.'
-    : `${checkoutChargeLine(plan, total)}${billing.kind === 'season' && billing.payments === 1 ? '' : ' Cancel any time from the app.'}`;
+    : `${blockChargeLine(plan, { nowMs: openedAt, payments, total })}${isSession ? ` ${sessionCancelNote(plan, first)}` : payments === 1 ? '' : ' Cancel any time from the app.'}`;
   const payLabel = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : (passPriceParts(plan, total)?.amount ?? '');
   const ending = Array.isArray(view?.passesEnding) ? view.passesEnding.filter((p) => p && typeof p.line === 'string' && p.line) : [];
   const currentName = view?.currentCoach?.name || null;

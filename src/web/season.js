@@ -48,6 +48,58 @@ export function seasonPayments(weeks, period) {
   return Math.max(1, p);
 }
 
+// ── A dated block (fitlink-app _shared/season.ts, launch plan Sprint 1 PR 4, 2026-10-25) ──
+//
+// A block with plans.starts_on is DATED: week 1 begins that day for every buyer. The first payment is taken at
+// purchase; for a purchase before the start the next one moves to one interval after the start (the server's
+// blockStartShiftDecision), and no installment falls after the block has ended (owner decision 2026-10-25). So a
+// purchase is billed the count of its billing dates (the purchase, then anchor + k intervals, the anchor being the
+// start for a purchase before it and the purchase otherwise) that fall before starts_on + weeks × 7 days, at least 1
+// and never more than P. Before a purchase the page predicts the count with this port; after create-subscription
+// answers, its `seasonPayments` is the truth (counted from the end of the server's idempotency hour).
+
+/** The hour (UTC) a date-only plan day is placed at: noon UTC is the same calendar day from UTC-11 to UTC+11. */
+export const PLAN_DAY_HOUR_UTC = 12;
+
+const DAY_MS = 86_400_000;
+
+/** A YYYY-MM-DD day → epoch ms at PLAN_DAY_HOUR_UTC, or null for anything that is not a real calendar day. */
+export function planDayMs(day) {
+  if (typeof day !== 'string') return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(day.trim());
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const ms = Date.UTC(y, mo - 1, d, PLAN_DAY_HOUR_UTC);
+  const back = new Date(ms);
+  return back.getUTCFullYear() === y && back.getUTCMonth() === mo - 1 && back.getUTCDate() === d ? ms : null;
+}
+
+/**
+ * `ms` plus k billing intervals counted from `ms` itself, the way Stripe counts them: the same day of the month (or
+ * year), clamped to the last day of a shorter month, same time of day.
+ */
+export function addIntervals(ms, period, k) {
+  const d = new Date(ms);
+  const months = (billingPeriod(period) === 'year' ? 12 : 1) * Math.max(0, Math.floor(k));
+  const y = d.getUTCFullYear();
+  const mo = d.getUTCMonth() + months;
+  const lastDay = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+  return Date.UTC(y, mo, Math.min(d.getUTCDate(), lastDay), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+}
+
+/** How many payments a purchase of a DATED block at `purchaseMs` makes (see above); null when it is not a dated block. */
+export function datedBlockPayments({ startsOn, weeks, period, purchaseMs }) {
+  const start = planDayMs(startsOn);
+  const w = seasonWeeks(weeks);
+  const p = seasonPayments(weeks, period);
+  if (start === null || w === null || p === null || !Number.isFinite(purchaseMs)) return null;
+  const end = start + w * 7 * DAY_MS;
+  const anchor = start > purchaseMs ? start : purchaseMs;
+  let count = 1;
+  for (let k = 1; k < 1000 && addIntervals(anchor, period, k) < end; k++) count++;
+  return Math.max(1, Math.min(count, p));
+}
+
 /** The price in whole cents create-subscription would charge (rules.ts planAmountCents), or null when there is none. */
 export function priceCents(price) {
   const n = Math.round(Number(price) * 100);

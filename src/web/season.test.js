@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  billingPeriod, checkoutChargeLine, coachPriceLine, finishedSeason, holdsRunningPass, lengthChangeLine,
+  addIntervals, billingPeriod, checkoutChargeLine, datedBlockPayments, planDayMs, coachPriceLine, finishedSeason, holdsRunningPass, lengthChangeLine,
   passBilling, passPriceParts, passPriceText, passSeasonLine, payingFor, priceCents, seasonPayments, seasonWeeks, usdFromCents,
 } from './season.js';
 
@@ -231,4 +231,39 @@ test('Model B: the server’s total replaces the price from the card form on, th
   // Without a total nothing moves.
   assert.equal(checkoutChargeLine(open), 'Charged today, then every month until you cancel.');
   assert.equal(passPriceText(season), '$180 / month');
+});
+
+// fitlink-app tests/blocks.test.ts "a dated block's installments never fall after it has ended (datedBlockPayments,
+// owner decision 2026-10-25)": the same cases, the same answers.
+test('a dated block: payments counted from the purchase, none after the block has ended (the server\'s table)', () => {
+  // Winter block: Dec 1 2026 (12:00 UTC), 8 weeks, ends Jan 26 2027 12:00 UTC. Monthly price.
+  const winter = { startsOn: '2026-12-01', weeks: 8, period: 'month' };
+  const at = (y, m, d, h = 15) => Date.UTC(y, m, d, h);
+  const cases = [
+    ['bought a month before it starts (the next payment moves to Jan 1)', 2, at(2026, 10, 1)],
+    ['bought on day 1, before 12:00 UTC (still before the start: anchored on the start)', 2, at(2026, 11, 1, 9)],
+    ['bought on day 1, after the start (Dec 1, Jan 1)', 2, at(2026, 11, 1)],
+    ['bought mid-block, Dec 15 (Dec 15, Jan 15)', 2, at(2026, 11, 15)],
+    ['bought Dec 29 (Jan 29 is after the end)', 1, at(2026, 11, 29)],
+    ['bought in the last week, Jan 20', 1, at(2027, 0, 20)],
+  ];
+  for (const [label, n, purchaseMs] of cases) assert.equal(datedBlockPayments({ ...winter, purchaseMs }), n, label);
+
+  // Never more than an undated block of the same length (P), never fewer than 1; null for an undated or open pass.
+  assert.equal(datedBlockPayments({ startsOn: '2027-02-01', weeks: 13, period: 'month', purchaseMs: at(2027, 0, 10) }), 3);
+  assert.equal(datedBlockPayments({ startsOn: '2026-12-01', weeks: 4, period: 'month', purchaseMs: at(2026, 10, 1) }), 1);
+  assert.equal(datedBlockPayments({ startsOn: '2026-12-01', weeks: 52, period: 'year', purchaseMs: at(2026, 10, 1) }), 1);
+  assert.equal(datedBlockPayments({ startsOn: '2026-12-01', weeks: 12, period: 'month', purchaseMs: at(2026, 10, 1) }), 3);
+  assert.equal(datedBlockPayments({ startsOn: '2026-12-01', weeks: 12, period: 'month', purchaseMs: at(2027, 0, 10) }), 2);
+  assert.equal(datedBlockPayments({ startsOn: null, weeks: 8, period: 'month', purchaseMs: at(2026, 10, 1) }), null);
+  assert.equal(datedBlockPayments({ startsOn: '2026-12-01', weeks: null, period: 'month', purchaseMs: at(2026, 10, 1) }), null);
+});
+
+test('addIntervals counts from the anchor itself (the 31st bills on the 31st again); planDayMs reads real days only', () => {
+  const iso = (ms) => new Date(ms).toISOString();
+  assert.equal(iso(addIntervals(Date.UTC(2027, 0, 31, 12), 'month', 1)), '2027-02-28T12:00:00.000Z');
+  assert.equal(iso(addIntervals(Date.UTC(2027, 0, 31, 12), 'month', 2)), '2027-03-31T12:00:00.000Z');
+  assert.equal(iso(addIntervals(Date.UTC(2026, 11, 1, 12), 'year', 2)), '2028-12-01T12:00:00.000Z');
+  assert.equal(planDayMs('2026-12-01'), Date.UTC(2026, 11, 1, 12));
+  for (const bad of ['2026-02-30', '2026-13-01', 'Dec 1', '', null, 20261201]) assert.equal(planDayMs(bad), null, String(bad));
 });

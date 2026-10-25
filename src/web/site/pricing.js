@@ -67,6 +67,14 @@ export const DISPUTE_FEE_USD = centsToUsd(CONFIG.disputes.recovery_cents);
 export const PAYOUT_INTERVAL = CONFIG.payouts.interval;
 export const PAYOUT_WEEKLY_ANCHOR = CONFIG.payouts.weekly_anchor;
 
+// ── Blocks and single sessions (fitlink-app migration 20261025120000) ─────────
+/** The length a new block is offered with (no column default: a block with no length is an open pass). */
+export const BLOCK_DEFAULT_WEEKS = CONFIG.blocks.default_weeks;
+/** How many days before its start a dated block goes on sale (create-subscription refuses earlier: block_not_open). */
+export const BLOCK_SALE_OPENS_DAYS_BEFORE = CONFIG.blocks.sale_opens_days_before;
+/** Up to this many hours before a session the athlete cancels for a full refund (cancel-session); inside it, the coach's policy. */
+export const SESSION_FREE_CANCEL_HOURS = CONFIG.sessions.free_cancel_hours;
+
 // ── Model B (a per-coach switch, off by default) ─────────────────────────────
 // The athlete's booking fee sits INSIDE the total the athlete sees at checkout, and the
 // coach's own rate drops. Shown on a Model B coach's dashboard fee line and earnings, and at
