@@ -359,13 +359,23 @@ async function athleteExit(body) {
   return data ?? {};
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** `{ planId }` for the pass being bought, when it is a plan id (else nothing is sent). */
+const planField = (planId) => (UUID.test(String(planId ?? '')) ? { planId: String(planId) } : {});
+
 /**
  * What joining this coach would end, changing nothing: `{ preview: true,
  * kind, newCoach: {id, name}, currentCoach: {id, name} | null, needsSwitch,
  * needsConfirmation, passesEnding: [{ line, … }], refund: 'none' }`.
+ *
+ * `planId` (fitlink-app launch/4-blocks, review 2026-10-25): the pass this join
+ * is for. The server then refuses, before it ends anything, a plan
+ * create-subscription would refuse (plan_archived, plan_unpriced,
+ * below_minimum, session_over, block_closed, block_not_open, a session about
+ * to start), in create-subscription's sentence plus "Nothing was changed.".
  */
-export function previewInvite(code) {
-  return athleteExit({ action: 'accept_invite', code, preview: true });
+export function previewInvite(code, { planId = null } = {}) {
+  return athleteExit({ action: 'accept_invite', code, ...planField(planId), preview: true });
 }
 
 /**
@@ -377,8 +387,20 @@ export function previewInvite(code) {
  * needs one is refused 409 `needs_confirmation` with the same view as the
  * preview in the body.
  */
-export function acceptInvite(code, { confirm = false } = {}) {
-  return athleteExit({ action: 'accept_invite', code, ...(confirm ? { confirm: true } : {}) });
+export function acceptInvite(code, { confirm = false, planId = null } = {}) {
+  return athleteExit({ action: 'accept_invite', code, ...planField(planId), ...(confirm ? { confirm: true } : {}) });
+}
+
+/**
+ * The pass as the server has it now, read right before a confirm that can end
+ * another pass: the row, `null` when it is gone or archived (no longer for
+ * sale), and a failed read throws.
+ */
+export async function planNow(planId) {
+  const { data, error } = await supabase.from('plans').select('*').eq('id', planId).limit(1);
+  if (error) throw error;
+  const row = data?.[0] ?? null;
+  return row && !row.archived_at ? row : null;
 }
 
 /**

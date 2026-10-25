@@ -104,6 +104,11 @@ test('a new week count tells the coach what buyers pay from now on', () => {
   assert.equal(lengthChangeLine(greek, 9), 'The season becomes 9 weeks. Athletes who buy it from now on pay 3 monthly payments ($540) instead of 2 monthly payments ($360).');
   assert.equal(lengthChangeLine(greek, 6), 'The season becomes 6 weeks. Athletes who buy it still pay 2 monthly payments ($360).');
   assert.equal(lengthChangeLine({ price: 180, period: 'month', duration_weeks: 5 }, 4), 'The season becomes 4 weeks. Athletes who buy it from now on pay one payment ($180) instead of 2 monthly payments ($360).');
+  // A dated block: the count is the most a buyer pays (one who joins after the start pays fewer).
+  const dated = { price: 180, period: 'month', duration_weeks: 8, starts_on: '2026-12-01' };
+  assert.equal(coachPriceLine(dated), '$180 / month · Athletes pay up to 2 monthly payments (up to $360); later joiners pay fewer');
+  assert.equal(coachPriceLine({ ...dated, duration_weeks: 4 }), '$180 / month · Athletes pay one payment ($180)');
+  assert.equal(lengthChangeLine(dated, 12), 'The season becomes 12 weeks. Athletes who buy it from now on pay up to 3 monthly payments (up to $540) instead of up to 2 monthly payments (up to $360).');
   assert.equal(lengthChangeLine({ price: 180, period: 'month' }, 9), null);
   assert.equal(lengthChangeLine(greek, 0), null);
 });

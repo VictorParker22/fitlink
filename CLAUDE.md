@@ -301,7 +301,10 @@ from `plans`.
     Today `Checkout.jsx` shows create-subscription's `amountCents` (the booking fee inside it, said as "includes a $12
     booking fee", never a separate surcharge line; `season.js chargedTotal`) in the title, the season line, the Pay
     button and the charge line, but only from the card form on: athlete-exit's switch confirmation (which can end
-    another pass) runs before any total exists, and the coach page still shows plans.price. The cap in words (`SIXTH_ATHLETE_RULE`): the 6th paying athlete pays and
+    another pass) runs before any total exists, and the coach page still shows plans.price per payment. Since the blocks
+    review (2026-10-25) neither the invite page nor the sheet before create-subscription's answer prints a "($X in
+    all)" total (`blocks.js priceLine` `serverTotal`): nothing they read says whether the coach uses Model B, so a
+    total made from plans.price could be short. The coach page PR (3) shows `coach_page`'s `total_cents`. The cap in words (`SIXTH_ATHLETE_RULE`): the 6th paying athlete pays and
     joins; the coach then needs Elite to keep changing plans (the server never refuses at the cap; it makes the roster
     read-only, `guard_roster_read_only`). Home and Help say the same (no "Free until it works", no Elite "in the app
     under Profile, billed through Apple"); App Store Elite is "managed in the App Store" for whoever already has it.
@@ -378,10 +381,13 @@ from `plans`.
     payments ($640 in all)"; joining in the last weeks is one payment). Before a purchase the page predicts it
     (`blocks.js paymentsFor`); once create-subscription answers, its `seasonPayments` is the number on every line.
   - **Coach page** (`CoachPublicPage.jsx`): a block card says "Starts Dec 1 · 8 weeks" ("Started …" once week 1 began,
-    "8 weeks · starts when you join" undated) and "$320 / month · 2 payments ($640 in all)" (one payment: "$320 · one
-    payment · nothing renews"); a session card "Session · Thu, Dec 3, 6:00 PM · 60 min · $40". A block's day is a
-    calendar day (UTC noon, the server's rule) and a session's time is the viewer's zone; a date more than ~6 months away
-    carries its year (the iOS `dateText` rule). A dated block outside its window is LISTED, not buyable: "On sale from
+    "8 weeks · starts when you join" undated) and "$320 / month · 2 payments" (one payment: "$320 · one payment ·
+    nothing renews"; no "($640 in all)" on this page: the Model B gate above); a session card "Session · Thu, Dec 3,
+    6:00 PM EST · 60 min · $40". A block's day is a calendar day (UTC noon, the server's rule) and a session's time is
+    the viewer's zone, named (`timeZoneName: 'short'`); a date more than ~6 months away carries its year (the iOS
+    `dateText` rule). A pass priced above $0 but under `MINIMUM_CHARGE_USD` (made before `guard_plan_minimum`; live has
+    $1, $5 and $20 unarchived ones) is listed with "No longer on sale. Ask <first>." and no button (`belowMinimum`;
+    create-subscription answers 409 `below_minimum`). The heading is "Pick a pass." (a block may start later). A dated block outside its window is LISTED, not buyable: "On sale from
     <90 days before>" / "Sign-ups closed <last sign-up day>" (an open one says "Sign-ups close …"). A session that has
     started is NOT listed. With a session listed, "Cancelling a session": the platform rule ("Cancel up to 24 hours
     before for a full refund.") and the coach's own policy from `trainers_public.cancellation_policy`, rendered as text
@@ -392,15 +398,35 @@ from `plans`.
     month after the block starts: 2 payments in all. Billing stops after the block." (after the start: "then
     monthly: …"; one payment: "One payment for the block."; a session: "One payment for this session." + the 24-hour
     rule, or the coach's policy for a session with no time). Model B: the server's total with "(includes a $4 booking
-    fee)". `assertSellable` refuses a pass outside its sale window BEFORE anything can end a pass ("… Nothing was
-    changed."); create-subscription's 409 `session_over` / `block_closed` / `block_not_open` (and `below_minimum`) are
-    final and shown in the server's words. No date of a later payment is computed on the web.
+    fee)". `assertSellable` (`blocks.js saleCheck`: unpriced, under the minimum, outside the sale window) refuses BEFORE
+    anything can end a pass ("… Nothing was changed."); create-subscription's 409 `session_over` / `block_closed` /
+    `block_not_open` (and `below_minimum`) are final and shown in the server's words. No date of a later payment is
+    computed on the web. "($640 in all)" appears only once create-subscription answered (its `amountCents` ×
+    `seasonPayments` for Model B). Paying what is owed on a held pass (`payingOpenInvoice`) shows "<pass> · you owe
+    $X", "$X today, for the payment you owe on the pass you hold." and no predicted payment count (the iOS rule).
+  - **The switch can't end a pass for a purchase that would be refused (review 2026-10-25, BLOCKING).** The athlete-exit
+    preview AND confirm send `planId` (`api.js previewInvite(code, {planId})`, `acceptInvite(code, {confirm, planId})`;
+    fitlink-app `launch/4-blocks` adds it): the server refuses, before ending anything, a plan create-subscription would
+    refuse (archived, unpriced, under the minimum, outside its sale window, a session starting within ~5 minutes) with
+    create-subscription's code and sentence plus "Nothing was changed."; the sheet shows it as sent (final codes: Close
+    only). Belt and braces: `confirmSwitch` reads the plan again (`api.js planNow`) and re-runs `saleCheck` right before
+    `join(true)`: gone / archived / another coach's → "<pass> is no longer on sale. Ask <first>. Nothing was
+    changed."; a failed read → "We couldn't check that <pass> is still on sale. Nothing was changed." with Check again.
+    Deploy this only with (or after) the server's `planId` change; an older athlete-exit ignores the field.
   - **Season editor** (`SeasonEditor.jsx`; RLS read on live 2026-10-25: `plans_insert` / `plans_update` admit
     `trainer_id = auth.uid()`, `trainers_update_own` the coach's own row, the same direct writes the iOS app makes).
     **New pass** inserts a block (name, price per month ≥ $25, length default 8, start date and last sign-up day
     optional; the last sign-up day needs a start and falls on or before the block's last day) or a session (price,
     date/time optional, minutes default 60), sending only the columns its kind allows (`newPassRow`). **Edit dates** /
-    **Edit time** patch `starts_on` + `enrollment_closes` or `session_at` + `session_minutes`, never `kind`. The
+    **Edit time** patch `starts_on` + `enrollment_closes` or `session_at` + `session_minutes`, never `kind`. A
+    datetime-local input is read and shown in the viewer's IANA zone (`blocks.js localInputToIso(v, timeZone)` /
+    `isoToLocalInput`, Intl offsets, not the machine's clock rules, so tests pin fixed zones), with "Times are in
+    America/New_York (EST)." under it (`timeZoneNote`). The held-session note: "Once booked, the time can't be cleared
+    or moved into the past. Any change lets the athlete cancel for a full refund until it starts." A dated block's coach
+    line says "Athletes pay up to 2 monthly payments (up to $640); later joiners pay fewer" (`coachPriceLine`, and
+    "up to" in `lengthChangeLine`). A new week count whose end falls before the last sign-up day
+    (`plans_enrollment_closes_window`) is said in the review and after publishing: "The last sign-up day is after the
+    new end. Move it first (Edit dates)." (`lengthBreaksSignUpWindow`, `lengthWriteError`). The
     server's refusals are shown from HINT (`planWriteError`: `block_has_holders`, `session_held`, `below_minimum`,
     `elite_required`, `kind_fixed`), CHECK names in words, 42703/PGRST204 = "not available on the server yet". A
     session has no weeks: its page is the details (no grid, no publish bar). A pass with an empty track opens as its
@@ -411,11 +437,29 @@ from `plans`.
     one payment, sessions with and without a time, a started session unlisted, the policy (text, none, failed read,
     no section without sessions), checkout with `seasonPayments` 1 / 2 / 3, a session, a Model B session, each 409,
     editor create block / session / session without a time, the $25 minimum on the page and from the server, held
-    block and held session refusals, a later time saved, the policy read and save and a refused save.
-  - **Deploy order:** after fitlink-app migration `20261025120000` and its functions (create-subscription first). Before
-    it, plans carry no `kind` (every pass reads as a block), New pass answers "not available on the server yet", and
-    the policy column is missing (the page shows no policy). The Help / Terms copy still speaks of "seasons" and has no
-    session refund rule: founder wording (Terms §16 notice).
+    block and held session refusals, a later time saved, the policy read and save and a refused save. After the review
+    fixes (same day): `node --test src/web/*.test.js` 98/98 in UTC, Pacific/Kiritimati, America/Los_Angeles,
+    Asia/Tokyo and Pacific/Honolulu; headless 132/132, adding sub-$25 cards, the planId on preview and confirm, a confirm
+    refused at a session's start (server stubbed), a preview refused, the re-read before confirm (repriced, archived,
+    failed), the zone label and wording, the owed-payment line, no "in all" before the server's answer and the Model B
+    total after it, and the dated block's "up to".
+  - **Deploy order:** after fitlink-app migration `20261025120000` and its functions (create-subscription first, and
+    athlete-exit with `planId`). Before it, plans carry no `kind` (every pass reads as a block), New pass answers "not
+    available on the server yet", and the policy column is missing (the page shows no policy). The Help / Terms copy
+    still speaks of "seasons" and has no session refund rule: founder wording (Terms §16 notice), listed below.
+  - **Terms to update (founder wording, for the rename-day Terms version; do NOT rewrite legal text from a feature
+    PR).** Each says only "seasons" and open passes, has no single sessions, no 24-hour rule and no "block":
+    - `termsContent.jsx` §4 "Passes and subscriptions": "What a pass is" (open pass or season; add blocks with a start
+      date and last sign-up day, and single sessions as one payment), "Renewal" (a session never renews; a dated block
+      joined late is fewer payments), "Cancelling" (a session: full refund up to 24 hours before its time, in the app;
+      inside that, or with no time set, the coach's own cancellation policy shown on their page).
+    - `termsContent.jsx` §5 "Refunds": the coach-discretion and 90-day lines need the platform's 24-hour session rule
+      beside them, and the minimum charge ($25 per payment) belongs with "Payments".
+    - `Support.jsx` lines 41–42 ("What kinds of pass can I sell?", "What happens when a season's payments are done?"),
+      56 and 81 ("How do athletes cancel?" / "How do I cancel?": a session's 24-hour rule), 82 ("What happens when my
+      season ends?") and 83 ("Can I get a refund?": a session cancelled 24+ hours ahead is refunded in full) say
+      "season" and never "block" or "session".
+    - Then bump `TERMS_UPDATED` (`legalMeta.js`) under §16's notice rule.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.

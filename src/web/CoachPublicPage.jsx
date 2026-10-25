@@ -22,11 +22,14 @@
 // season is billing's answer (passBilling), never a truthy duration_weeks.
 //
 // Blocks and single sessions (2026-10-25, fitlink-app migration 20261025120000; words in blocks.js): a block card
-// says "Starts Dec 1 · 8 weeks" and "$320 / month · 2 payments ($640 in all)" (a dated block's payments counted from
-// today, as the server counts them: joining late pays fewer), a session card "Session · Thu, Dec 3, 6:00 PM · 60 min ·
+// says "Starts Dec 1 · 8 weeks" and "$320 / month · 2 payments" (a dated block's payments counted from today, as the
+// server counts them: joining late pays fewer; no "($640 in all)" here, because a Model B coach's athletes also pay a
+// booking fee on each payment and this page cannot read whether the coach uses it: the checkout says the total once
+// create-subscription answered, and the coach page PR shows `coach_page`'s total_cents), a session card "Session · Thu, Dec 3, 6:00 PM · 60 min ·
 // $40" (or "Time arranged with <first>"). A dated block outside its sign-up window is shown with its day ("On sale from
 // Sep 2", "Sign-ups closed Nov 30") and no Buy button; a session that has started is not listed (create-subscription
-// refuses all three). Under the sessions: the platform rule (cancel up to 24 hours before for a full refund) and the
+// refuses all three). A pass priced under the minimum charge (made before guard_plan_minimum; live has $1, $5 and $20
+// ones) is listed with "No longer on sale. Ask <first>." and no Buy button (409 below_minimum). Under the sessions: the platform rule (cancel up to 24 hours before for a full refund) and the
 // coach's own policy, as text, from trainers_public.cancellation_policy.
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -37,8 +40,8 @@ import {
 import { appleSignUpUnfinished, RESUME_PASS_GONE, RESUME_SIGNED_OUT } from './appleAuth';
 import { passBilling, passPriceParts } from './season';
 import {
-  buyLabel, coachPolicyIntro, freeCancelLine, listedOnPage, passKind, paymentsFor, priceLine, saleLine, saleState,
-  scheduleLine, sessionCardLine,
+  belowMinimum, buyLabel, coachPolicyIntro, freeCancelLine, listedOnPage, passKind, paymentsFor, priceLine, saleCheck, saleLine,
+  saleState, scheduleLine, sessionCardLine,
 } from './blocks';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
@@ -208,7 +211,7 @@ export default function CoachPublicPage() {
     .filter(Boolean).slice(0, 2).join(' · ');
   // A session that already started is not listed; a block outside its sign-up window is listed, not buyable.
   const listed = plans.filter((p) => listedOnPage(p, now));
-  const buyable = (p) => planIsPriced(p) && saleState(p, now).open;
+  const buyable = (p) => saleCheck(p, now).ok;
   const forSale = listed.filter(buyable);
   const mostChosen = listed.length > 1 ? forSale.find((p) => !isSeason(p) && passKind(p) !== 'session') ?? forSale[0] ?? null : null;
   const sessions = listed.filter((p) => passKind(p) === 'session');
@@ -266,7 +269,7 @@ export default function CoachPublicPage() {
 
       <section id="passes" aria-labelledby="passes-h" className="fl-section">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <h2 id="passes-h" className="fl-h2">{forSale.length > 0 ? 'Pick a pass. Start this week.' : listed.length > 0 ? 'No pass for sale yet.' : 'No pass yet.'}</h2>
+          <h2 id="passes-h" className="fl-h2">{forSale.length > 0 ? 'Pick a pass.' : listed.length > 0 ? 'No pass for sale yet.' : 'No pass yet.'}</h2>
           <p className="fl-sub">
             {forSale.length > 0
               ? `Pay here — no app needed to buy. Your first week comes from ${first} once you’re in, and the app is waiting when you want it.`
@@ -304,6 +307,8 @@ export default function CoachPublicPage() {
                   )}
                   {!priced ? (
                     <p className="fl-unpriced">No price set yet, so this pass can’t be bought. Ask {first} about it.</p>
+                  ) : belowMinimum(plan) ? (
+                    <p className="fl-unpriced">No longer on sale. Ask {first}.</p>
                   ) : !sale.open ? (
                     <p className="fl-unpriced">{sale.code === 'block_not_open'
                       ? `Not on sale yet. Come back then, or ask ${first} about it.`
@@ -349,7 +354,7 @@ export default function CoachPublicPage() {
       <section aria-label="Get started" className="fl-cta-wrap">
         <div className="fl-cta">
           <div className="fl-cta-row">
-            <h2>Start Monday.</h2>
+            <h2>Ready when you are.</h2>
             {forSale.length > 0 && <a className="fl-btn accent xl" href="#passes">Choose a pass</a>}
           </div>
           <div className="fl-cta-foot">

@@ -38,7 +38,8 @@ import { supabase } from './supabase';
 import { coachPriceLine, lengthChangeLine, passBilling, payingFor, seasonWeeks, usdFromCents } from './season';
 import {
   BLOCK_DEFAULT_WEEKS, POLICY_MAX, SESSION_MINUTES_DEFAULT, SESSION_MINUTES_MAX, SESSION_MINUTES_MIN, SESSION_FREE_CANCEL_HOURS,
-  editorKindLine, isoToLocalInput, localInputToIso, newPassRow, passKind, planWriteError,
+  editorKindLine, isoToLocalInput, lengthBreaksSignUpWindow, lengthWriteError, localInputToIso, newPassRow, passKind,
+  planWriteError, timeZoneNote,
 } from './blocks';
 import { createPass, myCancellationPolicy, saveCancellationPolicy, updatePass } from './api';
 import { MINIMUM_CHARGE_USD, usd } from './site/pricing';
@@ -217,15 +218,22 @@ export default function SeasonEditor({ session }) {
       // The length sets how many payments a buyer makes from now on, so a write
       // that did not land is said, never assumed.
       let lengthKept = null;
+      let lengthWhy = null;
       if (plan.duration_weeks && plan.duration_weeks !== weeks.length) {
         const { error: lenErr } = await supabase.from('plans').update({ duration_weeks: weeks.length }).eq('id', plan.id);
-        if (lenErr) lengthKept = plan.duration_weeks;
+        if (lenErr) {
+          lengthKept = plan.duration_weeks;
+          // plans_enrollment_closes_window: the last sign-up day would fall after the new end (said specifically).
+          lengthWhy = String(lenErr.message ?? '').includes('plans_enrollment_closes_window') ? lengthWriteError(lenErr) : null;
+        }
       }
       setBaseline(newTrack);
       setReview(false);
       const n = typeof moved === 'number' ? moved : snapshots.length;
       const done = n > 0 ? `Published · ${n} athlete${n === 1 ? '' : 's'} updated` : 'Published';
-      say(lengthKept !== null ? `${done}. The season length didn’t save: it is still ${lengthKept} weeks, and buyers pay for that.` : done);
+      say(lengthKept !== null
+        ? `${done}. The season length didn’t save: ${lengthWhy ? `${lengthWhy} ` : ''}It is still ${lengthKept} weeks, and buyers pay for that.`
+        : done);
       seededFor.current = null;
       await load();
     } catch (e) {
@@ -286,6 +294,8 @@ export default function SeasonEditor({ session }) {
 
   const cur = weeks[week] ?? { days: emptyDays(), label: '', isRest: false };
   const lengthLine = lengthChangeLine(plan, weeks.length, payingFor(data.subscriptions, plan.id));
+  // A shorter dated block whose last sign-up day would fall after its new end: the server refuses the length.
+  const lengthBlocked = plan.duration_weeks && plan.duration_weeks !== weeks.length ? lengthBreaksSignUpWindow(plan, weeks.length) : null;
   const holdersHere = plan.duration_weeks ? data.enrollments.filter((e) => e.plan_id === plan.id && e.status === 'active').length : holders.length;
 
   return (
@@ -488,7 +498,8 @@ export default function SeasonEditor({ session }) {
               return <li key={i}><span>{c.kind === 'added' ? 'Added' : 'Removed'} {labelOf(c.node)} · week {c.week}</span><small>{note}</small></li>;
             })}
           </ul>
-          {lengthLine && <p className="fl-copy">{lengthLine}</p>}
+          {lengthLine && !lengthBlocked && <p className="fl-copy">{lengthLine}</p>}
+          {lengthBlocked && <div className="fl-error" role="alert">{lengthBlocked} Publishing now keeps the block at {plan.duration_weeks} weeks.</div>}
           <p className="fl-note">The pass and every athlete's copy update together. A week an athlete has started keeps what it had.</p>
           <button type="button" className="fl-btn accent lg" disabled={publishing} onClick={publish}>{publishing ? 'Publishing…' : 'Publish changes'}</button>
         </Sheet>
@@ -656,7 +667,7 @@ function NewPassSheet({ uid, onClose, onMade }) {
           </>
         ) : (
           <div className="fl-form-row">
-            <div className="fl-field"><label htmlFor="np-at">Date and time (optional)</label><input id="np-at" type="datetime-local" value={form.sessionAt} onChange={set('sessionAt')} /></div>
+            <div className="fl-field"><label htmlFor="np-at">Date and time (optional)</label><input id="np-at" type="datetime-local" value={form.sessionAt} onChange={set('sessionAt')} aria-describedby="np-at-zone" /><span id="np-at-zone" className="fl-note">{timeZoneNote()}</span></div>
             <div className="fl-field"><label htmlFor="np-min">Minutes</label><input id="np-min" type="number" min={SESSION_MINUTES_MIN} max={SESSION_MINUTES_MAX} step={1} value={form.minutes} onChange={set('minutes')} required /></div>
           </div>
         )}
@@ -710,7 +721,7 @@ function DetailsSheet({ plan, onClose, onSaved }) {
       <form onSubmit={save} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {session ? (
           <div className="fl-form-row">
-            <div className="fl-field"><label htmlFor="pd-at">Date and time</label><input id="pd-at" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} /></div>
+            <div className="fl-field"><label htmlFor="pd-at">Date and time</label><input id="pd-at" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} aria-describedby="pd-at-zone" /><span id="pd-at-zone" className="fl-note">{timeZoneNote()}</span></div>
             <div className="fl-field"><label htmlFor="pd-min">Minutes</label><input id="pd-min" type="number" min={SESSION_MINUTES_MIN} max={SESSION_MINUTES_MAX} step={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} /></div>
           </div>
         ) : (
@@ -722,7 +733,7 @@ function DetailsSheet({ plan, onClose, onSaved }) {
             <p className="fl-note">Empty start date: each athlete starts the day they join. Empty last sign-up day: sign-ups close the day before the start. Once athletes hold the block, its start date stays.</p>
           </>
         )}
-        {session && <p className="fl-note">Once an athlete has booked, the time can only move later. Moving it later lets them cancel for a full refund until it starts.</p>}
+        {session && <p className="fl-note">Once booked, the time can’t be cleared or moved into the past. Any change lets the athlete cancel for a full refund until it starts.</p>}
         {error && <div className="fl-error" role="alert">{error}</div>}
         <button type="submit" className="fl-btn accent lg" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
       </form>

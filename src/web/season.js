@@ -209,16 +209,24 @@ export function checkoutChargeLine(plan, total = null) {
   return `${today}${inside} today, then ${b.adverb}: ${b.payments} payments in all. Billing stops after the season.`;
 }
 
+/** A season with a start day (plans.starts_on): an athlete who joins after it started pays fewer payments. */
+const isDated = (plan, b) => b.kind === 'season' && planDayMs(plan?.starts_on) !== null;
+
 /**
  * The coach's own line for a pass (the season editor). Season: "$180 / month ·
- * Athletes pay 2 monthly payments ($360)"; open: "$20 / month · renews until
- * the athlete cancels"; no price: null.
+ * Athletes pay 2 monthly payments ($360)"; a dated block (a start day): "$180 /
+ * month · Athletes pay up to 2 monthly payments (up to $360); later joiners
+ * pay fewer" (datedBlockPayments counts from the purchase); open: "$20 / month
+ * · renews until the athlete cancels"; no price: null.
  */
 export function coachPriceLine(plan) {
   const b = passBilling(plan);
   if (!b.priced) return null;
   const per = `${usdFromCents(b.priceCents)} / ${b.period}`;
   if (b.kind !== 'season') return `${per} · renews until the athlete cancels`;
+  if (isDated(plan, b) && b.payments > 1) {
+    return `${per} · Athletes pay up to ${paymentsWord(b.payments, b.adverb)} (up to ${usdFromCents(b.totalCents)}); later joiners pay fewer`;
+  }
   return `${per} · Athletes pay ${paymentsWord(b.payments, b.adverb)} (${usdFromCents(b.totalCents)})`;
 }
 
@@ -242,7 +250,11 @@ export function lengthChangeLine(plan, newWeeks, paying = 0) {
   if (!b.priced || !plan?.duration_weeks || !Number.isInteger(n) || n < 1 || n === Number(plan.duration_weeks)) return null;
   const w = seasonWeeks(n);
   const p = w === null ? null : seasonPayments(w, b.period);
-  const pays = (count) => `${paymentsWord(count, b.adverb)} (${usdFromCents(b.priceCents * count)})`;
+  // A dated block: the count is the most a buyer pays; one who joins after the start pays fewer.
+  const upTo = planDayMs(plan?.starts_on) !== null;
+  const pays = (count) => (upTo && count > 1
+    ? `up to ${paymentsWord(count, b.adverb)} (up to ${usdFromCents(b.priceCents * count)})`
+    : `${paymentsWord(count, b.adverb)} (${usdFromCents(b.priceCents * count)})`);
   let buyers;
   if (b.kind === 'season' && p !== null) {
     if (p === b.payments) return `The season becomes ${w} weeks. Athletes who buy it still pay ${pays(p)}.`;

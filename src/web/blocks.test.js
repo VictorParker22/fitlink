@@ -7,6 +7,7 @@ import {
   buyLabel, chargeLine, coachPolicyIntro, dayWords, editorKindLine, freeCancelLine, isDatedBlock, lastSignUpDay, listedOnPage,
   localInputToIso, isoToLocalInput, newPassRow, notOnSaleSentence, passKind, paymentsFor, planWriteError, priceLine, saleLine,
   saleState, scheduleLine, sessionCancelNote, sessionCardLine, sessionWhen, blockLastDay, BLOCK_DEFAULT_WEEKS,
+  belowMinimum, saleCheck, timeZoneNote, lengthBreaksSignUpWindow, lengthWriteError, LENGTH_BREAKS_WINDOW,
 } from './blocks.js';
 
 const L = { locale: 'en-US', timeZone: 'America/New_York' };
@@ -50,8 +51,11 @@ test('dates: a block day is the same calendar day everywhere; a year only when ~
   assert.equal(dayWords('2027-01-05', NOW, 'en-US'), 'Jan 5');
   assert.equal(dayWords('2027-06-01', NOW, 'en-US'), 'Jun 1, 2027');
   assert.equal(dayWords('2026-12-01', NOW, 'en-GB'), '1 Dec');
-  assert.equal(sessionWhen('2026-12-03T23:00:00Z', NOW, L), 'Thu, Dec 3, 6:00 PM');
-  assert.equal(sessionWhen('2027-08-03T22:00:00Z', NOW, L), 'Tue, Aug 3, 2027, 6:00 PM');
+  // A session's time names its zone: the coach and the athlete may read it in different ones.
+  assert.equal(sessionWhen('2026-12-03T23:00:00Z', NOW, L), 'Thu, Dec 3, 6:00 PM EST');
+  assert.equal(sessionWhen('2027-08-03T22:00:00Z', NOW, L), 'Tue, Aug 3, 2027, 6:00 PM EDT');
+  assert.equal(sessionWhen('2026-12-03T23:00:00Z', NOW, { locale: 'en-US', timeZone: 'America/Los_Angeles' }), 'Thu, Dec 3, 3:00 PM PST');
+  assert.equal(sessionWhen('2026-12-03T23:00:00Z', NOW, { locale: 'en-US', timeZone: 'UTC' }), 'Thu, Dec 3, 11:00 PM UTC');
   assert.equal(sessionWhen(null, NOW, L), null);
 });
 
@@ -61,16 +65,19 @@ test('card lines: "Starts Dec 1 · 8 weeks", the price with its payments, a sess
   assert.equal(scheduleLine({ ...winter, starts_on: null }, NOW, L), '8 weeks · starts when you join');
   assert.equal(scheduleLine({ kind: 'block', price: 20 }, NOW, L), null);
   // L6: a $640 8-week block sells as $320 / month × 2. (The page shows plans.price, the coach's per-payment price.)
+  // The "in all" total only once create-subscription answered: a Model B booking fee is on top of plans.price.
   const l6 = { ...winter, price: '320.00' };
-  assert.equal(priceLine(l6, { payments: paymentsFor(l6, NOW) }), '$320 / month · 2 payments ($640 in all)');
+  assert.equal(priceLine(l6, { payments: paymentsFor(l6, NOW) }), '$320 / month · 2 payments');
+  assert.equal(priceLine(l6, { payments: 2, serverTotal: true }), '$320 / month · 2 payments ($640 in all)');
+  assert.equal(priceLine(l6, { payments: 2, total: { cents: 33200, bookingCents: 1200 }, serverTotal: true }), '$332 / month · 2 payments ($664 in all)');
   // Joined late: one payment.
   assert.equal(paymentsFor(l6, at(2026, 11, 29)), 1);
   assert.equal(priceLine(l6, { payments: paymentsFor(l6, at(2026, 11, 29)) }), '$320 · one payment · nothing renews');
   assert.equal(priceLine({ kind: 'block', price: 20, period: 'month' }, { payments: paymentsFor({ kind: 'block', price: 20 }, NOW) }), '$20 / month · renews until you cancel');
   assert.equal(priceLine({ kind: 'block', price: 0, duration_weeks: 8 }, { payments: 2 }), null);
   const s = { kind: 'session', name: 'PT', price: '40.00', period: 'month', session_at: '2026-12-03T23:00:00Z', session_minutes: 60 };
-  assert.equal(scheduleLine(s, NOW, { ...L, first: 'Dana' }), 'Session · Thu, Dec 3, 6:00 PM · 60 min');
-  assert.equal(sessionCardLine(s, NOW, { ...L, first: 'Dana' }), 'Session · Thu, Dec 3, 6:00 PM · 60 min · $40');
+  assert.equal(scheduleLine(s, NOW, { ...L, first: 'Dana' }), 'Session · Thu, Dec 3, 6:00 PM EST · 60 min');
+  assert.equal(sessionCardLine(s, NOW, { ...L, first: 'Dana' }), 'Session · Thu, Dec 3, 6:00 PM EST · 60 min · $40');
   assert.equal(sessionCardLine({ ...s, session_at: null }, NOW, { ...L, first: 'Dana' }), 'Session · Time arranged with Dana · 60 min · $40');
   assert.equal(sessionCardLine({ ...s, session_at: null, session_minutes: null }, NOW, { ...L, first: 'Dana' }), 'Session · Time arranged with Dana · $40');
   assert.equal(paymentsFor(s, NOW), 1);
@@ -123,7 +130,7 @@ test('the cancellation words: the platform rule from the config, the coach\'s ow
   assert.equal(freeCancelLine(), 'Cancel up to 24 hours before for a full refund.');
   assert.equal(coachPolicyIntro('Dana', 'No refunds inside 24 hours.'), 'Inside 24 hours, or for a session with no time set, Dana’s own cancellation policy applies:');
   assert.match(coachPolicyIntro('Dana', '  '), /Dana hasn’t written one here yet, so ask them before you book\.$/);
-  assert.match(sessionCancelNote({ kind: 'session', session_at: '2026-12-03T23:00:00Z' }, 'Dana'), /^Cancel up to 24 hours before for a full refund\. Cancel in the FitLink app; inside 24 hours Dana’s own policy applies/);
+  assert.equal(sessionCancelNote({ kind: 'session', session_at: '2026-12-03T23:00:00Z' }, 'Dana'), 'Cancel up to 24 hours before for a full refund. Cancel in the FitLink app; inside 24 hours Dana’s own policy applies (it’s on this page).');
   assert.match(sessionCancelNote({ kind: 'session', session_at: null }, 'Dana'), /^No time is set yet: you arrange it with Dana/);
   assert.equal(sessionCancelNote(winter, 'Dana'), null);
 });
@@ -141,18 +148,47 @@ test('a new pass row: only what the kind allows, the $25 minimum, the default le
   assert.equal(newPassRow({ kind: 'block', name: 'W', price: 30, weeks: 8, startsOn: '2026-12-01', enrollmentCloses: '2027-01-26' }, U).error, 'The last sign-up day must fall on or before the block’s last day.');
   assert.equal(newPassRow({ kind: 'block', name: 'W', price: 30, weeks: 8, startsOn: '2026-12-01', enrollmentCloses: '2027-01-25' }, U).row.enrollment_closes, '2027-01-25');
   assert.equal(newPassRow({ kind: 'block', name: 'W', price: 30, weeks: 8, startsOn: '2026-02-30' }, U).error, 'Pick a real start date.');
-  const sess = newPassRow({ kind: 'session', name: 'PT', price: '40', sessionAt: '2026-12-03T18:00', minutes: 60, weeks: 8, startsOn: '2026-12-01' }, U).row;
+  const sess = newPassRow({ kind: 'session', name: 'PT', price: '40', sessionAt: '2026-12-03T18:00', minutes: 60, weeks: 8, startsOn: '2026-12-01', timeZone: 'America/New_York' }, U).row;
   assert.deepEqual(Object.keys(sess).sort(), ['kind', 'name', 'period', 'price', 'session_at', 'session_minutes', 'trainer_id']);
-  assert.equal(sess.session_at, new Date('2026-12-03T18:00').toISOString());
+  assert.equal(sess.session_at, '2026-12-03T23:00:00.000Z');
+  assert.equal(newPassRow({ kind: 'session', name: 'PT', price: '40', sessionAt: '2026-12-03T18:00', minutes: 60, timeZone: 'Asia/Tokyo' }, U).row.session_at, '2026-12-03T09:00:00.000Z');
   assert.equal(newPassRow({ kind: 'session', name: 'PT', price: 40, sessionAt: '', minutes: 45 }, U).row.session_at, null);
   assert.equal(newPassRow({ kind: 'session', name: 'PT', price: 40, sessionAt: '', minutes: 4 }, U).error, 'A session lasts 5 to 720 minutes.');
   assert.equal(newPassRow({ kind: 'session', name: 'PT', price: 40, sessionAt: 'soon', minutes: 60 }, U).error, 'Pick a date and time for the session, or leave it empty to arrange it with each athlete.');
 });
 
-test('datetime-local round trip in the viewer\'s zone', () => {
-  assert.equal(isoToLocalInput(localInputToIso('2026-12-03T18:00')), '2026-12-03T18:00');
-  assert.equal(localInputToIso('2026-12-03 18:00'), null);
-  assert.equal(isoToLocalInput(null), '');
+test('datetime-local values are read and written in a named zone, whatever the machine\'s own', () => {
+  const NY = 'America/New_York';
+  assert.equal(localInputToIso('2026-12-03T18:00', NY), '2026-12-03T23:00:00.000Z');
+  assert.equal(localInputToIso('2026-07-03T18:00', NY), '2026-07-03T22:00:00.000Z');
+  assert.equal(localInputToIso('2026-12-03T18:00', 'America/Los_Angeles'), '2026-12-04T02:00:00.000Z');
+  assert.equal(localInputToIso('2026-12-03T18:00', 'Pacific/Kiritimati'), '2026-12-03T04:00:00.000Z');
+  assert.equal(localInputToIso('2026-12-03T18:00', 'UTC'), '2026-12-03T18:00:00.000Z');
+  // 2:30 on a spring-forward night does not exist: an hour later on the wall (3:30 EDT), as browsers do.
+  assert.equal(localInputToIso('2027-03-14T02:30', NY), '2027-03-14T07:30:00.000Z');
+  // 1:30 on the fall-back night happens twice: the first (EDT).
+  assert.equal(localInputToIso('2026-11-01T01:30', NY), '2026-11-01T05:30:00.000Z');
+  assert.equal(isoToLocalInput('2026-12-03T23:00:00Z', NY), '2026-12-03T18:00');
+  assert.equal(isoToLocalInput('2026-12-03T23:00:00Z', 'Asia/Tokyo'), '2026-12-04T08:00');
+  assert.equal(isoToLocalInput('2026-12-03T23:00:00Z', 'Pacific/Kiritimati'), '2026-12-04T13:00');
+  assert.equal(localInputToIso('2026-12-03 18:00', NY), null);
+  assert.equal(localInputToIso('2026-02-30T18:00', NY), null);
+  assert.equal(isoToLocalInput(null, NY), '');
+  assert.equal(timeZoneNote(NY, Date.UTC(2026, 11, 3), 'en-US'), 'Times are in America/New_York (EST).');
+  assert.equal(timeZoneNote(NY, Date.UTC(2026, 6, 3), 'en-US'), 'Times are in America/New_York (EDT).');
+  assert.equal(timeZoneNote('UTC', NOW, 'en-US'), 'Times are in UTC.');
+  assert.equal(timeZoneNote(null), 'Times are in this device’s time zone.');
+});
+
+test('a pass under the minimum charge is not for sale (live has $1, $5 and $20 passes)', () => {
+  for (const price of ['1.00', 5, '20.00', '24.99']) assert.equal(belowMinimum({ price }), true, String(price));
+  for (const price of ['25.00', 320, null, 0]) assert.equal(belowMinimum({ price }), false, String(price));
+  const twenty = { kind: 'block', name: 'Monthly', price: '20.00' };
+  assert.deepEqual(saleCheck(twenty, NOW, { first: 'Dana' }), { ok: false, code: 'below_minimum', sentence: 'Monthly is no longer on sale. Ask Dana.' });
+  assert.deepEqual(saleCheck({ ...twenty, price: 0 }, NOW, { first: 'Dana' }), { ok: false, code: 'plan_unpriced', sentence: 'This pass has no price set, so it can’t be bought yet. Ask Dana to set one.' });
+  assert.deepEqual(saleCheck({ ...winter, price: '320.00' }, at(2026, 11, 5), { first: 'Dana', locale: 'en-US' }), { ok: false, code: 'block_closed', sentence: 'Sign-ups for Winter closed on Nov 30.' });
+  assert.deepEqual(saleCheck({ ...winter, price: '320.00' }, NOW, { first: 'Dana' }), { ok: true });
+  assert.deepEqual(saleCheck({ ...twenty, price: '25.00' }, NOW), { ok: true });
 });
 
 test('the server\'s refusals in words: the HINT sentence first', () => {
@@ -165,6 +201,18 @@ test('the server\'s refusals in words: the HINT sentence first', () => {
   assert.equal(planWriteError({ code: '23514', message: 'new row for relation "plans" violates check constraint "plans_enrollment_closes_window"' }), 'The last sign-up day must fall on or before the block’s last day, and needs a start date.');
   assert.equal(planWriteError({ code: '23514', message: 'new row for relation "trainers" violates check constraint "trainers_cancellation_policy_len"' }), 'Keep the policy to 600 characters.');
   assert.equal(planWriteError(null), null);
+});
+
+test('a shorter dated block whose last sign-up day would fall after its new end', () => {
+  const w = { ...winter, enrollment_closes: '2027-01-15' };   // 8 weeks from Dec 1: last day Jan 25
+  assert.equal(lengthBreaksSignUpWindow(w, 6), 'The last sign-up day is after the new end. Move it first (Edit dates).');   // 6 weeks: last day Jan 11
+  assert.equal(lengthBreaksSignUpWindow(w, 5), LENGTH_BREAKS_WINDOW);
+  assert.equal(lengthBreaksSignUpWindow(w, 7), null);   // last day Jan 18
+  assert.equal(lengthBreaksSignUpWindow(winter, 2), null);   // no last sign-up day: it is the day before the start
+  assert.equal(lengthBreaksSignUpWindow({ ...w, starts_on: null }, 2), null);
+  const refused = { code: '23514', message: 'new row for relation "plans" violates check constraint "plans_enrollment_closes_window"' };
+  assert.equal(lengthWriteError(refused), 'The last sign-up day is after the new end. Move it first (Edit dates).');
+  assert.equal(lengthWriteError({ code: '42501', message: 'permission denied' }), 'Not allowed: this isn’t yours to change.');
 });
 
 test('the editor\'s kind line', () => {

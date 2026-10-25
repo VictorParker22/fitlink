@@ -23,9 +23,10 @@
 import {
   BLOCK_DEFAULT_WEEKS, BLOCK_SALE_OPENS_DAYS_BEFORE, MINIMUM_CHARGE_USD, SESSION_FREE_CANCEL_HOURS,
 } from './site/pricing.js';
+import { BRAND_NAME } from './site/brand.js';
 import {
   MAX_SEASON_WEEKS, billingPeriod, checkoutChargeLine, datedBlockPayments, passBilling, planDayMs,
-  seasonPayments, seasonWeeks, usdFromCents,
+  priceCents, seasonPayments, seasonWeeks, usdFromCents,
 } from './season.js';
 
 export { BLOCK_DEFAULT_WEEKS, SESSION_FREE_CANCEL_HOURS };
@@ -93,6 +94,35 @@ export function saleState(plan, nowMs) {
   return { open: true };
 }
 
+const MIN_CENTS = Math.round(MINIMUM_CHARGE_USD * 100);
+
+/**
+ * A pass priced above zero but under the minimum charge (the server's guard_plan_minimum keeps new ones out, but passes
+ * made before it exist: live has $1, $5 and $20 ones). create-subscription refuses a new purchase of it (409
+ * below_minimum), so no page offers to buy it.
+ */
+export function belowMinimum(plan) {
+  const c = priceCents(plan?.price);
+  return c !== null && c < MIN_CENTS;
+}
+
+/**
+ * Whether a page may offer this pass for sale now, by what the page can read: priced, at least the minimum, inside its
+ * sale window. `{ ok: true }` or `{ ok: false, code, sentence }` with create-subscription's code (plan_unpriced,
+ * below_minimum, session_over, block_closed, block_not_open) and a sentence for a person (no trailing "Nothing was
+ * changed."). The server judges again (athlete-exit with the planId, then create-subscription).
+ */
+export function saleCheck(plan, nowMs, { first = 'your coach', locale = undefined } = {}) {
+  const name = typeof plan?.name === 'string' && plan.name.trim() ? plan.name.trim() : 'This pass';
+  if (priceCents(plan?.price) === null) {
+    return { ok: false, code: 'plan_unpriced', sentence: `This pass has no price set, so it can’t be bought yet. Ask ${first} to set one.` };
+  }
+  if (belowMinimum(plan)) return { ok: false, code: 'below_minimum', sentence: `${name} is no longer on sale. Ask ${first}.` };
+  const notOnSale = notOnSaleSentence(plan, nowMs, locale);
+  if (notOnSale) return { ok: false, code: saleState(plan, nowMs).code, sentence: notOnSale };
+  return { ok: true };
+}
+
 const farFromNow = (ms, nowMs) => Math.abs(ms - nowMs) > YEAR_SHOWN_AFTER_DAYS * DAY_MS;
 
 /** "Dec 1" (", 2027" when more than ~6 months away) for a YYYY-MM-DD plan day, in the viewer's locale. */
@@ -104,12 +134,15 @@ export function dayWords(day, nowMs, locale = undefined) {
   });
 }
 
-/** "Tue, Dec 3, 6:00 PM" for a session's time, in the viewer's locale and zone (a year when ~6 months away). */
+/**
+ * "Tue, Dec 3, 6:00 PM EST" for a session's time, in the viewer's locale and zone, the zone named (a coach and an
+ * athlete in different zones read the same instant; review 2026-10-25), and a year when ~6 months away.
+ */
 export function sessionWhen(iso, nowMs, { locale = undefined, timeZone = undefined } = {}) {
   const ms = isoMs(iso);
   if (ms === null) return null;
   return new Date(ms).toLocaleString(locale, {
-    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
     ...(farFromNow(ms, nowMs) ? { year: 'numeric' } : {}),
     ...(timeZone ? { timeZone } : {}),
   });
@@ -151,18 +184,25 @@ export function scheduleLine(plan, nowMs, { first = 'your coach', locale, timeZo
 }
 
 /**
- * The price, said the way the pass bills: "$320 / month · 2 payments ($640 in all)"; one payment "$320 · one payment ·
- * nothing renews"; an open pass "$20 / month · renews until you cancel"; null without a price. `payments`: paymentsFor;
- * `total`: chargedTotal(create-subscription's answer) for a Model B coach (the booking fee inside the amount).
+ * The price, said the way the pass bills: "$320 / month · 2 payments"; once create-subscription answered
+ * (`serverTotal: true`) "$320 / month · 2 payments ($640 in all)"; one payment "$320 · one payment · nothing renews";
+ * an open pass "$20 / month · renews until you cancel"; null without a price. `payments`: paymentsFor; `total`:
+ * chargedTotal(create-subscription's answer) for a Model B coach (the booking fee inside the amount).
+ *
+ * The "in all" total waits for the server (review 2026-10-25): a Model B coach's athletes pay plans.price plus the
+ * booking fee on every payment, and nothing the invite page can read says whether this coach uses Model B, so a total
+ * made from plans.price could be short. The per-payment price stays (the coach page PR shows the server's
+ * `total_cents` from `coach_page`).
  */
-export function priceLine(plan, { payments, total = null } = {}) {
+export function priceLine(plan, { payments, total = null, serverTotal = false } = {}) {
   const b = passBilling(plan, total);
   if (!b.priced) return null;
   const amount = usdFromCents(b.priceCents);
   const period = passKind(plan) === 'session' ? 'month' : b.period;
   if (passKind(plan) === 'session' || payments === 1) return `${amount} · one payment · nothing renews`;
   if (!Number.isInteger(payments)) return `${amount} / ${period} · renews until you cancel`;
-  return `${amount} / ${period} · ${payments} payments (${usdFromCents(b.priceCents * payments)} in all)`;
+  const allIn = serverTotal ? ` (${usdFromCents(b.priceCents * payments)} in all)` : '';
+  return `${amount} / ${period} · ${payments} payments${allIn}`;
 }
 
 /**
@@ -242,7 +282,7 @@ export function sessionCancelNote(plan, first) {
   if (passKind(plan) !== 'session') return null;
   return isoMs(plan?.session_at) === null
     ? `No time is set yet: you arrange it with ${first}, and ${first}’s own cancellation policy applies (it’s on this page).`
-    : `${freeCancelLine()} Cancel in the FitLink app; inside ${SESSION_FREE_CANCEL_HOURS} hours ${first}’s own policy applies (it’s on this page).`;
+    : `${freeCancelLine()} Cancel in the ${BRAND_NAME} app; inside ${SESSION_FREE_CANCEL_HOURS} hours ${first}’s own policy applies (it’s on this page).`;
 }
 
 /** The longest cancellation policy the server keeps (trainers_cancellation_policy_len). */
@@ -250,26 +290,91 @@ export const POLICY_MAX = 600;
 
 // ── The coach makes a pass (the season editor) ───────────────────────────────
 
-const MIN_CENTS = Math.round(MINIMUM_CHARGE_USD * 100);
 /** The session lengths the server accepts (plans_session_minutes_range). */
 export const SESSION_MINUTES_MIN = 5;
 export const SESSION_MINUTES_MAX = 720;
 export const SESSION_MINUTES_DEFAULT = 60;
 
-/** A datetime-local value ("2026-12-03T18:00", the coach's own zone) → an ISO instant, or null. */
-export function localInputToIso(v) {
-  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return null;
-  const t = new Date(v).getTime();
-  return Number.isFinite(t) ? new Date(t).toISOString() : null;
+/** The viewer's own IANA zone ("America/New_York"), or null when the browser does not say. */
+export function viewerTimeZone() {
+  try {
+    const z = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return typeof z === 'string' && z ? z : null;
+  } catch {
+    return null;
+  }
 }
 
-/** An ISO instant → a datetime-local value in the viewer's zone, or ''. */
-export function isoToLocalInput(iso) {
+/** The note under a datetime-local input: "Times are in America/New_York (EST)." (the zone the input is read in). */
+export function timeZoneNote(timeZone = viewerTimeZone(), nowMs = Date.now(), locale = undefined) {
+  if (!timeZone) return 'Times are in this device’s time zone.';
+  let short;
+  try {
+    short = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'short' }).formatToParts(new Date(nowMs))
+      .find((p) => p.type === 'timeZoneName')?.value ?? null;
+  } catch {
+    short = null;
+  }
+  return `Times are in ${timeZone}${short && short !== timeZone ? ` (${short})` : ''}.`;
+}
+
+/** The wall clock of an instant in a zone, as [year, month, day, hour, minute, second] (month 1..12). */
+function wallParts(ms, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(new Date(ms));
+  const get = (t) => Number(parts.find((p) => p.type === t)?.value);
+  return [get('year'), get('month'), get('day'), get('hour') % 24, get('minute'), get('second')];
+}
+
+/** How far a zone's wall clock is ahead of UTC at an instant, in ms. */
+function zoneOffsetMs(ms, timeZone) {
+  const [y, mo, d, h, mi, se] = wallParts(ms, timeZone);
+  return Date.UTC(y, mo - 1, d, h, mi, se) - Math.floor(ms / 1000) * 1000;
+}
+
+/**
+ * A datetime-local value ("2026-12-03T18:00") read in `timeZone` (the viewer's own by default, the zone the editor's
+ * note names) → an ISO instant, or null. A wall time skipped by a clock change (2:30 on a spring-forward night)
+ * resolves an hour later on the wall, as browsers resolve it.
+ */
+export function localInputToIso(v, timeZone = viewerTimeZone()) {
+  const m = typeof v === 'string' ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(v) : null;
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null;
+  const wall = Date.UTC(y, mo - 1, d, h, mi);
+  if (!Number.isFinite(wall) || new Date(wall).getUTCDate() !== d) return null;
+  if (!timeZone) {
+    const t = new Date(y, mo - 1, d, h, mi).getTime();
+    return Number.isFinite(t) ? new Date(t).toISOString() : null;
+  }
+  try {
+    const first = wall - zoneOffsetMs(wall, timeZone);
+    const second = wall - zoneOffsetMs(first, timeZone);
+    const shows = (t) => { const [yy, mm, dd, hh, mn] = wallParts(t, timeZone); return Date.UTC(yy, mm - 1, dd, hh, mn) === wall; };
+    // The instant whose wall clock reads the input; inside a gap (none does), the later one, as browsers resolve it.
+    const t = shows(second) ? second : shows(first) ? first : Math.max(first, second);
+    return new Date(t).toISOString();
+  } catch {
+    return null;
+  }
+}
+
+/** An ISO instant → a datetime-local value in `timeZone` (the viewer's own by default), or ''. */
+export function isoToLocalInput(iso, timeZone = viewerTimeZone()) {
   const ms = isoMs(iso);
   if (ms === null) return '';
-  const d = new Date(ms);
   const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  let y; let mo; let d; let h; let mi;
+  try {
+    if (!timeZone) throw new Error('no zone');
+    [y, mo, d, h, mi] = wallParts(ms, timeZone);
+  } catch {
+    const x = new Date(ms);
+    [y, mo, d, h, mi] = [x.getFullYear(), x.getMonth() + 1, x.getDate(), x.getHours(), x.getMinutes()];
+  }
+  return `${y}-${p(mo)}-${p(d)}T${p(h)}:${p(mi)}`;
 }
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -290,7 +395,7 @@ export function newPassRow(form, trainerId) {
   const base = { trainer_id: trainerId, name, price: cents / 100, period: 'month', kind };
   if (kind === 'session') {
     const raw = String(form?.sessionAt ?? '').trim();
-    const at = raw ? localInputToIso(raw) : null;
+    const at = raw ? localInputToIso(raw, form?.timeZone === undefined ? viewerTimeZone() : form.timeZone) : null;
     if (raw && !at) return { error: 'Pick a date and time for the session, or leave it empty to arrange it with each athlete.' };
     const minutes = Number(form?.minutes);
     if (!Number.isInteger(minutes) || minutes < SESSION_MINUTES_MIN || minutes > SESSION_MINUTES_MAX) {
@@ -339,6 +444,27 @@ export function planWriteError(error) {
   if (msg.includes('trainers_cancellation_policy_len')) return `Keep the policy to ${POLICY_MAX} characters.`;
   if (code === '42501' || /permission|row-level security/i.test(msg)) return 'Not allowed: this isn’t yours to change.';
   return 'Couldn’t save that. Check your connection and try again.';
+}
+
+/**
+ * A new week count for a dated block whose last sign-up day would fall after the block's new last day: the server's
+ * plans_enrollment_closes_window refuses that length (review 2026-10-25). The sentence, or null when the length fits.
+ */
+export function lengthBreaksSignUpWindow(plan, newWeeks) {
+  const closes = planDayMs(plan?.enrollment_closes);
+  const weeks = seasonWeeks(Number(newWeeks));
+  if (closes === null || weeks === null || planDayMs(plan?.starts_on) === null) return null;
+  const last = blockLastDay({ starts_on: plan.starts_on, duration_weeks: weeks });
+  return plan.enrollment_closes > last ? LENGTH_BREAKS_WINDOW : null;
+}
+
+export const LENGTH_BREAKS_WINDOW = 'The last sign-up day is after the new end. Move it first (Edit dates).';
+
+/** A refused write of plans.duration_weeks (publishing a new week count), in words. */
+export function lengthWriteError(error) {
+  if (!error) return null;
+  if (String(error.message ?? '').includes('plans_enrollment_closes_window')) return LENGTH_BREAKS_WINDOW;
+  return planWriteError(error);
 }
 
 /** The editor's short line for a pass: "Block · starts Dec 1 · 8 weeks", "Session · Tue, Dec 3, 6:00 PM", "Open pass". */
