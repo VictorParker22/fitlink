@@ -161,6 +161,38 @@ export function foundingPhase(slots, todayIso) {
   return 'closed';
 }
 
+/**
+ * The day it is in `tz` (the offer's `closes_tz`), YYYY-MM-DD, or null when the zone is unknown to this browser. The
+ * server closes Founding at midnight after `closes_on` in that zone, so the page compares this day with it.
+ */
+export function todayIn(tz, now = new Date()) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+    const get = (t) => parts.find((p) => p.type === t)?.value;
+    const iso = `${get('year')}-${get('month')}-${get('day')}`;
+    return ISO_DAY.test(iso) ? iso : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What /founding is right now, and what every Founding call to action says (owner decision R4, 2026-10-25): the
+ * Founding application while it is open, else the coach sign-up on standard pricing ('join').
+ * - `phase`: foundingPhase(), except that a close day in the past (the build's config, `configClosesOn`, compared
+ *   with `today` in the offer's zone) is 'closed' whatever the counter says, while it loads, or when its read failed.
+ * - `mode`: 'join' when the phase is full or closed, else 'founding' (open, loading, unknown: the page it opens says
+ *   the truth, and apply_founding refuses a full or closed house on the server).
+ * - `closesOn`: the day the closed sentence names (the counter's, else the config's).
+ * `today` is null before the browser's first render (the prerendered markup never depends on the date).
+ */
+export function foundingView(slots, today, configClosesOn) {
+  const pastClose = typeof today === 'string' && typeof configClosesOn === 'string' && ISO_DAY.test(configClosesOn) && today > configClosesOn;
+  const phase = pastClose ? 'closed' : foundingPhase(slots, today);
+  const mode = phase === 'full' || phase === 'closed' ? 'join' : 'founding';
+  return { phase, mode, closesOn: slots?.closesOn ?? configClosesOn };
+}
+
 /** "9 of 15 taken" from the server's numbers only. */
 export function slotsLine({ taken, total }) {
   return `${taken} of ${total} taken`;

@@ -5,6 +5,8 @@
 // app page would not exist for a visitor) and every "get the app" call to action is the Founding one instead.
 export const APP_STORE_LIVE = (import.meta.env ?? {}).VITE_APP_STORE_LIVE === 'on';
 
-/** The coaches' call to action while the app is not public, and after: the Founding offer. */
+/** The coaches' call to action while Founding is open (or its state is still loading or unknown): the Founding offer. */
 export const FOUNDING_CTA = 'Claim a Founding spot';
+/** The same call to action once Founding is full or closed (owner decision R4): /founding is then the coach sign-up. */
+export const JOIN_CTA = 'Join as a coach';
 export const FOUNDING_PATH = '/founding';

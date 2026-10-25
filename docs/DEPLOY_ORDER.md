@@ -4,6 +4,18 @@ The site (Vercel, `fitlink.coach`) describes and calls server rules. It goes out
 the server pieces it depends on are live, in this order. Each step is the operator's; nothing
 here deploys anything.
 
+## Hard gates (read first; review 2026-10-25, M3)
+
+Do not deploy the site from these branches until each gate below is live. Checked on live 2026-10-25 (read only):
+no `founding_slots`, no `founding_applications`, no `trainers.handle`, no `reserved_handles`.
+
+- **W3, W4, W8 (`launch/w3-founding-ctas`, `launch/w4-founding-card`, `launch/w8-nav`, and every branch stacked on
+  them) need fitlink-app migration `20261025110000` (Founding) live.** Every coach call to action leads to `/founding`
+  and reads `founding_slots()`. Before the migration `/founding` says applications aren't open yet (so every CTA lands
+  there), the home page's Founding card says it couldn't load how many spots are taken, and the live
+  `handle_new_user` ignores the `founding_web` marker, so an email sign-up there would publish the address's local
+  part. Check: `select to_regprocedure('public.founding_slots()') is not null` on live.
+
 ## Fee engine + Founding (launch plan PR 1 and PR 2, 2026-10-25)
 
 Branches: fitlink-app `launch/2-founding` (stacked on `launch/1-fee-engine`); this site
@@ -122,7 +134,10 @@ change the site only; each says below what it waits for.
   "<name> — Monday, handled." in the tab and in `curl -s https://fitlink.coach/ | grep '<title>'`.
 - **W3 Founding CTAs** (`launch/w3-founding-ctas`): every CTA now leads to `/founding`, so this ships only once
   `/founding` works on live: fitlink-app migration `20261025110000` (Founding) applied and `VITE_FOUNDING_CALENDAR_URL`
-  set, as the Founding section above says. `VITE_APP_STORE_LIVE` stays unset until the app is public on the App Store
+  set, as the Founding section above says (a hard gate, top of this file). The CTAs read the same `founding_slots()`
+  and say "Join as a coach" once Founding is full or closed; `/founding` is then the coach sign-up on standard pricing
+  (owner decision R4). After the deploy: `/founding` with the counter open shows the application; after Dec 31
+  (America/Los_Angeles) or at 15/15 every CTA reads "Join as a coach" and the page signs coaches up. `VITE_APP_STORE_LIVE` stays unset until the app is public on the App Store
   (then also add Apple's official badge artwork, see CLAUDE.md); with it unset no page links to the App Store.
 - **W4 Founding card** (`launch/w4-founding-card`): the home page reads `founding_slots()` (anon), so it needs
   fitlink-app migration `20261025110000` on live; before it the card says it couldn't load how many spots are taken
