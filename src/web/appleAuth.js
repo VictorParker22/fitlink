@@ -7,6 +7,7 @@
 // point them to Apple instead); never show text taken from a URL; the Apple
 // button's title is always "Continue with Apple" (one of the three Apple allows).
 import { normalizeCode } from './codes.js';
+import { pageHandle } from './handles.js';
 
 /** Where Sign in with Apple can come back to this browser: Supabase Auth allows these return URLs (a Vercel preview's falls back to production, where this browser's verifier is missing). */
 export const APPLE_ORIGINS = Object.freeze(['https://fitlink.coach', 'http://localhost:5173', 'http://localhost:4173']);
@@ -239,22 +240,35 @@ export function siteCopy(enabled) {
   return enabled ? SITE_COPY.on : SITE_COPY.off;
 }
 
-/** What /join may read back: the code, the plan and a typed name, stamped now. null when the code or plan id is not one. */
-export function parkedCheckoutValue({ code, planId, name }, now = Date.now()) {
-  const c = normalizeCode(code);
-  if (!c || typeof planId !== 'string' || !UUID_RE.test(planId)) return null;
-  return JSON.stringify({ v: 1, code: c, planId, name: cleanName(name), at: now });
+/**
+ * What /join may read back: the invite code (v1, /i/CODE) OR the coach page's handle (v2, /c/<handle>; the code is
+ * not known before sign-in there: page_invite gives it after), the plan and a typed name, stamped now. null when
+ * neither names a page, or the plan id is not one.
+ */
+export function parkedCheckoutValue({ code = null, handle = null, planId, name }, now = Date.now()) {
+  if (typeof planId !== 'string' || !UUID_RE.test(planId)) return null;
+  const c = code == null ? null : normalizeCode(code);
+  if (c) return JSON.stringify({ v: 1, code: c, planId, name: cleanName(name), at: now });
+  const h = code == null ? pageHandle(handle) : null;
+  if (h) return JSON.stringify({ v: 2, handle: h, planId, name: cleanName(name), at: now });
+  return null;
 }
 
-/** The parked checkout, checked again on the way back: { code, planId, name } or null (wrong shape, or older than 30 minutes, or from the future). */
+/**
+ * The parked checkout, checked again on the way back: { code, planId, name } (v1) or { handle, planId, name } (v2),
+ * or null (wrong shape, or older than 30 minutes, or from the future).
+ */
 export function readParkedCheckout(raw, now = Date.now()) {
   if (typeof raw !== 'string') return null;
   let o;
   try { o = JSON.parse(raw); } catch { return null; }
-  if (!o || typeof o !== 'object' || o.v !== 1) return null;
-  if (typeof o.code !== 'string' || normalizeCode(o.code) !== o.code) return null;
+  if (!o || typeof o !== 'object' || (o.v !== 1 && o.v !== 2)) return null;
+  if (o.v === 1 && (typeof o.code !== 'string' || normalizeCode(o.code) !== o.code)) return null;
+  if (o.v === 2 && (typeof o.handle !== 'string' || pageHandle(o.handle) !== o.handle)) return null;
   if (typeof o.planId !== 'string' || !UUID_RE.test(o.planId)) return null;
   if (typeof o.at !== 'number' || !Number.isFinite(o.at)) return null;
   if (o.at > now + 60_000 || now - o.at > CHECKOUT_RETURN_TTL_MS) return null;
-  return { code: o.code, planId: o.planId, name: cleanName(o.name) };
+  return o.v === 1
+    ? { code: o.code, planId: o.planId, name: cleanName(o.name) }
+    : { handle: o.handle, planId: o.planId, name: cleanName(o.name) };
 }

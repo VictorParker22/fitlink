@@ -10,6 +10,7 @@ import {
 import { FOUNDING_RETURN_KEY, foundingReturnValue, parseSlots, readFoundingReturn } from './founding';
 import { APPLE_WEB_ENABLED } from './authConfig';
 import { BRAND_NAME } from './site/brand';
+import { isSessionKey } from './coachPage';
 
 export { normalizeCode } from './codes';
 
@@ -294,12 +295,12 @@ export function takeFoundingReturn() {
 export function clearFoundingReturn() { try { window.sessionStorage.removeItem(FOUNDING_RETURN_KEY); } catch { /* none */ } }
 
 /** Remember, in this tab only, which pass an Apple sign-in started from. false when the browser refuses. */
-export function parkCheckout({ code, planId, name }) {
-  const value = parkedCheckoutValue({ code, planId, name });
+export function parkCheckout({ code = null, handle = null, planId, name }) {
+  const value = parkedCheckoutValue({ code, handle, planId, name });
   if (!value) return false;
   try { window.sessionStorage.setItem(CHECKOUT_RETURN_KEY, value); return true; } catch { return false; }
 }
-/** Read and forget the parked checkout: { code, planId, name } or null. */
+/** Read and forget the parked checkout: { code, handle, planId, name } (one of code / handle) or null. */
 export function takeParkedCheckout() {
   let raw = null;
   try { raw = window.sessionStorage.getItem(CHECKOUT_RETURN_KEY); window.sessionStorage.removeItem(CHECKOUT_RETURN_KEY); } catch { /* none */ }
@@ -417,8 +418,12 @@ export async function planNow(planId) {
  * block_closed / block_not_open (blocks, 2026-10-25: each sentence ends "You
  * haven't been charged."), 502 stripe_error, 500 db_error.
  */
-export async function createSubscription(planId, clientId) {
-  const { data, error } = await supabase.functions.invoke('create-subscription', { body: { planId, clientId } });
+export async function createSubscription(planId, clientId, { fromPage = false, pageSession = null } = {}) {
+  // A purchase started on a coach page (/c/<handle>) says so (fitlink-app 20261025130000: create-subscription stamps
+  // the subscription, and the server records `paid` for the page's funnel after the grant). Analytics only: the
+  // server never lets it change who is paid or what is charged.
+  const page = fromPage ? { source: 'coach_page', ...(isSessionKey(pageSession) ? { pageSession } : {}) } : {};
+  const { data, error } = await supabase.functions.invoke('create-subscription', { body: { planId, clientId, ...page } });
   if (error) throw refusal(await functionError(error));
   return data ?? {};
 }
@@ -440,9 +445,9 @@ export async function confirmSubscription(clientId, subscriptionId = null) {
 }
 
 /** Shown when a call never reached the server, or its answer never came back. */
-export const NETWORK_SENTENCE = 'We couldn’t reach FitLink. Check your connection and try again.';
+export const NETWORK_SENTENCE = `We couldn’t reach ${BRAND_NAME}. Check your connection and try again.`;
 /** Shown when an answer came back with no sentence in it (a gateway's HTML page, a timeout). */
-export const NO_ANSWER_SENTENCE = 'FitLink didn’t send a readable answer. Try again in a moment.';
+export const NO_ANSWER_SENTENCE = `${BRAND_NAME} didn’t send a readable answer. Try again in a moment.`;
 const SIGNED_OUT_SENTENCE = 'Your sign-in has expired. Sign in again to continue.';
 
 /**
@@ -765,4 +770,78 @@ function earningsError(httpStatus) {
     : status === 0 ? `We couldn’t reach ${BRAND_NAME} to load your earnings. Check your connection, then try again.`
       : 'We couldn’t load your earnings right now. Try again in a moment.';
   return Object.assign(new Error(message), { status, code: status === 401 ? 'unauthorized' : 'read_failed' });
+}
+
+// ── The coach page, /c/<handle> (fitlink-app migration 20261025130000) ────────
+
+/** An RPC failure as `{ code, message, status }`: rate_limited (P0001), not_deployed (PGRST202), unauthorized, network. */
+function rpcError(error, status, fallback) {
+  const st = Number(status) || 0;
+  const msg = String(error?.message ?? '');
+  const code = error?.code === 'PGRST202' || error?.code === '42883' ? 'not_deployed'
+    : st === 401 ? 'unauthorized'
+      : error?.code === 'P0001' && msg ? msg
+        : st === 0 ? 'network' : 'failed';
+  const message = code === 'not_deployed' ? 'Coach pages aren’t available on the server yet.'
+    : code === 'unauthorized' ? SIGNED_OUT_SENTENCE
+      : error?.code === 'P0001' && typeof error?.hint === 'string' && error.hint ? error.hint
+        : code === 'network' ? NETWORK_SENTENCE : fallback;
+  return Object.assign(new Error(message), { code, status: st });
+}
+
+/** coach_page(p_handle) (anon): the page's one read. Throws `{ code, message }` (rate_limited, network, failed…). */
+export async function coachPage(handle) {
+  const { data, error, status } = await supabase.rpc('coach_page', { p_handle: handle });
+  if (error) throw rpcError(error, status, `${BRAND_NAME} couldn’t load this page right now. Try again in a moment.`);
+  return data;
+}
+
+/**
+ * page_invite(p_handle) (signed in): the coach's standing invite code, for athlete-exit. Only after the person acted
+ * (their own sign-in, or Continue under "Signed in as …"): the server renews or makes the coach's link. Answers
+ * `{ ok: true, invite_code }` | `{ ok: false, code, error }` (never raised); a transport failure throws.
+ */
+export async function pageInvite(handle) {
+  const { data, error, status } = await supabase.rpc('page_invite', { p_handle: handle });
+  if (error) throw rpcError(error, status, `${BRAND_NAME} couldn’t open checkout for this page. Nothing was changed. Try again in a moment.`);
+  return data;
+}
+
+/** log_page_event: fire and forget. Never awaited by a page, never throws, never logs the event. */
+export function logPageEvent(params) {
+  if (!params) return;
+  try {
+    Promise.resolve(supabase.rpc('log_page_event', params)).then(() => {}, () => {});
+  } catch { /* the funnel never stops the page */ }
+}
+
+/** The signed-in coach's own handle (trainers.handle): a string, null (none), or throws (`not_deployed` before the migration). */
+export async function myHandle(uid) {
+  const { data, error, status } = await supabase.from('trainers').select('handle').eq('id', uid).limit(1);
+  if (error) {
+    if (error.code === '42703') throw Object.assign(new Error('Coach pages aren’t available on the server yet.'), { code: 'not_deployed' });
+    throw rpcError(error, status, 'We couldn’t load your page’s name right now. Check again in a moment.');
+  }
+  return typeof data?.[0]?.handle === 'string' ? data[0].handle : null;
+}
+
+/**
+ * set_handle(p_handle): `{ ok: true, handle, previous, changed, path }` | `{ ok: false, code, error }` (the server
+ * never raises a refusal). A transport failure throws (`outcomeUnknown` when the call may have run).
+ */
+export async function setHandle(handle) {
+  const { data, error, status } = await supabase.rpc('set_handle', { p_handle: handle });
+  if (error) {
+    const e = rpcError(error, status, `${BRAND_NAME} didn’t answer clearly.`);
+    e.outcomeUnknown = e.code === 'network' || (Number(status) || 0) >= 500;
+    throw e;
+  }
+  return data;
+}
+
+/** my_page_stats(p_days): the coach's own funnel. Throws `{ code, message }` (rate_limited, not_a_coach, not_deployed…). */
+export async function myPageStats(days = 30) {
+  const { data, error, status } = await supabase.rpc('my_page_stats', { p_days: days });
+  if (error) throw rpcError(error, status, 'We couldn’t load your page’s numbers right now. Try again in a moment.');
+  return data;
 }

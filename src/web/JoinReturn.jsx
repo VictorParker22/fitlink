@@ -2,7 +2,8 @@
 // outside the AASA paths (/i/*, /live/*), so the installed app never takes the
 // return (the app has no code verifier). Reads ONLY what this tab parked in
 // sessionStorage before leaving (code, plan id, typed name; 30 minutes), never the
-// URL, then moves client-side to the coach's page, which reopens the checkout.
+// URL, then moves client-side to the coach's page (/i/CODE, or /c/<handle> since 2026-10-25), which reopens the
+// checkout.
 //
 // Nothing parked (another tab, storage cleared, more than 30 minutes) while the
 // exchange still signed the browser in: a sign-up nobody finished (every identity
@@ -28,7 +29,9 @@ export default function JoinReturn() {
       const note = await takeAuthReturnNote();
       const parked = takeParkedCheckout();
       if (parked) {
-        navigate(`/i/${parked.code}`, { replace: true, state: { resume: { planId: parked.planId, note, name: parked.name } } });
+        // An invite link (/i/CODE) or a coach page (/c/<handle>): both reopen the same checkout on that pass.
+        const back = parked.handle ? `/c/${parked.handle}` : `/i/${parked.code}`;
+        navigate(back, { replace: true, state: { resume: { planId: parked.planId, note, name: parked.name } } });
         return;
       }
       const s = await session();

@@ -22,6 +22,7 @@ import {
   isStripeCheckoutUrl, readEliteReturn, webEliteConfirmed,
 } from './coachMoney';
 import { usePageMeta } from './site/meta';
+import CoachPagePanel from './CoachPagePanel';
 import { BRAND_NAME } from './site/brand';
 
 /** Re-reads after a "started" return while the webhook has not landed (ms after the first read). */
@@ -50,6 +51,7 @@ export default function CoachDashboard() {
         <h1>Dashboard</h1>
       </div>
       <ElitePanel ret={ret} />
+      <CoachPagePanel />
       <nav className="fl-dash-links" aria-label="Coach pages">
         <Link className="fl-panel fl-dash-link" to="/coach/earnings">
           <b>Earnings</b>

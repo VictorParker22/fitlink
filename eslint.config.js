@@ -18,4 +18,9 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    // Vercel functions (api/coach-meta.js: the coach page's link-preview tags) run on Node.
+    files: ['api/**/*.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])

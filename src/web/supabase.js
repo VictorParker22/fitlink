@@ -3,9 +3,10 @@
 // let a fresh checkout run without a .env. Everything that matters is
 // enforced on the server (RLS, definer RPCs, edge functions).
 import { createClient } from '@supabase/supabase-js';
+import { DEFAULT_SUPABASE_KEY, DEFAULT_SUPABASE_URL } from './supabaseDefaults';
 
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://qcmtaskhyhwzyoegtfpw.supabase.co';
-export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_IxZ1QUlo0for6NcOQvf-xw_D0-vmrXL';
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_KEY;
 export const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 
 // PKCE (2026-10-21): a session is made in this browser only by a flow this

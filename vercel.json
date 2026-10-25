@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/coach-meta.js": { "includeFiles": "dist/index.html", "maxDuration": 10 }
+  },
   "headers": [
     {
       "source": "/.well-known/apple-app-site-association",
@@ -9,6 +12,15 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/c/:handle",
+      "has": [{ "type": "query", "key": "spa" }],
+      "destination": "/index.html"
+    },
+    {
+      "source": "/c/:handle",
+      "destination": "/api/coach-meta?handle=:handle"
+    },
     {
       "source": "/((?!\\.well-known/apple-app-site-association$).*)",
       "destination": "/index.html"

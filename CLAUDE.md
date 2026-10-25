@@ -460,6 +460,79 @@ from `plans`.
       season ends?") and 83 ("Can I get a refund?": a session cancelled 24+ hours ahead is refunded in full) say
       "season" and never "block" or "session".
     - Then bump `TERMS_UPDATED` (`legalMeta.js`) under §16's notice rule.
+- **The coach page, /c/<handle>, the web half (2026-10-25, launch plan Sprint 1 PR 3; server: fitlink-app PR #15 branch
+  `launch/3-coach-page` e50dc7a, migration `20261025130000`, function `coach-og`, rollout
+  `supabase/manual/ROLLOUT_20261025_coach_page.md` (the contract), threat model B40, A62–A66 — NOT live yet: read on live
+  2026-10-25, no `trainers.handle`, no `coach_page`, and the fee engine / blocks migrations are not applied either).**
+  Branch `launch/3-coach-page-web`, stacked on `launch/4-blocks-web`. Pure rules in `src/web/coachPage.js` +
+  `src/web/handles.js` (`node --test src/web/coachPage.test.js`), link previews in `src/web/coachMeta.js` +
+  `api/coach-meta.js` (`node --test src/web/coachMeta.test.js`).
+  - **The page** (`CoachPage.jsx`, outside the site shell: no marketing nav). One hero (photo: `avatar_url` only when
+    `safeImageUrl` passes, https, no credentials, else initials; name; sport = `specialization`, else up to three
+    `specializations`; the Founding 15 badge from `founding_member`; "Next block starts Dec 1" from
+    `next_block_starts_on`), the passes, "Cancelling a session" when a session is listed (the coach's
+    `cancellation_policy` from the same answer, as text), and the footer "Coached on <BRAND_NAME> · Start coaching →"
+    (→ `/founding`). No bio, no how-it-works (owner: "one hero, blocks below, nothing else"). Every number is
+    `coach_page`'s: the big price is `total_cents` per payment, the line under it "$320 / month · 2 payments ($640 in
+    all)" from that total (`blocks.js priceLine` with `serverTotal: true`), Model B's fee as "Includes a $12 booking fee
+    on each payment." (a session: "Includes a $4 booking fee."), and `buyable` / `on_sale` decide the button (not on sale →
+    "On sale from …"; `takes_cards` false → "<first> isn't taking card payments yet", said once above the cards too). A
+    pass whose `total_cents` is not `price_cents + booking_fee_cents` is shown without a total and not sold. `{found:
+    false, redirect}` → `navigate(replace)` to `/c/<new>` (query kept); `{found: false}` or a handle that cannot be a page
+    (checked before any call) → the 404 page; a refusal (`rate_limited`, the server's HINT) or a failed read → "Couldn't
+    load this page" with Try again. A handle typed in capitals is replaced by the page's own (`/c/Dana` → `/c/dana`).
+    Brand: the page, the checkout sheet, the 404 page and the API sentences take the name from `brand.js` only; the
+    sign-in sentences in `appleAuth.js` still spell "FitLink" (the rename PR moves them).
+  - **Buying** reuses `Checkout.jsx` (not a fork): `pageHandle` in place of `code`. The invite code comes from
+    `page_invite(handle)` (it renews or makes the coach's standing link: a write) only after the person acted (their own
+    code typed in the sheet, their own Apple return, or Continue under "Signed in as …") and after the page's sale checks,
+    right before the athlete-exit preview; `{ok: false, code, error}` is shown as sent + "Nothing was changed."
+    (`page_not_found` final, `rate_limited` Check again). Then the same flow: athlete-exit preview / confirm with
+    `planId`, `create-subscription {planId, clientId, source: 'coach_page', pageSession}` (`api.js createSubscription(…,
+    {fromPage, pageSession})`), PaymentElement, confirm-subscription. The sheet uses the page's total (`pageTotal`) from
+    its first line, so "($640 in all)" and the title price are the server's before the card form; create-subscription's
+    answer replaces it. Apple parks `{v: 2, handle, planId, name}` (`appleAuth.js parkedCheckoutValue`; v1 still parks a
+    code) and `/join` moves back to `/c/<handle>`, which reopens the sheet. `/i/:code` is unchanged.
+  - **The funnel** (`log_page_event`, `api.js logPageEvent`: never awaited, never throws). The page session is 24 random
+    bytes as 32 base64url characters in sessionStorage `fitlink-web-page-session` (one per tab, kept across reloads and
+    the Apple return). `page_view` once per page load (per handle, after a redirect only the new one), `pass_tap` on a
+    Buy tap with the pass id, `checkout_start` once when the card form opens (`Checkout onCardForm`). The referrer is
+    `document.referrer`'s host only (`referrerHost`), utm_source / medium / campaign from the URL, cleaned and cut at 100
+    (`utmFrom`); `eventParams` builds only what the server accepts (`paid` is the server's). Nothing is logged while the
+    stored session's uid is the coach's own (the coach previewing their page).
+  - **Link previews.** Unfurlers don't run JavaScript, so `vercel.json` rewrites `/c/:handle` to the Node function
+    `api/coach-meta.js` (`?handle=`): the built `dist/index.html` (from the function's own files, `includeFiles`; else
+    fetched from this deployment's own origin, `VERCEL_PROJECT_PRODUCTION_URL` in production / `VERCEL_URL` otherwise,
+    never the request's Host) with `<title>`, description, canonical, `og:*` (image = `<SUPABASE_URL>/functions/v1/
+    coach-og?handle=<h>`, 1200 × 630) and `twitter:*` from `coach_page` (publishable key, 2.5 s cap), every value
+    cleaned (`cleanText`: control / format / bidi characters out) and escaped (`escapeHtml`). A retired handle answers 307
+    to the new page (temporary: the coach can take the old name back), no page 404 + noindex with the SPA, any failure
+    the plain index.html (cached 30 s). The HTML is cached at Vercel's edge 300 s (`s-maxage`, SWR 600): coach_page paces
+    300/h per ADDRESS and this function calls from Vercel's addresses. With no template at all it answers 307 to
+    `/c/<h>?spa=1`, which the first rewrite serves as the plain SPA (the page drops the marker). The AASA header and the
+    SPA catch-all are unchanged; eslint runs on `api/` with Node globals.
+  - **Your page on /coach** (`CoachPagePanel.jsx`, under the Elite panel): the current `trainers.handle` (own row; 42703 →
+    "Coach pages aren't available on the server yet."), the address `<SITE_HOST>/c/<handle>` (`brand.js SITE_HOST` /
+    `SITE_ORIGIN`), Copy link, Open page; the field lower-cases as typed and drops a leading @ (`handleFieldValue`), says
+    format problems (`handleHint`, never availability) and previews the new address; `set_handle` answers in words
+    (`setHandleOutcome`: refusals as sent, `changed: false` → "That's already your page's name.", a change says the old
+    link sends people to the new one for a year); an answer that never came → "isn't clear whether your page's name
+    changed" + Check again. "Take my page down" asks a second time, then `set_handle(null)`. Nothing is suggested or saved
+    for the coach. Last 30 days from `my_page_stats(30)`: Opened your page / Tapped a pass / Reached the card form /
+    Paid (distinct browser sessions; paid = subscriptions), with the note that the first three are browser-reported.
+  - Checks (2026-10-25): `node --test src/web/*.test.js` 112/112 in UTC, Asia/Tokyo, Pacific/Honolulu,
+    America/Los_Angeles, Pacific/Kiritimati; eslint clean (`npx eslint src/web src/main.jsx vite.config.js api`); build;
+    the function against the built `dist/index.html` with a stubbed fetch; headless (390 / 1280, America/New_York)
+    84/84: found (block, session, not on sale, open pass, Model B, no cards, unsafe photo), redirect, not found, a bad
+    handle, rate-limited, Buy signed out (order verify → page_invite → preview → confirm → create-subscription, planId,
+    source / pageSession, the total before the card form), Buy with a stored session (nothing before Continue),
+    page_invite refusals, events (once, referrer host only, same key on reload, none for the coach), dashboard set /
+    taken / invalid / rate-limited / no answer / create / take down / stats / stats refused / before the migration, and
+    `/i/CODE` unchanged.
+  - **Deploy order (`docs/DEPLOY_ORDER.md`):** after fitlink-app migration `20261025130000` and `coach-og` (and
+    create-subscription / stripe-webhook / confirm-subscription with `_shared/pageEvents.ts`), AND after the operator
+    inserted the new product name and its variants into `reserved_handles` (rollout step 2): this site is what lets a
+    coach pick a handle. Before the migration `/c/*` says coach pages aren't available and the panel says the same.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.

@@ -26,10 +26,38 @@ Before step 4: `/pricing` describes rules the server does not enforce yet (on li
 cap still refuses), `/coach`'s Elite panel says Elite on the web isn't available, and
 `/coach/earnings` falls back to the pre-engine columns.
 
+## Coach page /c/<handle> (launch plan PR 3, 2026-10-25)
+
+Branches: fitlink-app `launch/3-coach-page` (PR #15, stacked on `launch/4-blocks`); this site
+`launch/3-coach-page-web` (stacked on `launch/4-blocks-web`). Server rollout:
+fitlink-app `supabase/manual/ROLLOUT_20261025_coach_page.md`.
+
+1. Everything above, and the blocks migration `20261025120000` with its functions (the
+   coach page migration applies only after it).
+2. fitlink-app migration `20261025130000_coach_page.sql` (`trainers.handle`, `set_handle`,
+   `coach_page`, `page_invite`, `log_page_event`, `my_page_stats`).
+3. The operator inserts the NEW product name and its variants into `reserved_handles`
+   (rollout step 2), BEFORE this site ships: the dashboard here is where a coach picks a
+   handle, and a reserved row added later never evicts a coach who already holds the name.
+4. `coach-og` deployed (`--no-verify-jwt`), then `create-subscription`, `stripe-webhook`,
+   `confirm-subscription` (they bundle `_shared/pageEvents.ts`: the `paid` stage).
+5. Then this site. Vercel runs `api/coach-meta.js` (the link-preview tags for `/c/:handle`)
+   with `includeFiles: dist/index.html`; it reads `VITE_SUPABASE_URL` /
+   `VITE_SUPABASE_PUBLISHABLE_KEY` at run time when set (else the same defaults as the
+   browser). After the deploy: `curl -s https://fitlink.coach/c/<a real handle> | grep og:`
+   shows the coach's tags, `curl -sI https://fitlink.coach/c/nobody-xyz` answers 404
+   `text/html`, `/.well-known/apple-app-site-association` is still `application/json`, and
+   a link pasted into iMessage shows the coach-og card.
+
+Before step 2: `/c/*` says coach pages aren't available yet, and `/coach`'s "Your page"
+panel says the same.
+
 ## Gates that hold after the deploy
 
 - **Model B must not be switched on for a coach** (`coach_billing.model_b`) **until the
-  coach page shows the total before checkout (PR 3).** Today the web shows a Model B
+  coach page shows the total before checkout (PR 3).** PR 3's `/c/<handle>` does (the
+  server's `total_cents` on every card and in the sheet from its first line); the invite page
+  `/i/CODE` still does not, so a Model B coach should share `/c/<handle>`. Today the web shows a Model B
   total (create-subscription's `amountCents`, the booking fee inside it) only from the card
   form on; athlete-exit's switch confirmation, which can end another pass, runs before any
   total exists.
