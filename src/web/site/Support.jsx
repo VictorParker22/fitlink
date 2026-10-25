@@ -19,7 +19,7 @@ import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
 import { DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, MINIMUM_CHARGE_USD, STANDARD_FEE_PERCENT, usd } from './pricing';
-import { SIXTH_ATHLETE_RULE } from './planLines';
+import { ELITE_WHERE, SIXTH_ATHLETE_RULE } from './planLines';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
 import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
@@ -63,7 +63,7 @@ const GROUPS = [
     items: [
       { q: 'What does the assistant do?', a: 'It reads an athlete’s check-in and their logged sets and drafts a reply in your voice. You edit, approve and send; nothing reaches an athlete on its own. It needs Coach Elite, and you agree to it in the app before the first draft.' },
       { q: 'Where does the text go?', a: 'The check-in text is sent to Google (Gemini) to produce the draft and for nothing else. The Privacy Policy says so, and athletes are told their coach may use an assistant.' },
-      { q: 'How do I get Coach Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, and manage or cancel it from the link in your Stripe receipt. If you already have Elite through the App Store, it stays managed in your Apple subscriptions.</p>) },
+      { q: 'How do I get Coach Elite?', a: (<><p>{ELITE_WHERE.us} On the web it is {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, from your <Link to="/coach">coach dashboard</Link>.</p><p>{ELITE_WHERE.elsewhere}</p><p>{ELITE_WHERE.manage}</p></>) },
     ],
   },
   {

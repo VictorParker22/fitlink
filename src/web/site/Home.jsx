@@ -17,7 +17,7 @@ import FoundingCount from './FoundingCount';
 import { todayIso, useFoundingSlots } from './useFoundingSlots';
 import { foundingPhase } from '../founding';
 import { FOUNDING_CTA, FOUNDING_PATH } from './flags';
-import { PLAN_LINES } from './planLines';
+import { ELITE_WHERE, PLAN_LINES } from './planLines';
 import AppStoreLink from './AppStoreLink';
 
 
@@ -270,7 +270,7 @@ export default function Home() {
             <div className="s-plan ink">
               <h3>Elite</h3>
               <span className="s-price"><b>{usd(ELITE_MONTHLY_USD)}</b><span>a month · {ELITE_FEE_PERCENT}% per pass sold</span></span>
-              <p>No athlete cap, the assistant’s drafts, and half the fee on every pass. Subscribe on the web.</p>
+              <p>No athlete cap, the assistant’s drafts, and half the fee on every pass. {ELITE_WHERE.short}</p>
             </div>
           </div>
         </div>

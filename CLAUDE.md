@@ -74,6 +74,16 @@ from `plans`.
   the one /founding draws: `site/useFoundingSlots.js` (`founding_slots()`, undefined while loading, null on failure,
   `retry`, `reload`, `todayIso`) + `site/FoundingCount.jsx` (nothing numeric while loading, "Couldn't load how many spots
   are taken." with Try again, "9 of 15 taken" with the meter, "All 15 spots are taken.", "Founding spots closed on …").
+- **Pricing and where Elite is bought (launch plan W5, 2026-10-25; branch `launch/w5-pricing`).** "Free to try.", the
+  Founding column and the Founding series in the calculator were already there (PR 1 web, `launch/1-fee-engine-web`).
+  W5 adds the region-true Elite copy, ONE source: `site/planLines.js ELITE_WHERE` (`us`: on the web from the coach
+  dashboard, which the app opens; `elsewhere`: in the iPhone app through the App Store, in the local currency, or on
+  the web; `manage`: Stripe receipt link vs Apple subscriptions; `short` for the Elite cards). Used by the Elite card
+  and its question on /pricing, the Elite plan on /, and "How do I get Coach Elite?" on /support; pinned in
+  `pricing.test.js` (never "billed through Apple" for everyone, never "web only"). It mirrors the app (US storefront →
+  web, other storefronts → StoreKit) and elite-checkout, which sells to anyone on the web. Still open (founder wording,
+  the rename-day Terms, decision L8): Terms §6 and the terms page's meta description (`legalMeta.js`) say Elite is
+  sold through Apple, and the Privacy Policy says the same.
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and

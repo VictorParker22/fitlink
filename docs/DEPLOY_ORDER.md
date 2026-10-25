@@ -127,3 +127,6 @@ change the site only; each says below what it waits for.
 - **W4 Founding card** (`launch/w4-founding-card`): the home page reads `founding_slots()` (anon), so it needs
   fitlink-app migration `20261025110000` on live; before it the card says it couldn't load how many spots are taken
   (no number is ever guessed).
+- **W5 pricing** (`launch/w5-pricing`): the Elite copy says US on the web, elsewhere the App Store or the web. It is
+  true once the fee engine's `elite-checkout` is live (above) AND the iOS build that routes Elite by storefront is the
+  one in the App Store; before that, ship it only with that build. Terms §6 still says Apple (rename-day Terms).
