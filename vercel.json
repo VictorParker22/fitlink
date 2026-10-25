@@ -30,7 +30,7 @@
       "destination": "/api/coach-meta/:handle"
     },
     {
-      "source": "/((?!\\.well-known/apple-app-site-association$).*)",
+      "source": "/((?!api/|\\.well-known/apple-app-site-association$).*)",
       "destination": "/index.html"
     }
   ]

@@ -530,7 +530,9 @@ from `plans`.
     review m2); a page 300 s (SWR 600); any failure the plain index.html (30 s). The body never depends on the query, but
     Vercel's CDN keys on the full URL, so `fbclid` still splits the edge cache: the in-memory answers cover the cost.
     With no template at all the answer is a 307 to `/c/<h>?spa=1`, which the first rewrite serves as the plain SPA (the
-    page drops the marker). The AASA header and the SPA catch-all are unchanged; eslint runs on `api/` with Node globals.
+    page drops the marker). The SPA catch-all excludes `api/` as well as the AASA file (the first preview deploy,
+    2026-10-25, answered `/api/coach-meta/<h>` with the static index.html: the catch-all had swallowed the function);
+    eslint runs on `api/` with Node globals.
   - **Your page on /coach** (`CoachPagePanel.jsx`, under the Elite panel): the current `trainers.handle` (own row; 42703 →
     "Coach pages aren't available on the server yet."), the address `<SITE_HOST>/c/<handle>` (`brand.js SITE_HOST` /
     `SITE_ORIGIN`), Copy link, Open page; the field lower-cases as typed and drops a leading @ (`handleFieldValue`), says

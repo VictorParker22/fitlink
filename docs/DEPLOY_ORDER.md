@@ -54,7 +54,12 @@ fitlink-app `supabase/manual/ROLLOUT_20261025_coach_page.md`.
    - `curl -s https://fitlink.coach/c/<a real handle> | grep og:` (curl's own user agent, a
      "person") prints nothing: the plain SPA;
    - `curl -sI -A 'Twitterbot/1.0' https://fitlink.coach/c/nobody-xyz` answers 404 `text/html`
-     with `s-maxage=30`;
+     whose head carries `<meta name="robots" content="noindex">`;
+   - `curl -s https://fitlink.coach/api/coach-meta/<a real handle> | grep og:title` shows the
+     coach's title, and `curl -sI` on it has no `etag` / `content-disposition: …index.html` (those
+     mark the static file: the catch-all must leave `api/` alone; the first preview deploy did not).
+     Vercel strips `s-maxage` from what the client sees (`cache-control: public, max-age=0` on the
+     preview, 2026-10-25), so the 30 s / 300 s edge times are not visible in `curl -I`;
    - `/.well-known/apple-app-site-association` is still `application/json`, and a link pasted
      into iMessage shows the coach-og card.
 
