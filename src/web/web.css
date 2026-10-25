@@ -230,3 +230,8 @@
 .fl-signin { max-width: 440px; margin: 80px auto; padding: 0 24px; display: flex; flex-direction: column; gap: 16px; }
 .fl-signin h1 { font-size: 34px; line-height: 1.1; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .fl * { transition: none !important; animation: none !important; } }
+
+/* The "Founding 15" badge (FoundingBadge.jsx): ink pill, accent star; a coach holds one only when the server says so. */
+.fl-founding-badge { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; font-size: 13px; font-weight: 700; letter-spacing: 0.01em; background: var(--fl-ink); color: var(--fl-on-ink); border-radius: 999px; padding: 6px 12px 6px 10px; white-space: nowrap; }
+.fl-founding-badge svg { color: #F59E0B; flex: none; }
+.fl-founding-badge.sm { font-size: 12px; padding: 4px 10px 4px 8px; }

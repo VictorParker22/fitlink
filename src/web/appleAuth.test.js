@@ -174,6 +174,11 @@ test('signInHint and noAccountMessage: every page and state, the §5 words', () 
       safari: 'Signed up with Sign in with Apple? Open fitlink.coach/delete-account in Safari to continue with Apple.',
       off: 'Signed up with Sign in with Apple and hid your email? Delete from the FitLink app instead: Profile, then Delete account.',
     },
+    founding: {
+      apple: 'Signed up in the app with Sign in with Apple and hid your email? Use Continue with Apple.',
+      safari: 'Signed up in the app with Sign in with Apple? Open fitlink.coach/founding in Safari to continue with Apple.',
+      off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page) and the application is taken by email.',
+    },
     checkout: {
       apple: 'Signed up in the app with Sign in with Apple? Use Continue with Apple, so the pass lands on that account.',
       safari: 'Signed up in the app with Sign in with Apple? Open this page in Safari to continue with Apple, so the pass lands on that account.',
@@ -185,6 +190,15 @@ test('signInHint and noAccountMessage: every page and state, the §5 words', () 
   assert.equal(signInHint('coach', { available: false, enabled: true, standalone: false }), want.coach.off);
   assert.equal(nameStepTitle('Dana'), 'What should Dana call you?');
   assert.equal(nameStepHint('Dana'), 'Optional. Dana sees it on their roster.');
+});
+
+test('Apple returns only to fixed pages, never under /i/ or /live/ (the AASA paths), /founding included', () => {
+  assert.deepEqual({ ...A.APPLE_RETURN_PATHS }, { coach: '/coach', delete: '/delete-account', checkout: '/join', founding: '/founding' });
+  for (const path of Object.values(A.APPLE_RETURN_PATHS)) {
+    assert.match(path, /^\/[a-z-]+$/);
+    assert.doesNotMatch(path, /^\/(i|live)(\/|$)/);
+  }
+  assert.ok(Object.isFrozen(A.APPLE_RETURN_PATHS));
 });
 
 test('siteCopy(false) is the pages’ words before Apple came to the web', () => {

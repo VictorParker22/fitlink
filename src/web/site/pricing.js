@@ -22,6 +22,25 @@ export const ELITE_MONTHLY_USD = 29.99;
 export const ELITE_YEARLY_USD = 249;
 export const FREE_ROSTER_CAP = 5;
 
+// Founding (launch plan 2026-10-25, owner-locked): 15 spots, Elite free for a
+// year from the coach's first paid athlete, then the Elite monthly price, for
+// coaches live with 5+ paying athletes by Dec 31, 2026; closes Dec 31. The
+// server's copy is fitlink-app `supabase/config/pricing.json` tiers.founding
+// (slots 15, free_days 365, notice_day 335, then_monthly_cents 2999, fee_bps
+// 500, suspend_after_days_without_paid_event 60, closes_on 2026-12-31); the
+// live counter comes from `founding_slots()`, never from here.
+export const FOUNDING_SLOTS = 15;
+export const FOUNDING_FREE_MONTHS = 12;
+export const FOUNDING_THEN_MONTHLY_USD = ELITE_MONTHLY_USD;
+export const FOUNDING_FEE_PERCENT = ELITE_FEE_PERCENT;
+export const FOUNDING_MIN_PAYING_ATHLETES = 5;
+/** The notice before the free year ends (day 335 of 365). */
+export const FOUNDING_NOTICE_DAYS_BEFORE = 30;
+/** No paid athlete payment for this many days pauses Founding pricing; the badge stays. */
+export const FOUNDING_PAUSE_DAYS = 60;
+/** The last day to apply (the server closes at midnight after it, California time). */
+export const FOUNDING_CLOSES_ON = '2026-12-31';
+
 /** App Store Connect app 6779058450 (bundle id fitlink.app). */
 export const APP_STORE_URL = 'https://apps.apple.com/app/id6779058450';
 /** The mailbox the iOS submission pack names. It must exist before launch. */
