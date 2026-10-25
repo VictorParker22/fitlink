@@ -61,6 +61,26 @@ fitlink-app `supabase/manual/ROLLOUT_20261025_coach_page.md`.
 Before step 2: `/c/*` says coach pages aren't available yet, and `/coach`'s "Your page"
 panel says the same.
 
+## Operator dashboard /admin (launch plan PR 6, 2026-10-25)
+
+Branches: fitlink-app `launch/6-funnel-dashboard` (stacked on `launch/3-coach-page`); this site
+`launch/6-funnel-dashboard-web` (stacked on `launch/3-coach-page-web`). Server rollout:
+fitlink-app `supabase/manual/ROLLOUT_20261025_dashboard.md`.
+
+1. Everything above (the dashboard migration applies only after the coach page's `20261025130000`).
+2. fitlink-app migration `20261025140000_admin_dashboard.sql` (`admin_scorecard`, `admin_coaches`,
+   `admin_page_funnel`; `platform_admins` loses its grants to anon and authenticated), its Editor
+   proofs (PASS 24) and `get_advisors`.
+3. The operator inserts their own account into `platform_admins` (SQL Editor; live has no row):
+   `insert into public.platform_admins (user_id, note) values ('<auth uid>', 'owner');`.
+4. Then this site. No edge function and no secret. After the deploy: `curl -sI
+   https://fitlink.coach/admin` shows `x-robots-tag: noindex, nofollow`; signed in as the operator the
+   page shows the scorecard; signed in as any other account it says "This account isn't an operator
+   account."
+
+Before step 2: `/admin` says the dashboard isn't on the server yet. Before step 3: every account,
+the operator's included, gets "This account isn't an operator account."
+
 ## Gates that hold after the deploy
 
 - **Model B must not be switched on for a coach** (`coach_billing.model_b`) **until the

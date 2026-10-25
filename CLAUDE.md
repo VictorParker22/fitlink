@@ -562,6 +562,42 @@ from `plans`.
     create-subscription / stripe-webhook / confirm-subscription with `_shared/pageEvents.ts`), AND after the operator
     inserted the new product name and its variants into `reserved_handles` (rollout step 2): this site is what lets a
     coach pick a handle. Before the migration `/c/*` says coach pages aren't available and the panel says the same.
+- **The operator dashboard, /admin (2026-10-25, launch plan Sprint 1 PR 6; server: fitlink-app branch
+  `launch/6-funnel-dashboard`, migration `20261025140000`, rollout `supabase/manual/ROLLOUT_20261025_dashboard.md` (the
+  contract and every definition), threat model B41, A67 — NOT live yet).** Branch `launch/6-funnel-dashboard-web`, stacked
+  on `launch/3-coach-page-web`. Owner spec: "One admin page from the item-3 events: coaches activated (first paid
+  athlete), athletes per coach, GMV, page funnel with drop-off per stage. Done when: Victor reads it Sunday night without
+  asking engineering."
+  - **Files.** `src/web/admin/AdminDashboard.jsx` (route `/admin`, outside the site shell, linked from nowhere; a robots
+    `noindex, nofollow` meta while mounted and `vercel.json`'s `X-Robots-Tag` + `Cache-Control: no-store` for `/admin`),
+    `admin.css` (scoped under `.ad`, CSS bars, the coach table turns into labelled blocks under 720 px),
+    `adminModel.js` (every number and sentence; `node --test src/web/admin/adminModel.test.js`), `targets.js` (Victor's
+    week-4 / Dec 31 targets, plain text: edit them there only), `api.js` `adminScorecard` / `adminCoaches` /
+    `adminPageFunnel`.
+  - **Who reads it is the server's.** Sign-in is the email code of an EXISTING account (`shouldCreateUser: false`); no
+    Apple button (Apple's return paths are fixed and `/admin` is not one; an Apple-only operator signs in with the code
+    sent to the account's email). `freshUser()` decides the session; an unfinished Apple sign-up is left as on `/coach`
+    (the one write the page can make, the site-wide rule). The three reads answer `not_admin` (P0001, HINT) unless
+    `platform_admins` holds the account: then "This account isn't an operator account." with Sign out and no number. The
+    page writes nothing else. Every other failure is the section's own sentence with Check again (`rate_limited` the
+    server's HINT, no connection, `not_deployed` before the migration); a 401 goes back to sign-in with the expired
+    sentence.
+  - **Layout:** the scorecard first (a month picker, 2025-01 .. this month UTC; each number for the month and the month
+    before, its one-line definition from the server's `definitions`, Victor's targets as text, and the server's
+    `not_in_data` lines: Stripe fees, Elite subscriptions, Venmo), then the page funnel (7 / 30 / 90 days; sessions per
+    stage, bars relative to the largest stage, "N% dropped off" and the share of page openers, a negative drop-off said as
+    "more than the stage before"; top referrer hosts and UTM sources as counts), then the coaches (name, handle, activated,
+    paying athletes 30 d, GMV, payments, plan, the funnel as "2 → 1 → 1 → 1"). Money from cents. A value the server sent
+    as null is never 0 or 0%: the row says why ("No coach had a paying athlete in these 30 days.", "No coach was activated
+    the month before."). Revenue is "before Stripe fees", payments recorded before fees were tracked are counted apart,
+    refunds stand beside GMV and are not subtracted.
+  - Checks (2026-10-25): `node --test src/web/*.test.js src/web/admin/*.test.js` 127/127; eslint clean; build; headless
+    (390 / 1280) 100/100 with stubbed RPCs: signed out (no read before a session, the code for an existing account only),
+    operator (order, every metric, definitions, targets, not-in-data, funnel, coach rows, the month and window arguments,
+    no writes, no horizontal scroll), non-operator, a failed read and Check again, rate limited, no connection, an expired
+    session, empty data, the server before the migration.
+  - **Deploy order (`docs/DEPLOY_ORDER.md`):** after fitlink-app migration `20261025140000`, and the operator's own
+    `platform_admins` row (live has none).
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.
