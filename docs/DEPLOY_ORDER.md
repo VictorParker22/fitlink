@@ -55,6 +55,9 @@ fitlink-app `supabase/manual/ROLLOUT_20261025_coach_page.md`.
      "person") prints nothing: the plain SPA;
    - `curl -sI -A 'Twitterbot/1.0' https://fitlink.coach/c/nobody-xyz` answers 404 `text/html`
      with `s-maxage=30`;
+   - `curl -sI https://fitlink.coach/api/coach-meta/<a real handle>` answers with the function's
+     `Cache-Control` (`s-maxage=300`), not the static index.html's `max-age=0, must-revalidate`
+     (the catch-all must leave `api/` alone; the first preview deploy did not);
    - `/.well-known/apple-app-site-association` is still `application/json`, and a link pasted
      into iMessage shows the coach-og card.
 

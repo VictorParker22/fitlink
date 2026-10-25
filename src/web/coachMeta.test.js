@@ -279,6 +279,9 @@ test('vercel.json: only link-preview bots reach the function; people get the SPA
   assert.equal(route('/c/dana-ruiz', 'spa=1', UA.facebook), '/index.html?spa=1', 'the no-template fallback never loops');
   assert.equal(route('/.well-known/apple-app-site-association', '', UA.facebook), '/.well-known/apple-app-site-association');
   assert.equal(route('/i/ABC123', '', UA.facebook), '/index.html');
+  // The catch-all must not swallow the function itself (seen on the preview deploy 2026-10-25: /api/coach-meta/x
+  // came back as the static index.html).
+  assert.equal(route('/api/coach-meta/dana-ruiz', '', UA.facebook), '/api/coach-meta/dana-ruiz');
 
   // A bot, end to end: vercel.json's destination → the function → the coach's tags. A visitor's own ?handle= loses.
   clearAnswerCache();
