@@ -28,7 +28,7 @@ from `plans`.
 - **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
   is the layout route (glass header with the brand mark + Home · Pricing · Help · Sign in → `/coach` · "Claim a
   Founding spot" (or "Join as a coach" once Founding is full or closed) → `/founding` (W3, W8; at phone width Sign in ends the nav row, `.s-nav-signin`, because the actions
-  keep only the button); footer with Help · For athletes (off the header since W8; the page stays and is static) · Privacy · Terms ·
+  keep only the button; every nav link there is 44 px tall, by its box, not its font); footer with Help · For athletes (off the header since W8; the page stays and is static) · Privacy · Terms ·
   Delete account · `SUPPORT_EMAIL`; scroll-to-top; a `body` class so overscroll is
   cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
   `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,

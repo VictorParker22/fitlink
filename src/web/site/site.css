@@ -59,7 +59,7 @@ body.fl-site-body-dark { background: #0B0C0F; }
 @media (max-width: 720px) {
   .fl-site .fl-header-bar { border-radius: 24px; padding: 8px 8px 8px 12px; }
   .s-nav { order: 3; width: 100%; padding: 4px 0 2px; border-top: 1px solid rgba(21, 23, 28, 0.08); }
-  .s-nav a { padding: 0 12px; font-size: 14px; min-height: 38px; }
+  .s-nav a { padding: 0 12px; font-size: 14px; min-height: 44px; } /* a 44 px hit area at phone width (review 2026-10-25); the font stays */
   .s-header-actions .signin { display: none; }
   .s-nav .s-nav-signin { display: flex; margin-left: auto; }
 }
