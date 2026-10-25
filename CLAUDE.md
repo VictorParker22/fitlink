@@ -108,8 +108,8 @@ from `plans`.
   and the 24-hour cancel line, "Coached on <name>". Every value is `site/coachPageSample.js` (pure; the real page's
   `blocks.js` / `season.js` builders over pricing.js; `node --test src/web/site/coachPageSample.test.js`), and the
   caption under the phone says it is an example. No date in it (the static page and the browser draw the same).
-- **Static pages (launch plan W7, 2026-10-25; branch `launch/w7-prerender`).** Home, `/pricing`, `/athletes` and
-  `/support` (Help) are written to static HTML at build time, so a crawler, an unfurler or a slow phone reads the page
+- **Static pages (launch plan W7, 2026-10-25; branch `launch/w7-prerender`).** Home, `/pricing`, `/athletes`,
+  `/support` (Help) and `/founding` (since review 1: every coach CTA leads there and coaches share it) are written to static HTML at build time, so a crawler, an unfurler or a slow phone reads the page
   before any script. `npm run build` is three steps: `vite build` (client; `spaShell` in `vite.config.js` also emits
   `dist/spa.html`, a copy of the shell, before the service worker is generated), `vite build --ssr
   src/web/site/prerender.jsx --outDir dist-ssr` (the same tree `main.jsx` hydrates for those paths, under
@@ -119,8 +119,15 @@ from `plans`.
   `usePageMeta` reads the same entries). `/` overwrites `dist/index.html`; the others go to `dist/prerendered/*.html`.
   Pure Node (no browser), so Vercel's build runs it; `vercel.json` names `"buildCommand": "npm run build"` so the Vite
   preset's `vite build` can never skip it. **Routing:** `vercel.json` rewrites `/` → `/index.html` and `/pricing`,
-  `/athletes`, `/support` → their files BEFORE everything else; the `?spa` fallback and the SPA catch-all now serve
-  `/spa.html` (never the static home page), and the catch-all still leaves `api/` and the AASA file alone.
+  `/athletes`, `/support`, `/founding` → their files BEFORE everything else; the `?spa` fallback and the SPA catch-all
+  now serve `/spa.html` (never the static home page), and the catch-all still leaves `api/` and the AASA file alone.
+  A direct hit on a file (`/index.html`, `/prerendered/<page>.html`) is a 308 to the clean path (`redirects`, one per
+  `PRERENDERED_PAGES` entry; Vercel matches redirects on the request's own path, never on a rewrite's destination, so
+  the rewrites keep working). `/spa.html` is NOT redirected (the service worker precaches it and the coach-meta
+  function's fallback fetches it; a redirect would hand both the static home page): it answers `X-Robots-Tag:
+  noindex`. `/founding` prerenders as the application in its loading state (no counter number, no date); once Founding
+  is full or closed the browser turns it into the coach sign-up after hydrating and sets the title then; the static
+  head stays the Founding one.
   **Hydration:** `main.jsx` calls `hydrateRoot` only when `#root[data-prerendered]` equals `location.pathname`
   (`/pricing/` with a slash is the shell → `createRoot`). Nothing in those four pages may render differently on the
   server and in the browser's first render: no date (the footer's year carries `suppressHydrationWarning`), no
@@ -128,9 +135,14 @@ from `plans`.
   both builds share the env. A mismatch is React error #418 in the console (the headless check fails on it and on any
   node of `#root` replaced). **Service worker:** `navigateFallback: 'spa.html'`; `index.html`, `prerendered/**` and the
   share image are not precached (`globIgnores`); `navigateFallbackDenylist` = the AASA path, `/api/`, and the four
-  static paths (built from `PRERENDERED_PAGES`), so a visitor with the worker still gets the files. The coach page's
+  static paths (built from `PRERENDERED_PAGES`), so a visitor with the worker still gets the files. `/` is NOT
+  precached, on purpose (review 1): a precache entry is hashed before the prerender rewrites `index.html` (it would
+  never match the file served), and a precached `/` would answer the home page from the cache ahead of the network,
+  the stale-page problem the denylist exists to stop. So the installed web app's start URL needs the network; offline
+  it shows the browser's own offline page. The coach page's
   link-preview function reads `dist/spa.html` (`includeFiles`, or `<origin>/spa.html`). `node --test
-  src/web/prerender.test.js` pins the list, the rewrites, the denylist and the build command.
+  src/web/prerender.test.js` pins the list, the rewrites, the redirects, the shell's noindex, the denylist and the
+  build command.
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and
@@ -717,7 +729,7 @@ from `plans`.
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.
   `vite.config.js` keeps the PWA plugin (manifest, service worker); the head comes from `brand.js` + `pageMeta.js`
-  (W1), the four static pages carry their own (W7), and each page sets its own on navigation through `usePageMeta`.
+  (W1), the five static pages carry their own (W7), and each page sets its own on navigation through `usePageMeta`.
 - **Universal links.** `public/.well-known/apple-app-site-association` (JSON, no extension, no
   comments) lists `applinks` for `SCJ422P9KZ.fitlink.app` with components `/i/*` and `/live/*`,
   plus `webcredentials`. `vercel.json` gives it `Content-Type: application/json` and

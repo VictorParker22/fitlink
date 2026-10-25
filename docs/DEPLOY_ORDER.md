@@ -163,7 +163,10 @@ change the site only; each says below what it waits for.
 - **W7 static pages** (`launch/w7-prerender`): no server dependency. `vercel.json` now sets `buildCommand` to
   `npm run build` (three steps, see CLAUDE.md); a dashboard Build Command loses to vercel.json. After the deploy:
   - `curl -s https://fitlink.coach/ | grep -c 'data-prerendered="/"'` prints 1, and the same for `/pricing`,
-    `/athletes`, `/support` with their paths; each shows its own `<title>` and `<link rel="canonical">`;
+    `/athletes`, `/support`, `/founding` with their paths; each shows its own `<title>` and `<link rel="canonical">`;
+  - `curl -sI https://fitlink.coach/prerendered/pricing.html` answers 308 with `location: /pricing` (the same for the
+    other files, and `/index.html` → `/`); `curl -sI https://fitlink.coach/spa.html` answers 200 with
+    `x-robots-tag: noindex`;
   - `curl -s https://fitlink.coach/coach | grep -c 'data-prerendered'` prints 0 (the shell), and so does
     `/c/<handle>` for a browser user agent; `curl -s -A 'facebookexternalhit/1.1' https://fitlink.coach/c/<handle>`
     still prints ONE `og:title`, the coach's;

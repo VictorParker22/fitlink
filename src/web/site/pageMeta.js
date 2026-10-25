@@ -4,7 +4,10 @@ import { escapeHtml } from '../coachMeta.js';
 import {
   BRAND_NAME, OG_IMAGE_ALT, OG_IMAGE_HEIGHT, OG_IMAGE_URL, OG_IMAGE_WIDTH, SITE_ORIGIN,
 } from './brand.js';
-import { ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, STANDARD_FEE_PERCENT, usd } from './pricing.js';
+import {
+  ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FOUNDING_CLOSES_ON, FOUNDING_SLOTS, FOUNDING_THEN_MONTHLY_USD, STANDARD_FEE_PERCENT, usd,
+} from './pricing.js';
+import { closesLabel } from '../founding.js';
 
 /** The hero line (launch plan W2): the home page's title and the share title of the site. */
 export const HERO_LINE = 'Monday, handled.';
@@ -29,6 +32,13 @@ export const PRERENDERED_PAGES = Object.freeze([
   {
     path: '/support', file: 'prerendered/support.html', title: 'Help',
     description: `Answers for coaches and athletes on ${BRAND_NAME}: payouts and Stripe, passes, refunds, the assistant, paying and cancelling, finding your plan. Or write to us.`,
+  },
+  {
+    // Where every coach call to action leads and the link coaches share (review 2026-10-25). The counter is the
+    // client's (the markup is its loading state: nothing numeric from it); once Founding is full or closed the page
+    // turns into the coach sign-up in the browser and sets its own title then (Founding.jsx), the head stays this.
+    path: '/founding', file: 'prerendered/founding.html', title: 'Founding coaches',
+    description: `${FOUNDING_SLOTS} Founding spots for independent coaches: Elite free for a year from your first paid athlete, then ${usd(FOUNDING_THEN_MONTHLY_USD)} a month. Closes ${closesLabel(FOUNDING_CLOSES_ON)}.`,
   },
 ]);
 

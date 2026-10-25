@@ -73,6 +73,7 @@ import {
   statusLine,
 } from '../founding';
 import { usePageMeta } from './meta';
+import { pageMetaFor } from './pageMeta';
 import {
   ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, FOUNDING_CLOSES_ON, FOUNDING_ENDS_AFTER_DAYS_WITHOUT_PAYMENT,
   FOUNDING_FEE_PERCENT, FOUNDING_FREE_MONTHS, FOUNDING_MIN_PAYING_ATHLETES, FOUNDING_NOTICE_DAYS_BEFORE, FOUNDING_SLOTS,
@@ -92,10 +93,8 @@ const BOOKING_URL = bookingUrl((import.meta.env ?? {}).VITE_FOUNDING_CALENDAR_UR
 const CLOSES = closesLabel(FOUNDING_CLOSES_ON);
 const NOTIFY_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Tell me when a Founding spot opens')}`;
 
-const FOUNDING_META = [
-  'Founding coaches',
-  `${FOUNDING_SLOTS} Founding spots for independent coaches: Elite free for a year from your first paid athlete, then ${usd(FOUNDING_THEN_MONTHLY_USD)} a month. Closes ${CLOSES}.`,
-];
+/** The Founding page's title and description: the static head's (pageMeta.js, prerendered). */
+const FOUNDING_META = [pageMetaFor('/founding').title, pageMetaFor('/founding').description];
 const JOIN_META = [
   'Join as a coach',
   `Make your ${BRAND_NAME} coach account: free to start, ${STANDARD_FEE_PERCENT}% per pass with up to ${FREE_ROSTER_CAP} paying athletes, Coach Elite optional.`,
