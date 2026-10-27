@@ -11,7 +11,7 @@ import { normalizeCode } from './codes.js';
 /** Where Sign in with Apple can come back to this browser: Supabase Auth allows these return URLs (a Vercel preview's falls back to production, where this browser's verifier is missing). */
 export const APPLE_ORIGINS = Object.freeze(['https://fitlink.coach', 'http://localhost:5173', 'http://localhost:4173']);
 /** The fixed return page per caller; never under /i/* or /live/* (the paths the installed app may claim), never from a query. */
-export const APPLE_RETURN_PATHS = Object.freeze({ coach: '/coach', delete: '/delete-account', checkout: '/join' });
+export const APPLE_RETURN_PATHS = Object.freeze({ coach: '/coach', delete: '/delete-account', checkout: '/join', founding: '/founding' });
 /** sessionStorage key of the checkout an Apple sign-in started from, and how long it is good for. */
 export const CHECKOUT_RETURN_KEY = 'fitlink-web-checkout-return';
 export const CHECKOUT_RETURN_TTL_MS = 30 * 60 * 1000;
@@ -44,6 +44,17 @@ export const APPLE_SETTINGS_PATH = 'Settings, then your name, then Sign in with 
 export const APPLE_STILL_LISTED = `FitLink may still be listed under Sign in with Apple on your iPhone. To remove it, open ${APPLE_SETTINGS_PATH}, then tap Delete, then Stop Using.`;
 export const SETTING_UP = 'Setting up your account…';
 export const SIGN_UP_FAILED = 'We couldn’t finish setting up your account. You haven’t been charged. Try again in a moment.';
+/** /founding (2026-10-25): the page is for coach accounts; an athlete account is told so and never converted. */
+export const FOUNDING_NOT_COACH_TITLE = 'This page is for coach accounts';
+export const FOUNDING_ATHLETE_ACCOUNT = 'This account was made as an athlete account, so it can’t apply for a Founding spot. To apply, sign out and use the email you coach with, or a new one.';
+/** /founding: a new account here (email code) is made as a coach account once the code is verified; an unfinished Apple sign-up is finished as one. */
+export const FOUNDING_SIGN_IN_SUB = 'Sign in with the account you coach with. New here? The code makes your coach account; no password.';
+/** /founding (review 2026-10-25): a session this tab did not make is named, and nothing is written before this tap. */
+export const FOUNDING_CONTINUE_TITLE = 'This isn’t a coach account yet';
+export const FOUNDING_CONTINUE_BODY = 'Founding spots are for coach accounts. Continue as a coach to set this account up as one; nothing about your application is sent until you apply.';
+export const FOUNDING_CONTINUE = 'Continue as a coach';
+export const FOUNDING_CONTINUING = 'Setting up your coach account…';
+export const FOUNDING_FINISH_FAILED = 'We couldn’t finish setting up your coach account. Nothing was sent. Try again in a moment.';
 export const TRAINER_IN_USE = 'This Apple ID already has a coach account on FitLink. To train with this coach, open the link in the FitLink app.';
 export const RESUME_PASS_GONE = 'The pass you chose isn’t for sale any more. Pick another pass below.';
 export const JOIN_NOTHING_TITLE = 'Nothing to finish here';
@@ -176,6 +187,11 @@ export const HINTS = Object.freeze({
     safari: 'Signed up with Sign in with Apple? Open fitlink.coach/delete-account in Safari to continue with Apple.',
     off: 'Signed up with Sign in with Apple and hid your email? Delete from the FitLink app instead: Profile, then Delete account.',
   }),
+  founding: Object.freeze({
+    apple: 'Signed up in the app with Sign in with Apple and hid your email? Use Continue with Apple.',
+    safari: 'Signed up in the app with Sign in with Apple? Open fitlink.coach/founding in Safari to continue with Apple.',
+    off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page) and the application is taken by email.',
+  }),
   checkout: Object.freeze({
     apple: 'Signed up in the app with Sign in with Apple? Use Continue with Apple, so the pass lands on that account.',
     safari: 'Signed up in the app with Sign in with Apple? Open this page in Safari to continue with Apple, so the pass lands on that account.',
@@ -183,7 +199,7 @@ export const HINTS = Object.freeze({
   }),
 });
 
-/** page: 'coach' | 'delete' | 'checkout'. The button is drawn → use it; the build offers Apple but this is a Home Screen web app → Safari; else the app. */
+/** page: 'coach' | 'delete' | 'checkout' | 'founding'. The button is drawn → use it; the build offers Apple but this is a Home Screen web app → Safari; else the app. */
 export function signInHint(page, { available, enabled, standalone }) {
   const h = HINTS[page];
   if (available) return h.apple;

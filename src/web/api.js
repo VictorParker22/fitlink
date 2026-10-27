@@ -4,9 +4,10 @@
 import { supabase, SUPABASE_KEY, FUNCTIONS_URL } from './supabase';
 import { finishedSeason } from './season';
 import {
-  APPLE_RETURN_PATHS, CHECKOUT_RETURN_KEY, APPLE_START_FAILED, SIGN_UP_FAILED, TRAINER_IN_USE,
-  appleAvailable, parseAuthReturn, parkedCheckoutValue, readParkedCheckout, cleanName,
+  APPLE_RETURN_PATHS, CHECKOUT_RETURN_KEY, APPLE_START_FAILED, SIGN_UP_FAILED, TRAINER_IN_USE, FOUNDING_FINISH_FAILED,
+  appleAvailable, parseAuthReturn, parkedCheckoutValue, readParkedCheckout, cleanName, metadataName,
 } from './appleAuth';
+import { FOUNDING_RETURN_KEY, foundingReturnValue, parseSlots, readFoundingReturn } from './founding';
 import { APPLE_WEB_ENABLED } from './authConfig';
 
 export { normalizeCode } from './codes';
@@ -189,6 +190,107 @@ export async function finishAthleteSignUp({ name = '' } = {}) {
     throw Object.assign(new Error(unauthorized ? SIGNED_OUT_SENTENCE : SIGN_UP_FAILED), { code: unauthorized ? 'unauthorized' : 'sign_up_failed' });
   }
 }
+
+/**
+ * /founding (2026-10-25): finish an account as a COACH, the way the iOS app's
+ * AuthService.claimRole(.trainer) does it: the caller's own trainers row when it
+ * is missing (RLS trainers_insert_own: id = auth.uid()), then role 'trainer' in
+ * metadata. Called ONLY when founding.js accountStep() says 'finish' (never on an
+ * athlete account), and ONLY for this tab's own session (a code typed here, this
+ * tab's Apple return) or after the person tapped Continue as a coach under
+ * "Signed in as …" (review 2026-10-25: a role-less session someone left in the
+ * browser was made a coach on page load). A /founding email sign-up has no
+ * trainers row (fitlink-app 20261025110000 handle_new_user skips
+ * signup 'founding_web'), so this is where the coach card is first made: after
+ * the code was verified. `user` is freshUser()'s answer. Throws
+ * { code: 'unauthorized' | 'finish_failed' }.
+ */
+export async function finishCoachSignUp(user) {
+  const fail = (status) => {
+    const unauthorized = status === 401 || status === 403;
+    return Object.assign(new Error(unauthorized ? SIGNED_OUT_SENTENCE : FOUNDING_FINISH_FAILED), { code: unauthorized ? 'unauthorized' : 'finish_failed' });
+  };
+  const have = await supabase.from('trainers').select('id').eq('id', user.id).limit(1);
+  if (have.error) throw fail(have.status);
+  if (!have.data?.length) {
+    const ins = await supabase.from('trainers').insert({ id: user.id, name: metadataName(user), email: user.email ?? '' });
+    // 23505: made meanwhile (another tab), which is what was wanted.
+    if (ins.error && ins.error.code !== '23505') throw fail(ins.status);
+  }
+  const { error } = await supabase.auth.updateUser({ data: { role: 'trainer' } });
+  if (error) throw fail(error.status);
+}
+
+/**
+ * The public Founding counter: founding_slots() (anon; fitlink-app migration
+ * 20261025110000) → parseSlots()'s `{ taken, total, closesOn, open }`. Throws on
+ * a failed read or an answer of another shape: the page then shows no number.
+ */
+export async function foundingSlots() {
+  const { data, error } = await supabase.rpc('founding_slots');
+  if (error) throw error;
+  const slots = parseSlots(data);
+  if (!slots) throw new Error('founding_slots answered an unexpected shape');
+  return slots;
+}
+
+/**
+ * The signed-in coach's own Founding application (RLS: own row only), or null.
+ * `{ row, open }`: `open` is false when the table is not on the server yet (the
+ * migration lands after this page), so the page can say applications aren't
+ * open instead of failing. Any other failed read throws `{ status, code }`.
+ */
+export async function myFoundingApplication(uid) {
+  const { data, error, status } = await supabase.from('founding_applications').select('*').eq('user_id', uid).limit(1);
+  if (error) {
+    if (error.code === '42P01' || error.code === 'PGRST205' || status === 404) return { row: null, open: false };
+    throw Object.assign(new Error(error.message || 'read failed'), { status: Number(status) || 0, code: status === 401 ? 'unauthorized' : error.code ?? null });
+  }
+  return { row: data?.[0] ?? null, open: true };
+}
+
+/**
+ * apply_founding: the caller's own application (it takes no slot; the operator
+ * grants one after the setup call). `params` is founding.js checkAnswers()'s.
+ * Never throws: `{ data, error, status }` for applyRefusal() to word.
+ */
+export async function applyFounding(params) {
+  try {
+    const { data, error, status } = await supabase.rpc('apply_founding', params);
+    return { data: data ?? null, error: error ?? null, status: Number(status) || 0 };
+  } catch (e) {
+    return { data: null, error: { message: String(e?.message ?? e) }, status: 0 };
+  }
+}
+
+/**
+ * Whether a coach holds a Founding grant: trainers_public.founding_member
+ * (anon-readable; true once the operator granted it, kept on suspension). A
+ * read that fails, a missing row, or the column not being there yet (before the
+ * migration) all answer false: a badge shows only when the server says so.
+ */
+export async function foundingMember(trainerId) {
+  if (!trainerId) return false;
+  try {
+    const { data, error } = await supabase.from('trainers_public').select('founding_member').eq('id', trainerId).limit(1);
+    if (error) return false;
+    return data?.[0]?.founding_member === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Remember, in this tab only, that Sign in with Apple was started on /founding. false when the browser refuses. */
+export function parkFoundingReturn() {
+  try { window.sessionStorage.setItem(FOUNDING_RETURN_KEY, foundingReturnValue()); return true; } catch { return false; }
+}
+/** Read and forget it: when this tab started Sign in with Apple on /founding (ms), or null. */
+export function takeFoundingReturn() {
+  let raw = null;
+  try { raw = window.sessionStorage.getItem(FOUNDING_RETURN_KEY); window.sessionStorage.removeItem(FOUNDING_RETURN_KEY); } catch { /* none */ }
+  return readFoundingReturn(raw);
+}
+export function clearFoundingReturn() { try { window.sessionStorage.removeItem(FOUNDING_RETURN_KEY); } catch { /* none */ } }
 
 /** Remember, in this tab only, which pass an Apple sign-in started from. false when the browser refuses. */
 export function parkCheckout({ code, planId, name }) {

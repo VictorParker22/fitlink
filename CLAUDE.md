@@ -1,6 +1,6 @@
 # CLAUDE.md — FitLink Project Memory
 
-> **Last updated**: 2026-10-21
+> **Last updated**: 2026-10-25
 > **Project**: FitLink — Gym Trainer Referral & Client Management Platform
 > **Location**: `c:\projects\fitlink`
 > **Dev server**: `npm run dev` → http://localhost:5173 (or next available port)
@@ -129,7 +129,7 @@ from `plans`.
     `https://fitlink.coach` or localhost, and not in a Home Screen web app.
     - The owner's console steps are in fitlink-app's threat model (Apple vendor row): Services ID
       `fitlink.app.web` FIRST in Supabase's Apple Client IDs, client secret expiry.
-    - Return paths are fixed: `/coach`, `/delete-account`, `/join`. Never `/i/*` or `/live/*` (the
+    - Return paths are fixed: `/coach`, `/delete-account`, `/join`, `/founding`. Never `/i/*` or `/live/*` (the
       AASA paths). Never from a query.
     - Checkout parks `{code, planId, name}` in sessionStorage (`fitlink-web-checkout-return`, 30
       minutes). `/join` moves client-side to `/i/CODE`, which reopens the sheet (no who step: the
@@ -225,6 +225,58 @@ from `plans`.
   stripe-webhook v41, confirm-subscription v7, create-subscription v28), so the season copy
   is now true for new purchases; the site still waits on the Terms §16 decision below, and the
   one unstamped live subscription is billed by the plan's current length until it is stamped.
+- **Founding (2026-10-25, launch plan Sprint 1 PR 2; `src/web/site/Founding.jsx`, rules in `src/web/founding.js`,
+  `node --test src/web/founding.test.js`).** `/founding` in the site shell, linked from nowhere yet (the "Claim a Founding
+  spot" CTA is website item W3). Server: fitlink-app migration `20261025110000` (threat model B38, A56–A58).
+  - **Applying never takes a spot.** The form calls `apply_founding` (the caller's own application, status `pending`);
+    Victor takes a spot for the coach with `grant_founding` after the setup call. Never build a web path that sets
+    founding: farmed accounts would take all 15.
+  - **The counter** is `founding_slots()` (anon): `{taken, total, closes_on, open}`, taken = granted spots that exist
+    (a deleted Founding coach's grant goes with the account, so the slot reopens: owner decision 2026-10-25, and the
+    "If one opens…" copy stays). Nothing numeric while it loads; a failed read says "Couldn't load how many spots are
+    taken." with Try again (never a guessed number); full → a NEW application becomes "All N spots are taken." and a
+    "Tell me when a spot opens" `mailto:` to `SUPPORT_EMAIL`; past the close → closed copy (`foundingPhase`). An
+    application already pending or booked keeps its place: "Edit your contact details" (instagram, phone; the other
+    fields locked, the server keeps them, `contactOnly`). A withdrawn one is a new one (`isNewApplication`).
+  - **The offer's numbers** (15 spots, 12 months, $29.99, 5% vs 10%, 5 paying athletes, 30-day notice, 60 days without
+    a payment, Dec 31) are `FOUNDING_*` / `STANDARD_FEE_PERCENT` / `FREE_ROSTER_CAP` in `pricing.js` with the dev
+    `[confirm]` markers; the server's copy is fitlink-app `pricing.json` `tiers.founding` (`closes_on` 2026-12-31,
+    `closes_tz` America/Los_Angeles). Say the server's rules as they are (review 2026-10-25): the free year starts with
+    the first athlete payment AFTER the grant; the 5% applies while the free year or Elite runs; after the free year
+    without Elite the coach is on the free plan (10%, up to 5 paying athletes); with no athlete payment for 60 days
+    (counted from the grant or the last athlete payment) Founding pricing ENDS (the server's suspension lasts until the
+    operator lifts it; never "pauses"); the badge stays.
+  - **Sign-in.** Email code with `shouldCreateUser: true, data: { signup: 'founding_web' }` and NO role
+    (`FOUNDING_SIGN_UP_DATA`): the auth user exists from the moment the code is SENT, and the server's
+    `handle_new_user` (20261025110000) makes no trainers row for that marker, so nothing reaches the public
+    `trainers_public` for an address nobody proved (A58). Or Sign in with Apple, returning to `/founding` (in
+    `APPLE_RETURN_PATHS`; SiteShell skips its URL cleaning there, the page takes the return note itself). Then
+    `freshUser()` + `myRole()` → `accountStep`: an athlete account (a clients row, or metadata role `client`) is told
+    "This page is for coach accounts. This account was made as an athlete account…" and never converted.
+  - **Nothing is written for an account before the person acts** (review 2026-10-25: a role-less Apple session left in
+    the browser was made a coach on page load). An account that is not a coach account yet (no rows and no role, a
+    coach role with its row missing, an Apple sign-up nobody finished) is finished as a COACH (`api.js
+    finishCoachSignUp`: its own trainers row if missing, then role `trainer`; the one place the web does that)
+    automatically ONLY for this tab's own sign-in (`isOwnSession`): the code was typed in this tab, or this tab started
+    Sign in with Apple on `/founding` (sessionStorage `fitlink-web-founding-return`, 30 minutes, read and forgotten on
+    arrival) with no failure note and the server's `last_sign_in_at` after that start. Any other session gets "Signed in
+    as … · Not you? Sign out", "This isn't a coach account yet" and **Continue as a coach**; nothing is written before
+    that tap. A coach account's only write is Apply. Proved headless with the request log (no write before the tap).
+    A read that fails says so with Check again.
+  - **After applying** (or with an application on file): the status from the row (pending / booked / granted →
+    "You're a Founding coach" with the badge / declined / withdrawn), the answers, Edit your answers. "Book your setup
+    call" opens `VITE_FOUNDING_CALENDAR_URL` (validated by `bookingUrl`: https, a host, no credentials; read at build
+    time, never from the page's URL) in a new tab; unset → "Nothing is emailed automatically: Victor will email you at
+    <email> to set up the call." There is no email provider. Refusals are worded from the RPC's keys
+    (`applyRefusal`); an answer that never came says the outcome is unknown, with Check again (re-reads the own row).
+  - **The badge** is `src/web/FoundingBadge.jsx` ("Founding 15"), shown on the coach page when
+    `trainers_public.founding_member` is true (`api.js foundingMember`: any failed read, a missing column before the
+    migration included, means no badge). PR 3 moves it to `/c/<handle>` with the component as is.
+  - **Brand.** The product is being renamed: new copy takes the name from `src/web/site/brand.js` (`BRAND_NAME`,
+    `FOUNDER_FIRST_NAME`), never a new hard-coded "FitLink".
+  - Owner: set `VITE_FOUNDING_CALENDAR_URL` on Vercel (production) before the page is linked. Deploy this page only
+    AFTER the server migration: before it the page says applications aren't open yet, AND the live `handle_new_user`
+    ignores the `founding_web` marker, so an email sign-up here would still publish the address's local part.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.

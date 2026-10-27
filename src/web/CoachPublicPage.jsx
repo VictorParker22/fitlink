@@ -23,13 +23,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, freshUser, leaveUnfinishedAppleSignUp, session,
-  takeAuthReturnNote,
+  inviteInfo, normalizeCode, plansFor, planIsPriced, firstName, finishedSeasonWith, foundingMember, freshUser, leaveUnfinishedAppleSignUp,
+  session, takeAuthReturnNote,
 } from './api';
 import { appleSignUpUnfinished, RESUME_PASS_GONE, RESUME_SIGNED_OUT } from './appleAuth';
 import { passBilling, passPriceParts, passSeasonLine } from './season';
 import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
+import FoundingBadge from './FoundingBadge';
 import './web.css';
 
 const Check = ({ dark }) => (
@@ -55,6 +56,8 @@ export default function CoachPublicPage() {
   const [buying, setBuying] = useState(null);
   /** The signed-in athlete's completed season with this coach: { planId, planName, paidInFull } or null. */
   const [finished, setFinished] = useState(null);
+  /** The coach holds a Founding grant (trainers_public.founding_member): the "Founding 15" badge. False on any failed read. */
+  const [founding, setFounding] = useState(false);
   /** Bumped when the checkout closes, so a season bought there takes the offer away. */
   const [recheck, setRecheck] = useState(0);
 
@@ -111,6 +114,15 @@ export default function CoachPublicPage() {
     const coach = state.card?.coach;
     document.title = coach?.name ? `${coach.name} — FitLink` : 'FitLink';
   }, [state.card]);
+
+  // The badge: the server's column only; absent (before the migration), unreadable or false → no badge.
+  const badgeCoachId = state.card?.kind === 'coach' ? state.card?.coach?.id ?? null : null;
+  useEffect(() => {
+    if (!badgeCoachId) return undefined;
+    let cancelled = false;
+    foundingMember(badgeCoachId).then((v) => { if (!cancelled) setFounding(v); });
+    return () => { cancelled = true; };
+  }, [badgeCoachId]);
 
   // Only with a session already in this browser (no sign-in is asked for).
   // A read that fails shows nothing: the offer is an invitation, not a fact
@@ -185,6 +197,7 @@ export default function CoachPublicPage() {
       <section id="top" aria-label={`About ${coach.name || 'the coach'}`} className="fl-hero">
         <div className="fl-hero-copy">
           {kicker && <span className="fl-kicker">{kicker}</span>}
+          {founding && <FoundingBadge />}
           <h1 className="fl-display">{coach.name || 'Your coach'}</h1>
           {coach.bio && <p className="fl-lede">{coach.bio}</p>}
           <div className="fl-actions">

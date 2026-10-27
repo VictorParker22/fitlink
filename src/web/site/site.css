@@ -384,3 +384,21 @@ body.fl-site-body-dark { background: #0B0C0F; }
 .s-404 .s-actions { justify-content: center; }
 .s-404 .fl-btn.ghost-dark { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: var(--fl-on-ink); min-height: 54px; padding: 0 24px; }
 .s-404 .fl-btn.accent { min-height: 54px; padding: 0 24px; box-shadow: none; border: 0; background: var(--fl-accent); }
+
+/* /founding (Founding.jsx) */
+.s-founding { display: flex; flex-direction: column; gap: 40px; padding-top: 48px; padding-bottom: 72px; }
+.s-founding-count { display: flex; flex-direction: column; gap: 10px; min-height: 28px; margin: 0; font-size: 18px; }
+.s-founding-count b { font-size: 20px; }
+.s-founding-count-failed .fl-btn { align-self: flex-start; }
+.s-founding-meter { display: block; height: 10px; border-radius: 999px; background: var(--fl-raised); overflow: hidden; max-width: 360px; }
+.s-founding-meter span { display: block; height: 100%; background: var(--fl-accent); border-radius: 999px; }
+.s-founding-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+.s-founding-card { background: var(--fl-surface); border-radius: 30px; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.s-founding-set { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.s-founding-set legend { font-size: 15px; font-weight: 600; padding: 0; margin-bottom: 10px; }
+.s-founding-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.s-founding-chips .fl-chip { min-height: 44px; font-size: 15px; }
+.s-founding-answers { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: 16px; }
+.s-founding-answers dt { color: var(--s-text-3); }
+.s-founding-answers dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .s-founding { padding-top: 28px; gap: 28px; } .s-founding-card { padding: 20px; border-radius: 24px; } }

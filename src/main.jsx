@@ -12,6 +12,7 @@ import Athletes from './web/site/Athletes.jsx'
 import Support from './web/site/Support.jsx'
 import Legal from './web/site/Legal.jsx'
 import DeleteAccount from './web/site/DeleteAccount.jsx'
+import Founding from './web/site/Founding.jsx'
 import NotFound from './web/site/NotFound.jsx'
 
 // The marketing and policy pages share SiteShell (header, footer); a coach's
@@ -34,6 +35,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/privacy" element={<Legal key="privacy" doc="privacy" />} />
           <Route path="/terms" element={<Legal key="terms" doc="terms" />} />
           <Route path="/delete-account" element={<DeleteAccount />} />
+          <Route path="/founding" element={<Founding />} />
         </Route>
         <Route path="/i/:code" element={<CoachPublicPage />} />
         <Route path="/live/:code" element={<CoachPublicPage />} />

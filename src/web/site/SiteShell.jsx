@@ -72,12 +72,12 @@ export function SiteFooter() {
 export default function SiteShell() {
   useBodyClass('fl-site-body');
   // Take any tokens or error text out of the address bar, silently: none of
-  // these pages receives a sign-in return. Not on /delete-account, which takes
-  // the return itself and shows its sentence (parent effects run after the
-  // child's, and the first to read the URL cleans it).
+  // these pages receives a sign-in return. Not on /delete-account or /founding,
+  // which take the return themselves and show its sentence (parent effects run
+  // after the child's, and the first to read the URL cleans it).
   const { pathname } = useLocation();
   useEffect(() => {
-    if (pathname !== '/delete-account') takeAuthReturnNote();
+    if (pathname !== '/delete-account' && pathname !== '/founding') takeAuthReturnNote();
     // Once, on the page the visitor arrived at.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
