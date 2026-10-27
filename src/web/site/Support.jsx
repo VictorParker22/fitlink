@@ -72,7 +72,7 @@ const GROUPS = [
       { q: 'How do I sign in?', a: copy.supportSignInA },
       { q: 'I signed up with Sign in with Apple and hid my email.', a: copy.supportHidEmailA },
       { q: 'Can I also train with a coach?', a: 'Yes. From Profile, a coach can turn on training and open another coach’s link or enter their code. The account then has two modes, Coaching and Training, each with its own Home, messages and notifications; your athletes never see your own training, and you cannot coach yourself.' },
-      { q: 'How old do I have to be?', a: `${BRAND_NAME} is for people aged 16 and over. We ask for your date of birth at sign-up.` },
+      { q: 'How old do I have to be?', a: `${BRAND_NAME} is for people aged 16 and over.` },
     ],
   },
   {

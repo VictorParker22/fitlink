@@ -1,12 +1,15 @@
 import { BRAND_NAME } from './brand.js';
 // Title, meta description, date and the "On this page" list for each legal
 // document. The text itself is privacyContent.jsx / termsContent.jsx.
-export const LEGAL_UPDATED = '21 October 2026';
+export const LEGAL_UPDATED = '27 October 2026';
 // The Terms changed on 17 October 2026: switching coaches or deleting an
 // account ends the pass that day, with no refund of time already paid; a
 // season is billed a fixed number of payments and then stops by itself, and
 // when a pass stops billing, the coach's plan is no longer part of it (§4).
-export const TERMS_UPDATED = '17 October 2026';
+// They changed again on 27 October 2026: Coach Elite is also sold on the
+// website through Stripe and ends when the account is deleted (§6, §11), and
+// the date-of-birth sentence is gone (no date of birth is collected).
+export const TERMS_UPDATED = '27 October 2026';
 
 const PRIVACY_SECTIONS = [
   { id: 'plain', label: 'In plain words' },
@@ -28,7 +31,7 @@ const TERMS_SECTIONS = [
   { id: 's3', label: '3. Your account' },
   { id: 's4', label: '4. Passes and subscriptions' },
   { id: 's5', label: '5. Payments, fees, refunds, disputes' },
-  { id: 's6', label: '6. Coach Elite and the App Store' },
+  { id: 's6', label: '6. Coach Elite, our website and the App Store' },
   { id: 's7', label: '7. Acceptable use' },
   { id: 's8', label: '8. Content and ownership' },
   { id: 's9', label: '9. Health and safety' },
@@ -51,7 +54,7 @@ export const LEGAL_DOCS = {
   },
   terms: {
     title: 'Terms of Service',
-    description: `The terms for using ${BRAND_NAME}: coaches sell training passes, athletes buy them, payments run through Stripe, Coach Elite is sold through Apple.`,
+    description: `The terms for using ${BRAND_NAME}: coaches sell training passes, athletes buy them, payments run through Stripe, Coach Elite is sold through Apple and on our website.`,
     updated: TERMS_UPDATED,
     sections: TERMS_SECTIONS,
   },

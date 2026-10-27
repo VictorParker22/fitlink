@@ -90,11 +90,11 @@ export default function TermsBody() {
       </section>
 
       <section id="s6" aria-labelledby="s6-h">
-        <h2 id="s6-h">6. Coach Elite and the App Store</h2>
+        <h2 id="s6-h">6. Coach Elite, our website and the App Store</h2>
         <ul>
           <li><strong>Coach Elite</strong> is an optional subscription for coaches, sold as an in-app purchase through Apple. It is billed to your Apple Account at confirmation and renews automatically unless you cancel it at least 24 hours before the end of the current period. Manage or cancel it in your Apple Account’s subscription settings; deleting the app or your {BRAND_NAME} account does not cancel it.</li>
           <li>In the United States you can also buy Coach Elite on our website. Stripe bills it, renews it automatically until you cancel, and the link in Stripe’s receipt manages or cancels it.</li>
-          <li>Refunds for Coach Elite are handled by Apple under Apple’s terms; {BRAND_NAME} cannot issue them.</li>
+          <li>Refunds for Coach Elite bought through Apple are handled by Apple under Apple’s terms; {BRAND_NAME} cannot issue them. For Coach Elite bought on our website, contact us (section 17).</li>
           <li>While Elite is active {BRAND_NAME} charges you a lower platform fee on pass payments. The lower fee ends when Elite lapses.</li>
           <li>The app itself is licensed to you, not sold, for use on Apple devices you own or control, as Apple’s usage rules allow. This licence is between you and {BRAND_NAME}. <strong>Apple is not a party to these terms</strong>, has no obligation to provide maintenance or support for the app, and is not responsible for addressing any claim relating to the app or your use of it (including product liability, legal compliance and consumer protection claims) or any third-party claim that the app infringes intellectual property rights. Apple and its subsidiaries are third-party beneficiaries of this section and may enforce it. You confirm that you are not in a country subject to a U.S. government embargo and are not on any U.S. government list of prohibited or restricted parties.</li>
         </ul>
@@ -196,7 +196,7 @@ export default function TermsBody() {
         <div className="s-note-card">
           <p><strong>Support and questions about these terms:</strong> <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a></p>
           <p><strong>Questions about your data:</strong> <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> · <Link to="/privacy">Privacy Policy</Link></p>
-          <p><strong>Refunds for a pass:</strong> ask your coach in the app. <strong>Refunds for Coach Elite:</strong> Apple, through your Apple Account.</p>
+          <p><strong>Refunds for a pass:</strong> ask your coach in the app. <strong>Refunds for Coach Elite:</strong> Apple, through your Apple Account, if you bought it in the app; us, at the address above, if you bought it on our website.</p>
         </div>
       </section>
 

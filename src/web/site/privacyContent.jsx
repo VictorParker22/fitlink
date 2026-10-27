@@ -70,7 +70,7 @@ export default function PrivacyBody() {
         <ul>
           <li><strong>With your coach:</strong> training data, logged sets, body weight, check-ins, photos you send and messages are shared with the coach you train with. A coach you leave keeps their own record of the coaching they delivered.</li>
           <li><strong>On a coach’s public page:</strong> a coach’s name, photo, bio and passes are public on the link the coach shares.</li>
-          <li><strong>Payment processing:</strong> payment and payout data is handled by Stripe. The status of a Coach Elite subscription comes from Apple and RevenueCat.</li>
+          <li><strong>Payment processing:</strong> payment and payout data is handled by Stripe. The status of a Coach Elite subscription comes from Apple and RevenueCat, or from Stripe when it was bought on our website.</li>
           <li><strong>Sign in with Apple:</strong> when you choose it, in the app or on the website, Apple confirms who you are and sends us an identifier and your email address or a private relay address that forwards to you.</li>
           <li><strong>The coach’s assistant:</strong> when a coach asks the assistant to draft a reply, the athlete’s check-in text is sent to Google (Gemini) to produce that draft and for nothing else. The coach must agree to the assistant in the app before it is used, and reads and approves every message before it is sent.</li>
           <li><strong>Meal photo suggestions:</strong> when you allow it in the app, the photo of a meal you log is sent to Google (Gemini) to suggest what is on the plate, and for nothing else.</li>
