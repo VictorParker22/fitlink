@@ -2,6 +2,7 @@
 // The SPA has one index.html, so each page sets its own on mount and restores
 // the home values when it leaves.
 import { useEffect } from 'react';
+import { BRAND_NAME } from './brand';
 
 export const HOME_TITLE = 'FitLink — Run your coaching business from one app';
 export const HOME_DESCRIPTION = 'FitLink is where independent coaches sell passes, build seasons and run their athletes’ weeks. Athletes pay on the web or in the app; Stripe pays the coach.';
@@ -16,7 +17,7 @@ export function useBodyClass(name) {
 
 export function usePageMeta(title, description) {
   useEffect(() => {
-    document.title = title ? `${title} — FitLink` : HOME_TITLE;
+    document.title = title ? `${title} — ${BRAND_NAME}` : HOME_TITLE;
     const tag = document.querySelector('meta[name="description"]');
     if (tag) tag.setAttribute('content', description || HOME_DESCRIPTION);
     return () => {

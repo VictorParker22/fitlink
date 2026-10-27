@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/coach-meta/*.js": { "includeFiles": "dist/index.html", "maxDuration": 10 }
+  },
   "headers": [
     {
       "source": "/.well-known/apple-app-site-association",
@@ -10,7 +13,17 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!\\.well-known/apple-app-site-association$).*)",
+      "source": "/c/:handle",
+      "has": [{ "type": "query", "key": "spa" }],
+      "destination": "/index.html"
+    },
+    {
+      "source": "/c/:handle",
+      "has": [{ "type": "header", "key": "user-agent", "value": ".*(facebookexternalhit|Facebot|meta-externalagent|meta-externalfetcher|Twitterbot|Slackbot|Slack-ImgProxy|Discordbot|WhatsApp|TelegramBot|LinkedInBot|Pinterestbot|redditbot|Applebot|Googlebot|Google-InspectionTool|bingbot|BingPreview|DuckDuckBot|YandexBot|Embedly|SkypeUriPreview|vkShare|Iframely|Mastodon|Bluesky|Snap URL Preview).*" }],
+      "destination": "/api/coach-meta/:handle"
+    },
+    {
+      "source": "/((?!api/|\\.well-known/apple-app-site-association$).*)",
       "destination": "/index.html"
     }
   ]

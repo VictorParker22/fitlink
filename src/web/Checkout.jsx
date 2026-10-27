@@ -66,8 +66,8 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { supabase, APP_SCHEME } from './supabase';
 import {
   acceptInvite, appConfig, appleAvailableHere, claimAthleteRole, clearParkedCheckout, coachTakesCards, confirmSubscription,
-  createSubscription, finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, parkCheckout,
-  planNow, previewInvite, session, signInWithApple, signOutLocal,
+  createSubscription, finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, pageInvite,
+  parkCheckout, planNow, previewInvite, session, signInWithApple, signOutLocal,
 } from './api';
 import { chargedTotal, passBilling, passPriceParts } from './season';
 import { chargeLine as blockChargeLine, passKind, paymentsFor, priceLine, saleCheck, scheduleLine, sessionCancelNote } from './blocks';
@@ -78,6 +78,8 @@ import {
 import { APPLE_WEB_ENABLED } from './authConfig';
 import AppleButton from './AppleButton';
 import { SUPPORT_EMAIL } from './site/pricing';
+import { BRAND_NAME } from './site/brand';
+import { normalizeCode } from './codes';
 
 const STEP = { email: 'email', code: 'code', who: 'who', name: 'name', checking: 'checking', switch: 'switch', pay: 'pay', done: 'done', stopped: 'stopped' };
 /** The steps that carry "Signed in as … · Not you? Sign out" (a session is in the browser). */
@@ -87,8 +89,15 @@ const WHO_STEPS = new Set([STEP.who, STEP.name, STEP.switch, STEP.pay, STEP.stop
 const FINAL_CODES = new Set([
   'invite_not_found', 'invite_expired', 'invite_already_accepted', 'cannot_coach_yourself',
   'athlete_only', 'plan_archived', 'plan_not_found', 'coach_not_found', 'plan_unpriced', 'payouts_not_ready', 'trainer_in_use',
-  'below_minimum', 'session_over', 'block_closed', 'block_not_open',
+  'below_minimum', 'session_over', 'block_closed', 'block_not_open', 'page_not_found',
 ]);
+
+/** coach_page's per-payment total ({ cents, bookingCents }), or null when it is not one. */
+function validPageTotal(t) {
+  if (!t || !Number.isInteger(t.cents) || t.cents <= 0) return null;
+  const b = Number.isInteger(t.bookingCents) && t.bookingCents > 0 && t.bookingCents < t.cents ? t.bookingCents : 0;
+  return { cents: t.cents, bookingCents: b };
+}
 
 function cents(amount) {
   const n = Math.max(0, Number(amount) || 0) / 100;
@@ -106,7 +115,7 @@ function stop(message, code = null) {
 
 /** create-subscription's payouts_not_ready sentence ("Coach has not completed payment setup") is not written for a person. */
 function payoutsNotReady(first, tail) {
-  return `${first} hasn’t finished setting up payments, so this pass can’t be bought yet. Ask them to finish Payouts in the FitLink app. ${tail}`;
+  return `${first} hasn’t finished setting up payments, so this pass can’t be bought yet. Ask them to finish Payouts in the ${BRAND_NAME} app. ${tail}`;
 }
 
 /**
@@ -118,10 +127,10 @@ function payoutsNotReady(first, tail) {
 function unknownSwitch(err) {
   const what = 'whether your pass ended or you switched';
   const message = err.status === 0
-    ? `We couldn’t reach FitLink, so we can’t tell ${what}. Check again to see where things stand.`
+    ? `We couldn’t reach ${BRAND_NAME}, so we can’t tell ${what}. Check again to see where things stand.`
     : err.fromServer
       ? `${err.message} We can’t tell from this answer ${what}. Check again to see where things stand.`
-      : `FitLink didn’t answer clearly, so we can’t tell ${what}. Check again to see where things stand.`;
+      : `${BRAND_NAME} didn’t answer clearly, so we can’t tell ${what}. Check again to see where things stand.`;
   return stop(message);
 }
 
@@ -129,8 +138,24 @@ function unknownSwitch(err) {
  * `resumed`: this sheet reopened after this tab's own Sign in with Apple (/join,
  * from what the tab parked before leaving). A return with `returnNote` set did
  * not sign anyone in here, so a session found then is not taken as the person's.
+ *
+ * From a coach page (/c/<handle>, 2026-10-25) there is no invite code yet: `pageHandle` names the page, and the code
+ * comes from page_invite (which renews or makes the coach's standing link, a write) only once the person said the
+ * account is theirs and the page's own checks passed, right before the athlete-exit preview. `pageTotal` is
+ * coach_page's `{ cents: total_cents, bookingCents: booking_fee_cents }`: the server's per-payment total, shown from
+ * the first line (create-subscription's own answer replaces it). `pageSession` goes to create-subscription with
+ * `source: 'coach_page'`; `onCardForm` runs once when the card form opens (the page logs checkout_start).
  */
-export default function Checkout({ plan, coach, code, onClose, returnNote = null, resumeName = '', resumed = false }) {
+export default function Checkout({
+  plan, coach, code = null, onClose, returnNote = null, resumeName = '', resumed = false,
+  pageHandle = null, pageSession = null, pageTotal = null, onCardForm = null,
+}) {
+  /** The invite code athlete-exit joins with: the link's own, or page_invite's answer for a coach page. */
+  const codeRef = useRef(code ?? null);
+  /** The same code for rendering (the done step's app link); set with codeRef. */
+  const [joinCode, setJoinCode] = useState(code ?? null);
+  /** The card form was reported open for this client secret (checkout_start, once). */
+  const cardFormFor = useRef(null);
   const first = firstName(coach?.name);
   const [step, setStep] = useState(STEP.checking);
   const [checkingNote, setCheckingNote] = useState('One moment…');
@@ -187,7 +212,8 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   /** Park this pass for the way back, then leave for Apple. */
   async function startApple() {
     setError(null);
-    if (!parkCheckout({ code, planId: plan.id, name })) { setError(APPLE_PARK_FAILED); return false; }
+    const where = pageHandle ? { handle: pageHandle } : { code: codeRef.current };
+    if (!parkCheckout({ ...where, planId: plan.id, name })) { setError(APPLE_PARK_FAILED); return false; }
     try { await signInWithApple('checkout'); return true; } catch (e) { clearParkedCheckout(); setError(e.message); return false; }
   }
 
@@ -289,7 +315,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
       throw stop(`${e.message} Nothing was changed.`);
     }
     const pk = cfg?.stripePublishableKey;
-    if (!pk || !String(pk).startsWith('pk_')) throw stop('Payments aren’t set up on this page yet. Buy the pass in the FitLink app instead. Nothing was changed.');
+    if (!pk || !String(pk).startsWith('pk_')) throw stop(`Payments aren’t set up on this page yet. Buy the pass in the ${BRAND_NAME} app instead. Nothing was changed.`);
     stripeKey.current = String(pk);
     let takesCards;
     try {
@@ -297,7 +323,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     } catch {
       throw stop('We couldn’t check that this coach can take payments. Nothing was changed. Try again in a moment.');
     }
-    if (takesCards === null) throw stop('This coach is no longer on FitLink. Nothing was changed.', 'coach_not_found');
+    if (takesCards === null) throw stop(`This coach is no longer on ${BRAND_NAME}. Nothing was changed.`, 'coach_not_found');
     if (!takesCards) throw stop(payoutsNotReady(first, 'Nothing was changed.'), 'payouts_not_ready');
   }
 
@@ -353,7 +379,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
       }
       await assertSellable();
       setCheckingNote('Checking your passes…');
-      const v = await previewInvite(code, { planId: plan.id });
+      const v = await previewInvite(await inviteCode(), { planId: plan.id });
       const lost = lostSwitch.current;
       lostSwitch.current = null;
       if (lost && v?.currentCoach?.id && v.currentCoach.id === v?.newCoach?.id) {
@@ -390,6 +416,36 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /**
+   * The invite code to join with. A coach page asks page_invite for the coach's standing code here, after the
+   * person's own sign-in or their Continue and after the page's checks (it renews or makes the coach's link). Its
+   * refusals are its own sentences (`page_not_found` is final, `rate_limited` can be tried again).
+   */
+  async function inviteCode() {
+    if (codeRef.current) return codeRef.current;
+    if (!pageHandle) throw stop('This link doesn’t point to a coach. Nothing was changed.', 'invite_not_found');
+    let answer;
+    try {
+      answer = await pageInvite(pageHandle);
+    } catch (err) {
+      if (err?.code === 'unauthorized') throw stop(err.message, 'unauthorized');
+      // Every other failure (no connection included: review 2026-10-25 m6) says that nothing ended or was bought; the
+      // athlete-exit preview has not run yet.
+      const said = `${err?.message || 'Something went wrong.'}`.trim();
+      throw stop(/Nothing was changed\./.test(said) ? said : `${said} Nothing was changed.`, null);
+    }
+    if (answer?.ok === true && normalizeCode(answer.invite_code)) {
+      codeRef.current = normalizeCode(answer.invite_code);
+      setJoinCode(codeRef.current);
+      return codeRef.current;
+    }
+    if (answer?.ok === false) {
+      const sentence = typeof answer.error === 'string' && answer.error.trim() ? answer.error.trim() : 'This coach page can’t take a purchase right now.';
+      throw stop(`${sentence} Nothing was changed.`, answer.code === 'not_authenticated' ? 'unauthorized' : answer.code ?? null);
+    }
+    throw stop(`${BRAND_NAME} didn’t answer clearly. Nothing was changed. Try again in a moment.`);
+  }
+
   /** The page's own sale check on a plan row, now: throws the sentence, ending "Nothing was changed.". */
   function assertOnSale(p) {
     const check = saleCheck(p, clockNow(), { first });
@@ -424,7 +480,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   async function join(confirm) {
     let accepted;
     try {
-      accepted = await acceptInvite(code, { confirm, planId: plan.id });
+      accepted = await acceptInvite(codeRef.current, { confirm, planId: plan.id });
     } catch (err) {
       // The server found something to confirm that the preview did not show
       // (a pass started in between): show its list, ask again.
@@ -460,14 +516,14 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     if (!id) throw new Error('Your athlete record isn’t ready yet. Reload and try again.');
     setClientId(id);
     const pk = stripeKey.current;
-    if (!pk) throw new Error('Payments aren’t set up on this page yet. Buy the pass in the FitLink app instead.');
+    if (!pk) throw new Error(`Payments aren’t set up on this page yet. Buy the pass in the ${BRAND_NAME} app instead.`);
     let res;
     try {
-      res = await createSubscription(plan.id, id);
+      res = await createSubscription(plan.id, id, { fromPage: Boolean(pageHandle), pageSession });
     } catch (err) {
       // The one refusal whose server sentence is not written for a person.
       if (err?.code === 'payouts_not_ready') {
-        throw Object.assign(new Error(`${first} hasn’t finished setting up payments, so this pass can’t be bought yet. Ask them to finish Payouts in the FitLink app. You haven’t been charged.`), { code: err.code });
+        throw Object.assign(new Error(`${first} hasn’t finished setting up payments, so this pass can’t be bought yet. Ask them to finish Payouts in the ${BRAND_NAME} app. You haven’t been charged.`), { code: err.code });
       }
       throw err;
     }
@@ -525,6 +581,12 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   }
 
   const clientSecret = purchase?.clientSecret ?? null;
+  // The card form is on screen: the coach page's funnel stage checkout_start, once per checkout started.
+  useEffect(() => {
+    if (step !== STEP.pay || !clientSecret || outcome || cardFormFor.current === clientSecret) return;
+    cardFormFor.current = clientSecret;
+    try { onCardForm?.(); } catch { /* the funnel never stops a payment */ }
+  }, [step, clientSecret, outcome, onCardForm]);
   const elementsOptions = useMemo(() => clientSecret ? ({
     clientSecret,
     appearance: {
@@ -536,7 +598,11 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   const owing = purchase?.payingOpenInvoice === true;
   // Model B: create-subscription's own total (the booking fee inside it) replaces plans.price on every line from the
   // card form on; the booking fee is named as part of that total, never as a surcharge line of its own.
-  const total = owing ? null : chargedTotal(purchase);
+  // From a coach page, coach_page's total_cents is the server's per-payment total before create-subscription answers.
+  // Once it answered (a client secret exists) its answer is the only total: without `amountCents` it charges
+  // plans.price, so the page's total (read when the page loaded; the coach may have turned Model B off since) never
+  // labels the Pay button (review 2026-10-25 m4).
+  const total = owing ? null : purchase?.clientSecret ? chargedTotal(purchase) : validPageTotal(pageTotal);
   // How many payments this purchase makes: create-subscription's seasonPayments once it answered, else the page's
   // count from when the sheet opened (a dated block's from now; a session 1; an open pass null).
   const payments = paymentsFor(plan, openedAt, owing ? null : purchase);
@@ -552,7 +618,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   // What is bought: "Starts Dec 1 · 8 weeks · $320 / month · 2 payments", and "($640 in all)" only once
   // create-subscription answered (its total holds a Model B booking fee); an open pass has no such line.
   const what = scheduleLine(plan, openedAt, { first });
-  const seasonLine = what ? [what, priceLine(plan, { payments, total, serverTotal: Boolean(purchase?.clientSecret) })].filter(Boolean).join(' · ') : null;
+  const seasonLine = what ? [what, priceLine(plan, { payments, total, serverTotal: Boolean(purchase?.clientSecret) || validPageTotal(pageTotal) !== null })].filter(Boolean).join(' · ') : null;
   // One payment has nothing left to cancel once it is paid; a session says the 24-hour rule instead.
   const chargeLine = owing
     ? `${due ?? 'Charged'} today, for the payment you owe on the pass you hold.`
@@ -691,8 +757,8 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
             {outcome.kind === 'unconfirmed' && (
               <>
                 {apple
-                  ? <p className="fl-note">It can take a minute. Open the FitLink app and sign in with Apple; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
-                  : <p className="fl-note">It can take a minute. Open the FitLink app signed in with <b>{who || email}</b>; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>}
+                  ? <p className="fl-note">It can take a minute. Open the {BRAND_NAME} app and sign in with Apple; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
+                  : <p className="fl-note">It can take a minute. Open the {BRAND_NAME} app signed in with <b>{who || email}</b>; if the pass isn’t there soon, write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>}
                 {outcome.canCheck !== false && (
                   <button type="button" className="fl-btn accent lg" disabled={busy} onClick={checkAgain}>{busy ? 'Checking…' : 'Check again'}</button>
                 )}
@@ -719,12 +785,12 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
             </div>
             {joinedNote}
             {apple
-              ? <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app: sign in there with Apple.</p>
-              : <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the FitLink app, signed in with <b>{who || email}</b>.</p>}
-            <a className="fl-btn accent lg" href={`${APP_SCHEME}invite/${code}`}>Open the FitLink app</a>
+              ? <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the {BRAND_NAME} app: sign in there with Apple.</p>
+              : <p style={{ fontSize: 17 }}>{first} sees you on their roster now. Your first week comes from them; you’ll find it in the {BRAND_NAME} app, signed in with <b>{who || email}</b>.</p>}
+            <a className="fl-btn accent lg" href={joinCode ? `${APP_SCHEME}invite/${joinCode}` : APP_SCHEME}>Open the {BRAND_NAME} app</a>
             <p className="fl-note">{apple
-              ? 'No app yet? Install FitLink from the App Store, sign in with Apple, and the pass is already there.'
-              : 'No app yet? Install FitLink from the App Store, sign in with the same email code, and the pass is already there.'}</p>
+              ? `No app yet? Install ${BRAND_NAME} from the App Store, sign in with Apple, and the pass is already there.`
+              : `No app yet? Install ${BRAND_NAME} from the App Store, sign in with the same email code, and the pass is already there.`}</p>
           </div>
         )}
       </div>
@@ -763,7 +829,7 @@ function PayForm({ payLabel, chargeLine, onPaid }) {
       {error && <div className="fl-error" role="alert">{error}</div>}
       <button type="submit" className="fl-btn accent lg" disabled={!stripe || busy}>{busy ? 'Paying…' : `Pay ${payLabel}`}</button>
       <p className="fl-note">
-        {chargeLine} Card details go to Stripe, never to FitLink.
+        {chargeLine} Card details go to Stripe, never to {BRAND_NAME}.
       </p>
     </form>
   );
