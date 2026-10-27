@@ -530,7 +530,7 @@ function roleReadError(httpStatus) {
   const message = status === 401
     ? SIGNED_OUT_SENTENCE
     : status === 0
-      ? 'We couldn’t reach FitLink to check your account. Check your connection, then check again.'
+      ? `We couldn’t reach ${BRAND_NAME} to check your account. Check your connection, then check again.`
       : 'We couldn’t check your account right now. Check again in a moment.';
   return Object.assign(new Error(message), { status, code: status === 401 ? 'unauthorized' : null });
 }

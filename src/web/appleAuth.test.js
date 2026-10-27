@@ -11,6 +11,7 @@ import {
   parkedCheckoutValue, parseAuthReturn, readParkedCheckout, signInHint, siteCopy, usedApple, whoStepBody,
 } from './appleAuth.js';
 import { normalizeCode } from './codes.js';
+import { BRAND_NAME, SITE_HOST, SITE_ORIGIN } from './site/brand.js';
 
 const apple = [{ provider: 'apple' }];
 
@@ -112,22 +113,22 @@ test('parseAuthReturn: notes are fixed sentences, auth keys go, everything else 
 });
 
 test('noAccountMessage, by page and by whether Apple is offered', () => {
-  assert.equal(noAccountMessage('coach', true), 'No FitLink account uses that email. If you signed up with Apple, use Continue with Apple.');
-  assert.equal(noAccountMessage('delete', true), 'No FitLink account uses that email. If you signed up with Apple, use Continue with Apple.');
-  assert.equal(noAccountMessage('coach', false), 'No FitLink account uses that email. Check the address, or sign up in the FitLink app first.');
-  assert.equal(noAccountMessage('delete', false), 'No FitLink account uses that email. Check the address, or the one you used in the app.');
+  assert.equal(noAccountMessage('coach', true), `No ${BRAND_NAME} account uses that email. If you signed up with Apple, use Continue with Apple.`);
+  assert.equal(noAccountMessage('delete', true), `No ${BRAND_NAME} account uses that email. If you signed up with Apple, use Continue with Apple.`);
+  assert.equal(noAccountMessage('coach', false), `No ${BRAND_NAME} account uses that email. Check the address, or sign up in the ${BRAND_NAME} app first.`);
+  assert.equal(noAccountMessage('delete', false), `No ${BRAND_NAME} account uses that email. Check the address, or the one you used in the app.`);
 });
 
 test('appleAvailable: the flag, a listed origin, and not a Home Screen web app', () => {
   for (const enabled of [true, false]) {
-    for (const origin of ['https://fitlink.coach', 'http://localhost:4173', 'https://fitlink-abc.vercel.app']) {
+    for (const origin of [SITE_ORIGIN, 'http://localhost:4173', 'https://fitlink-abc.vercel.app']) {
       for (const standalone of [true, false]) {
         const want = enabled && origin !== 'https://fitlink-abc.vercel.app' && !standalone;
         assert.equal(appleAvailable({ enabled, origin, standalone }), want, `${enabled} ${origin} ${standalone}`);
       }
     }
   }
-  assert.equal(appleAvailable({ enabled: 'on', origin: 'https://fitlink.coach', standalone: false }), false, 'only a boolean true turns it on');
+  assert.equal(appleAvailable({ enabled: 'on', origin: SITE_ORIGIN, standalone: false }), false, 'only a boolean true turns it on');
   assert.equal(appleAvailable({ enabled: true, origin: 'http://localhost:5173' }), true);
 });
 
@@ -166,23 +167,23 @@ test('signInHint and noAccountMessage: every page and state, the §5 words', () 
   const want = {
     coach: {
       apple: 'Signed up with Sign in with Apple and hid your email? Use Continue with Apple.',
-      safari: 'Signed up with Sign in with Apple? Open fitlink.coach/coach in Safari to continue with Apple.',
-      off: 'Signed up with Sign in with Apple and hid your email? Sign in in the FitLink app instead.',
+      safari: `Signed up with Sign in with Apple? Open ${SITE_HOST}/coach in Safari to continue with Apple.`,
+      off: `Signed up with Sign in with Apple and hid your email? Sign in in the ${BRAND_NAME} app instead.`,
     },
     delete: {
       apple: 'Signed up with Sign in with Apple and hid your email? Use Continue with Apple.',
-      safari: 'Signed up with Sign in with Apple? Open fitlink.coach/delete-account in Safari to continue with Apple.',
-      off: 'Signed up with Sign in with Apple and hid your email? Delete from the FitLink app instead: Profile, then Delete account.',
+      safari: `Signed up with Sign in with Apple? Open ${SITE_HOST}/delete-account in Safari to continue with Apple.`,
+      off: `Signed up with Sign in with Apple and hid your email? Delete from the ${BRAND_NAME} app instead: Profile, then Delete account.`,
     },
     founding: {
       apple: 'Signed up in the app with Sign in with Apple and hid your email? Use Continue with Apple.',
-      safari: 'Signed up in the app with Sign in with Apple? Open fitlink.coach/founding in Safari to continue with Apple.',
+      safari: `Signed up in the app with Sign in with Apple? Open ${SITE_HOST}/founding in Safari to continue with Apple.`,
       off: 'Signed up in the app with Sign in with Apple and hid your email? Write to support (the address is at the bottom of this page) and the application is taken by email.',
     },
     checkout: {
       apple: 'Signed up in the app with Sign in with Apple? Use Continue with Apple, so the pass lands on that account.',
       safari: 'Signed up in the app with Sign in with Apple? Open this page in Safari to continue with Apple, so the pass lands on that account.',
-      off: 'Signed up in the app with Sign in with Apple? Open this link in the FitLink app instead, so the pass lands on that account.',
+      off: `Signed up in the app with Sign in with Apple? Open this link in the ${BRAND_NAME} app instead, so the pass lands on that account.`,
     },
   };
   for (const page of Object.keys(want)) for (const [state, args] of Object.entries(states)) assert.equal(signInHint(page, args), want[page][state], `${page} ${state}`);
@@ -208,7 +209,7 @@ test('siteCopy(false) is the pages’ words before Apple came to the web', () =>
     checkoutIntro: 'One account for the pass and the app. We email you a six-digit code; no password.',
     supportSignInA: 'With Sign in with Apple or a six-digit code sent to your email. There are no passwords. The season editor on the web signs in with the same email code.',
     supportHidEmailA: undefined,
-    supportBuyA: 'Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; FitLink never sees the number. The same email signs you in to the app.',
+    supportBuyA: `Open your coach’s link, pick a pass, enter your email and the six-digit code we send, then pay by card. Stripe handles the card; ${BRAND_NAME} never sees the number. The same email signs you in to the app.`,
     supportPaidNoPlanLead: 'Sign in to the app with the same email you paid with.',
     athletesStep2: 'Card checkout, handled by Stripe. We email you a six-digit code; no password.',
     athletesStep3: 'Sign in with the email you paid with. Your plan is already there.',
@@ -216,7 +217,7 @@ test('siteCopy(false) is the pages’ words before Apple came to the web', () =>
     homeNeedAppA: 'No. They pay on your page in any browser, then get the app to train. Their plan is waiting when they sign in with the same email.',
   });
   // The one new answer (no old words to keep): the app, never the hidden address.
-  assert.equal(siteCopy(false).supportHidEmailA, `Sign in in the FitLink app with Sign in with Apple; it opens the same account. To see the address FitLink has for you, on your iPhone open ${APPLE_SETTINGS_PATH}.`);
+  assert.equal(siteCopy(false).supportHidEmailA, `Sign in in the ${BRAND_NAME} app with Sign in with Apple; it opens the same account. To see the address ${BRAND_NAME} has for you, on your iPhone open ${APPLE_SETTINGS_PATH}.`);
   assert.deepEqual(Object.keys(siteCopy(true)).sort(), Object.keys(siteCopy(false)).sort());
   assert.equal(siteCopy(true).coachSignInSub, 'The same account as the app. No password.');
 });

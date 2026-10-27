@@ -6,7 +6,7 @@
 // email or relay address as the app). Change the table, change this file. The
 // title, date and section list live in legalMeta.js.
 import { Link } from 'react-router-dom';
-import { SUPPORT_EMAIL } from './pricing';
+import { BRAND_NAME, SITE_HOST, SUPPORT_EMAIL } from './brand';
 
 
 export default function PrivacyBody() {
@@ -15,7 +15,7 @@ export default function PrivacyBody() {
       <section id="plain" className="s-plain" aria-labelledby="plain-h">
         <h2 id="plain-h">In plain words</h2>
         <ul>
-          <li>FitLink collects only the data needed to connect coaches with athletes and run the coaching between them.</li>
+          <li>{BRAND_NAME} collects only the data needed to connect coaches with athletes and run the coaching between them.</li>
           <li>We never sell your data, and nothing is used for advertising or tracking.</li>
           <li>Your coach sees your training, check-ins and messages. Nothing else unless you send it.</li>
           <li>Stripe handles payments. We never see a card number.</li>
@@ -33,14 +33,14 @@ export default function PrivacyBody() {
           <li><strong>Payment information:</strong> pass payments are processed by Stripe. We never see or store card numbers; we keep a record of which pass you bought, when, and its status. A coach who connects payouts gives their identity and bank details directly to Stripe. Coach Elite is bought through Apple; we receive the subscription’s status from Apple and RevenueCat, not your payment details.</li>
           <li><strong>Communications:</strong> messages exchanged between coaches and athletes within the app.</li>
           <li><strong>Device information:</strong> device type, OS version, and a push notification token, used only to deliver the notifications you have allowed.</li>
-          <li><strong>Website:</strong> a coach’s public page on fitlink.coach can be read by anyone with its link. You can sign in there with a six-digit code sent to your email or with Sign in with Apple. If you sign in with Apple, Apple gives us the same account identifier and email address (or private relay address) it gives the app, and your name the first time, if you choose to share it. Your sign-in session is kept in your browser’s local storage. When you continue with Apple from a coach’s page, that browser tab also keeps the link’s code, the pass you chose and any name you typed until you come back, for at most 30 minutes. We do not use advertising cookies.</li>
+          <li><strong>Website:</strong> a coach’s public page on {SITE_HOST} can be read by anyone with its link. You can sign in there with a six-digit code sent to your email or with Sign in with Apple. If you sign in with Apple, Apple gives us the same account identifier and email address (or private relay address) it gives the app, and your name the first time, if you choose to share it. Your sign-in session is kept in your browser’s local storage. When you continue with Apple from a coach’s page, that browser tab also keeps the link’s code, the pass you chose and any name you typed until you come back, for at most 30 minutes. We do not use advertising cookies.</li>
         </ul>
       </section>
 
       <section id="use" aria-labelledby="use-h">
         <h2 id="use-h">2. How we use your data</h2>
         <ul>
-          <li>To provide and maintain the FitLink service</li>
+          <li>To provide and maintain the {BRAND_NAME} service</li>
           <li>To connect athletes with their coaches, and show each the other’s training data and messages</li>
           <li>To show your training progress</li>
           <li>To process payments, pay coaches and manage subscriptions</li>
@@ -53,10 +53,10 @@ export default function PrivacyBody() {
 
       <section id="health" aria-labelledby="health-h">
         <h2 id="health-h">3. Fitness and health data</h2>
-        <p>The training data FitLink holds is what you or your coach type into FitLink:</p>
+        <p>The training data {BRAND_NAME} holds is what you or your coach type into {BRAND_NAME}:</p>
         <ul>
-          <li><strong>Apple Health is optional and off by default.</strong> If you turn it on in the app, FitLink can save the workouts you finish to Apple Health, and read your resting heart rate and sleep from it. Each of the three is a separate switch; iOS asks your permission before anything is read or written</li>
-          <li>Resting heart rate and sleep are shown to you next to your check-ins. Your coach sees them <strong>only</strong> if you also turn on “Share with your coach”, and stops seeing them the moment you turn it off. FitLink does not use Google Health Connect and reads nothing from any other health app or wearable</li>
+          <li><strong>Apple Health is optional and off by default.</strong> If you turn it on in the app, {BRAND_NAME} can save the workouts you finish to Apple Health, and read your resting heart rate and sleep from it. Each of the three is a separate switch; iOS asks your permission before anything is read or written</li>
+          <li>Resting heart rate and sleep are shown to you next to your check-ins. Your coach sees them <strong>only</strong> if you also turn on “Share with your coach”, and stops seeing them the moment you turn it off. {BRAND_NAME} does not use Google Health Connect and reads nothing from any other health app or wearable</li>
           <li>Logged sets, sessions, body weight and check-ins are used solely to run your coaching: they are shown to you and to the coach you train with</li>
           <li>Never sold to third parties</li>
           <li>Never used for advertising or marketing purposes</li>
@@ -105,7 +105,7 @@ export default function PrivacyBody() {
 
       <section id="children" aria-labelledby="children-h">
         <h2 id="children-h">7. Children’s privacy</h2>
-        <p>FitLink is for people aged 16 and over. We ask for a date of birth at sign-up and do not knowingly collect data from anyone under 16; if we learn that we have, we delete the account. If you believe a child has provided us with personal information, please contact us.</p>
+        <p>{BRAND_NAME} is for people aged 16 and over. We ask for a date of birth at sign-up and do not knowingly collect data from anyone under 16; if we learn that we have, we delete the account. If you believe a child has provided us with personal information, please contact us.</p>
       </section>
 
       <section id="changes" aria-labelledby="changes-h">
@@ -122,7 +122,7 @@ export default function PrivacyBody() {
         </div>
       </section>
 
-      <p className="s-doc-foot">© {new Date().getFullYear()} FitLink. All rights reserved. · <Link to="/terms">Terms of Service</Link> · <Link to="/delete-account">Delete your account</Link></p>
+      <p className="s-doc-foot">© {new Date().getFullYear()} {BRAND_NAME}. All rights reserved. · <Link to="/terms">Terms of Service</Link> · <Link to="/delete-account">Delete your account</Link></p>
     </div>
   );
 }

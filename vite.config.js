@@ -1,19 +1,43 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { APP_DESCRIPTION, BRAND_NAME, THEME_COLOR } from './src/web/site/brand.js'
+import { siteHeadTags } from './src/web/site/pageMeta.js'
+import { escapeHtml } from './src/web/coachMeta.js'
+
+// The brand reaches index.html and the PWA manifest from src/web/site/brand.js at build time (launch plan W1), so the
+// rename changes one file. index.html carries tokens (__BRAND_NAME__, __THEME_COLOR__) and a <!--site-head--> marker
+// for the title, description and share tags; a build that leaves one behind fails.
+function brandHtml() {
+  return {
+    name: 'brand-html',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html) {
+        const out = html
+          .replace('<!--site-head-->', () => siteHeadTags())
+          .replaceAll('__BRAND_NAME__', escapeHtml(BRAND_NAME))
+          .replaceAll('__THEME_COLOR__', escapeHtml(THEME_COLOR))
+        if (/__[A-Z_]+__|<!--site-head-->/.test(out)) throw new Error('index.html: a brand token was not replaced')
+        return out
+      },
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
     react(),
+    brandHtml(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'FitLink',
-        short_name: 'FitLink',
-        description: 'Run your coaching business from one app: passes, seasons, check-ins, payouts.',
-        theme_color: '#F2F0EB',
-        background_color: '#F2F0EB',
+        name: BRAND_NAME,
+        short_name: BRAND_NAME,
+        description: APP_DESCRIPTION,
+        theme_color: THEME_COLOR,
+        background_color: THEME_COLOR,
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',

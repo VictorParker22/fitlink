@@ -126,6 +126,7 @@ export function headTags(meta) {
 
 const TITLE_RE = /<title>[\s\S]*?<\/title>\s*/i;
 const DESCRIPTION_RE = /<meta\s+name=["']description["'][^>]*>\s*/i;
+const SHARE_TAGS_RE = /<meta\s+(?:property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*>\s*|<link\s+rel=["']canonical["'][^>]*>\s*/gi;
 
 /**
  * index.html with its <title> and description replaced by `tags` (headTags), or by nothing but a robots noindex
@@ -135,7 +136,9 @@ export function injectHead(html, { tags = null, noindex = false } = {}) {
   if (typeof html !== 'string' || !/<\/head>/i.test(html)) return null;
   if (!tags && !noindex) return html;
   let out = html;
-  if (tags) out = out.replace(TITLE_RE, '').replace(DESCRIPTION_RE, '');
+  // The template carries the site's own share tags (index.html, launch plan W1): the coach's replace them, so an
+  // unfurler that reads the first og:title never sees the site's.
+  if (tags) out = out.replace(TITLE_RE, '').replace(DESCRIPTION_RE, '').replace(SHARE_TAGS_RE, '');
   const add = [tags, noindex ? '<meta name="robots" content="noindex" />' : null].filter(Boolean).join('\n    ');
   // A replacement FUNCTION: a string replacement would read `$&`, `$'`, `` $` `` and `$$` in a coach's name as
   // patterns and copy parts of the template into the tags (review 2026-10-25).

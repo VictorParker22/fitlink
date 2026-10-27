@@ -6,9 +6,10 @@
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { usePageMeta } from './meta';
-import { APP_STORE_URL, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, usd } from './pricing';
+import { ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, FREE_ROSTER_CAP, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
+import { APP_STORE_URL, BRAND_NAME, SITE_HOST } from './brand';
 
 
 const Check = () => (
@@ -69,7 +70,7 @@ function AthleteTodayScreen() {
 
 const FAQ = [
   { q: 'Do my athletes need the app to pay?', a: siteCopy(APPLE_WEB_ENABLED).homeNeedAppA },
-  { q: 'Does FitLink work on Android?', a: 'FitLink is an iPhone app today. There is no Android app, so an athlete needs an iPhone to train with you.' },
+  { q: `Does ${BRAND_NAME} work on Android?`, a: `${BRAND_NAME} is an iPhone app today. There is no Android app, so an athlete needs an iPhone to train with you.` },
   { q: 'How do payouts work?', a: 'Payments run on Stripe. You connect a bank once, inside the app, and Stripe sends your payouts to it. Athletes can’t buy a pass until Stripe says your account can take charges.' },
   { q: 'Does the AI message my athletes?', a: 'Never on its own. With Coach Elite it drafts a reply from the check-in and the logged sets; you edit, approve and send.' },
   { q: 'Can I bring athletes I already coach?', a: 'Yes. Send them your link. They buy a pass on your page and their plan is ready in the app. Nobody lands on your roster without accepting your link, sending you a request, or buying your pass.' },
@@ -83,14 +84,14 @@ export default function Home() {
         <div className="s-hero-copy">
           <span className="s-kicker">For independent coaches</span>
           <h1 id="hero-h" className="s-h1">Run your coaching business from one app.</h1>
-          <p className="s-lede narrow">Your athletes pay, train and check in on FitLink. You open it on Monday and see exactly who needs you. Nothing else.</p>
+          <p className="s-lede narrow">Your athletes pay, train and check in on {BRAND_NAME}. You open it on Monday and see exactly who needs you. Nothing else.</p>
           <div className="s-actions">
-            <a className="fl-btn accent lg" href={APP_STORE_URL}>Get FitLink for iPhone</a>
+            <a className="fl-btn accent lg" href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>
             <Link className="fl-btn lg" to="/pricing">See pricing</Link>
           </div>
-          <span className="s-fine">Free to start. FitLink only earns when your athletes pay you.</span>
+          <span className="s-fine">Free to start. {BRAND_NAME} only earns when your athletes pay you.</span>
         </div>
-        <div className="s-hero-art" role="img" aria-label="FitLink coach Home on iPhone, with a drafted reply and this month’s payout">
+        <div className="s-hero-art" role="img" aria-label={`${BRAND_NAME} coach Home on iPhone, with a drafted reply and this month’s payout`}>
           <div className="s-phone" aria-hidden="true"><CoachHomeScreen /></div>
           <div className="s-float ink" aria-hidden="true">
             <small>This month · {SAMPLE_PASSES} passes</small>
@@ -107,7 +108,7 @@ export default function Home() {
       <section className="s-wrap s-features" aria-labelledby="monday-h">
         <div className="s-features-head">
           <h2 id="monday-h" className="s-h2">Monday, handled.</h2>
-          <p>Most coaching software gives you a dashboard. FitLink gives you a to-do list that empties.</p>
+          <p>Most coaching software gives you a dashboard. {BRAND_NAME} gives you a to-do list that empties.</p>
         </div>
 
         <div className="s-feature">
@@ -164,7 +165,7 @@ export default function Home() {
               <small>This month</small>
               <span className="big">{usd(samplePayout)}</span>
               <span className="line first"><span>{SAMPLE_PASSES} passes sold</span><span>{usd(sampleGross)}</span></span>
-              <span className="line"><span>FitLink fee · {STANDARD_FEE_PERCENT}%</span><span>−{usd(sampleFee)}</span></span>
+              <span className="line"><span>{BRAND_NAME} fee · {STANDARD_FEE_PERCENT}%</span><span>−{usd(sampleFee)}</span></span>
             </div>
           </div>
           <div className="s-feature-copy">
@@ -187,7 +188,7 @@ export default function Home() {
             </ul>
             <Link className="fl-btn link salmon" to="/athletes">What your athletes see</Link>
           </div>
-          <div className="s-center-art" role="img" aria-label="FitLink athlete Today screen on iPhone">
+          <div className="s-center-art" role="img" aria-label={`${BRAND_NAME} athlete Today screen on iPhone`}>
             <div className="s-phone black" aria-hidden="true"><AthleteTodayScreen /></div>
           </div>
         </div>
@@ -210,7 +211,7 @@ export default function Home() {
           <h2 id="trust-h" className="s-h2 sm">Built so your athletes trust you more, not less.</h2>
           <div className="s-trust">
             <div><b>You approve every message</b><span>The assistant drafts. Athletes are told you use one, and every word is still sent by you.</span></div>
-            <div><b>Payments by Stripe</b><span>FitLink never stores card or bank numbers.</span></div>
+            <div><b>Payments by Stripe</b><span>{BRAND_NAME} never stores card or bank numbers.</span></div>
             <div><b>Nobody is added without asking</b><span>An athlete joins your roster by accepting your link, sending you a request or buying your pass. Never by being added.</span></div>
             <div><b>Their data is theirs</b><span>Every athlete can export their training and delete their account any time, and so can you.</span></div>
           </div>
@@ -219,10 +220,10 @@ export default function Home() {
 
       <section className="s-wrap s-section" aria-labelledby="proof-h">
         <div className="s-stack" style={{ gap: 20 }}>
-          <h2 id="proof-h" className="s-eyebrow">From coaches using FitLink</h2>
+          <h2 id="proof-h" className="s-eyebrow">From coaches using {BRAND_NAME}</h2>
           <div className="s-proof">
-            <figure><blockquote>[Quote from a beta coach, used with permission]</blockquote><figcaption>[Name · what they coach · athletes on FitLink]</figcaption></figure>
-            <figure><blockquote>[Quote from a beta coach, used with permission]</blockquote><figcaption>[Name · what they coach · athletes on FitLink]</figcaption></figure>
+            <figure><blockquote>[Quote from a beta coach, used with permission]</blockquote><figcaption>[Name · what they coach · athletes on {BRAND_NAME}]</figcaption></figure>
+            <figure><blockquote>[Quote from a beta coach, used with permission]</blockquote><figcaption>[Name · what they coach · athletes on {BRAND_NAME}]</figcaption></figure>
           </div>
         </div>
       </section>
@@ -266,7 +267,7 @@ export default function Home() {
               <span><small>Download on the</small><b>App Store</b></span>
             </a>
           </div>
-          <span className="aside">On a computer? Open fitlink.coach on your iPhone and tap Get the app.</span>
+          <span className="aside">On a computer? Open {SITE_HOST} on your iPhone and tap Get the app.</span>
         </div>
       </section>
     </>

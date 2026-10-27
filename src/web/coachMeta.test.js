@@ -7,6 +7,7 @@ import { cleanText, escapeHtml, headTags, injectHead, metaFor, ogImageUrl, short
 import { readFileSync } from 'node:fs';
 import handler, { ANSWER_CACHE_MAX, cachedCoachPage, clearAnswerCache, renderCoachPage, ownOrigin, requestHandle } from '../../api/coach-meta/[handle].js';
 import { LINK_PREVIEW_UA_PATTERN, isLinkPreviewBot } from './linkPreviewBots.js';
+import { BRAND_NAME, SITE_HOST, SITE_ORIGIN } from './site/brand.js';
 
 const NOW = Date.UTC(2026, 9, 25, 15);
 const SUPA = 'https://proj.supabase.co';
@@ -15,7 +16,7 @@ const TEMPLATE = `<!doctype html>
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content="Home description" />
-    <title>FitLink — Home</title>
+    <title>${BRAND_NAME} — Home</title>
     <script type="module" crossorigin src="/assets/index-abc.js"></script>
   </head>
   <body>
@@ -43,12 +44,12 @@ test('metaFor: a page, a retired handle, no page, an unreadable answer', () => {
   const r = metaFor('Dana-Ruiz', found(), { supabaseUrl: SUPA, nowMs: NOW });
   assert.equal(r.status, 200);
   assert.deepEqual(r.meta, {
-    title: 'Dana Ruiz · FitLink',
+    title: `Dana Ruiz · ${BRAND_NAME}`,
     ogTitle: 'Dana Ruiz · Strength',
     description: 'Strength. Next block starts Dec 1. Join and pay on the web, no app needed.',
     image: `${SUPA}/functions/v1/coach-og?handle=dana-ruiz`,
-    imageAlt: 'Dana Ruiz on FitLink',
-    url: 'https://fitlink.coach/c/dana-ruiz',
+    imageAlt: `Dana Ruiz on ${BRAND_NAME}`,
+    url: `${SITE_ORIGIN}/c/dana-ruiz`,
   });
   assert.equal(metaFor('dana', found({ name: '', specialization: null }, { next_block_starts_on: null }), { supabaseUrl: SUPA, nowMs: NOW }).meta.description,
     'Join and pay on the web, no app needed.');
@@ -75,7 +76,7 @@ test('the head: tags escaped, the template\'s title and description replaced, no
   assert.ok(html.includes('<div id="root"></div>'));
   assert.equal(injectHead('<html>no head</html>', { tags: '<title>x</title>' }), null);
   const nf = injectHead(TEMPLATE, { noindex: true });
-  assert.ok(nf.includes('<meta name="robots" content="noindex" />') && nf.includes('<title>FitLink — Home</title>'));
+  assert.ok(nf.includes('<meta name="robots" content="noindex" />') && nf.includes(`<title>${BRAND_NAME} — Home</title>`));
 });
 
 /** A fetch stub: coach_page answers `rpc`; /index.html answers `page` (or fails). */
@@ -105,7 +106,7 @@ test('function: a page gets its tags, cached at the edge; the RPC is the anon co
   assert.match(out.headers['Content-Type'], /text\/html/);
   assert.match(out.headers['Cache-Control'], /s-maxage=300/);
   assert.ok(out.body.includes('<meta property="og:image" content="https://proj.supabase.co/functions/v1/coach-og?handle=dana-ruiz" />'));
-  assert.ok(out.body.includes('<title>Dana Ruiz · FitLink</title>'));
+  assert.ok(out.body.includes(`<title>Dana Ruiz · ${BRAND_NAME}</title>`));
   const rpc = fetchImpl.calls.find((c) => c.url.endsWith('/rpc/coach_page'));
   assert.equal(rpc.init.method, 'POST');
   assert.equal(rpc.init.headers.apikey, 'sb_publishable_test');
@@ -141,7 +142,7 @@ test('function: redirect, not found, failures, a bad handle, no template', async
 });
 
 test('function: the template from the deployment\'s own origin, never the request\'s host; none at all → the plain SPA', async () => {
-  assert.equal(ownOrigin({ VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: 'fitlink.coach', VERCEL_URL: 'x-abc.vercel.app' }), 'https://fitlink.coach');
+  assert.equal(ownOrigin({ VERCEL_ENV: 'production', VERCEL_PROJECT_PRODUCTION_URL: SITE_HOST, VERCEL_URL: 'x-abc.vercel.app' }), SITE_ORIGIN);
   assert.equal(ownOrigin({ VERCEL_ENV: 'preview', VERCEL_URL: 'x-abc.vercel.app' }), 'https://x-abc.vercel.app');
   assert.equal(ownOrigin({ VERCEL_URL: 'evil.com/path' }), null);
   assert.equal(ownOrigin({}), null);
@@ -161,7 +162,7 @@ test('the head: `$` patterns in a name or a sport are text, never replacement pa
   const name = 'Dana $` $\' $& $$ Ruiz';
   const r = metaFor('dana-ruiz', found({ name, specialization: "Lift $' $& $$ $` heavy" }), { supabaseUrl: SUPA, nowMs: NOW });
   const html = injectHead(TEMPLATE, { tags: headTags(r.meta) });
-  assert.ok(html.includes('<title>Dana $` $&#39; $&amp; $$ Ruiz · FitLink</title>'));
+  assert.ok(html.includes(`<title>Dana $\` $&#39; $&amp; $$ Ruiz · ${BRAND_NAME}</title>`));
   assert.ok(html.includes('content="Lift $&#39; $&amp; $$ $` heavy. Next block starts Dec 1.'));
   assert.equal((html.match(/<\/head>/g) ?? []).length, 1, 'no </head> copied in');
   assert.equal((html.match(/<script /g) ?? []).length, 1, 'the template head is not copied into a tag');
@@ -187,7 +188,7 @@ test('function: coach_page answers are kept 60 s per handle, failures are not, a
   await renderCoachPage({ handle: 'dana-ruiz', env: ENV, fetchImpl: down, readImpl: readOk, nowMs: NOW, clockMs: t0 });
   const up = stubFetch({ rpc: found() });
   const after = await renderCoachPage({ handle: 'dana-ruiz', env: ENV, fetchImpl: up, readImpl: readOk, nowMs: NOW, clockMs: t0 + 1 });
-  assert.ok(after.body.includes('<title>Dana Ruiz · FitLink</title>'), 'a refused call is not kept');
+  assert.ok(after.body.includes(`<title>Dana Ruiz · ${BRAND_NAME}</title>`), 'a refused call is not kept');
 
   clearAnswerCache();
   const many = stubFetch({ rpc: found() });
@@ -302,4 +303,23 @@ test('vercel.json: only link-preview bots reach the function; people get the SPA
   assert.equal(res2.body, TEMPLATE);
   assert.equal(g.calls.length, 0);
   clearAnswerCache();
+});
+
+test('injectHead: the site’s own share tags in the template give way to the coach’s (W1)', () => {
+  const tpl = `<!doctype html><html><head>
+    <title>Site</title>
+    <meta name="description" content="site" />
+    <meta property="og:title" content="Site" />
+    <meta property="og:image" content="https://example.com/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://example.com/" />
+  </head><body><div id="root"></div></body></html>`;
+  const meta = { title: 'Dana · X', ogTitle: 'Dana', description: 'd', image: 'https://img/x.png', imageAlt: 'a', url: 'https://example.com/c/dana' };
+  const out = injectHead(tpl, { tags: headTags(meta) });
+  assert.equal((out.match(/property="og:title"/g) || []).length, 1);
+  assert.ok(out.includes('<meta property="og:title" content="Dana" />'));
+  assert.ok(!out.includes('og-image.png') && !out.includes('href="https://example.com/"'));
+  assert.equal((out.match(/name="twitter:card"/g) || []).length, 1);
+  const nf = injectHead(tpl, { noindex: true });
+  assert.ok(nf.includes('og-image.png'), 'the 404 keeps the plain page');
 });

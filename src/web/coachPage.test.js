@@ -10,6 +10,7 @@ import {
   sportLine, statsView, utmFrom, FUNNEL_STAGES,
 } from './coachPage.js';
 import { parkedCheckoutValue, readParkedCheckout } from './appleAuth.js';
+import { SITE_HOST, SITE_ORIGIN } from './site/brand.js';
 
 const NOW = Date.UTC(2026, 9, 25, 15);
 const COACH = '33333333-3333-4333-8333-333333333333';
@@ -87,7 +88,7 @@ test('page model: hostile or odd values are left out', () => {
   // Only our own origins (review m5): this project's public Storage, and the site. A tracker host is never loaded.
   const STORE = 'https://qcmtaskhyhwzyoegtfpw.supabase.co/storage/v1/object/public/avatars/u1/a.jpg';
   assert.equal(safeImageUrl(STORE), STORE);
-  assert.equal(safeImageUrl('https://fitlink.coach/apple/logo.png'), 'https://fitlink.coach/apple/logo.png');
+  assert.equal(safeImageUrl(`${SITE_ORIGIN}/apple/logo.png`), `${SITE_ORIGIN}/apple/logo.png`);
   assert.equal(safeImageUrl('https://proj.supabase.co/storage/v1/object/public/avatars/a.jpg', { supabaseUrl: 'https://proj.supabase.co/' }),
     'https://proj.supabase.co/storage/v1/object/public/avatars/a.jpg', 'the configured project, not a literal');
   for (const bad of [
@@ -101,7 +102,7 @@ test('page model: hostile or odd values are left out', () => {
     'https://qcmtaskhyhwzyoegtfpw.supabase.co.evil.com/storage/v1/object/public/a.jpg',
     'https://qcmtaskhyhwzyoegtfpw.supabase.co:8443/storage/v1/object/public/a.jpg',
     'https://other.supabase.co/storage/v1/object/public/avatars/a.jpg',
-    'https://fitlink.coach.evil.com/a.png',
+    `${SITE_ORIGIN}.evil.com/a.png`,
   ]) assert.equal(safeImageUrl(bad), null, bad);
   const tracked = pageModel(answer({ coach: { ...answer().coach, avatar_url: 'https://tracker.example/p.gif' } }));
   assert.equal(tracked.coach.photo, null, 'a photo on another host is not drawn');
@@ -199,15 +200,15 @@ test('events: only well-formed payloads, the referrer\'s host only, utm values c
 });
 
 test('dashboard: set_handle answers in words, my_page_stats in four stages', () => {
-  const host = 'fitlink.coach';
+  const host = SITE_HOST;
   assert.deepEqual(setHandleOutcome({ ok: false, code: 'handle_unavailable', error: 'That name isn\'t available.' }, host),
     { ok: false, code: 'handle_unavailable', message: 'That name isn\'t available.' });
   assert.equal(setHandleOutcome({ ok: false, code: 'rate_limited', error: 'Too many changes today.' }, host).message, 'Too many changes today.');
   assert.deepEqual(setHandleOutcome(null, host), { ok: null });
   assert.deepEqual(setHandleOutcome({ ok: true, handle: '<b>', previous: null, changed: true }, host), { ok: null });
-  assert.equal(setHandleOutcome({ ok: true, handle: 'dana', previous: null, changed: true, path: '/c/dana' }, host).message, 'Saved. Your page is fitlink.coach/c/dana.');
+  assert.equal(setHandleOutcome({ ok: true, handle: 'dana', previous: null, changed: true, path: '/c/dana' }, host).message, `Saved. Your page is ${SITE_HOST}/c/dana.`);
   assert.equal(setHandleOutcome({ ok: true, handle: 'dana2', previous: 'dana', changed: true }, host).message,
-    'Saved. Your page is fitlink.coach/c/dana2. fitlink.coach/c/dana sends people there for a year.');
+    `Saved. Your page is ${SITE_HOST}/c/dana2. ${SITE_HOST}/c/dana sends people there for a year.`);
   assert.equal(setHandleOutcome({ ok: true, handle: 'dana', previous: 'dana', changed: false }, host).message, 'That’s already your page’s name.');
   const down = setHandleOutcome({ ok: true, handle: null, previous: 'dana', changed: true, path: null }, host);
   assert.equal(down.handle, null);

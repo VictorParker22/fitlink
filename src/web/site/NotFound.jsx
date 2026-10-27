@@ -4,8 +4,7 @@ import { Link } from 'react-router-dom';
 import { useBodyClass, usePageMeta } from './meta';
 import '../web.css';
 import './site.css';
-import { APP_STORE_URL } from './pricing';
-import { BRAND_NAME } from './brand';
+import { APP_STORE_URL, BRAND_NAME } from './brand';
 
 export default function NotFound() {
   usePageMeta('Page not found', 'This page took a rest day.');

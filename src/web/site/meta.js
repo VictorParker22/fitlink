@@ -2,10 +2,9 @@
 // The SPA has one index.html, so each page sets its own on mount and restores
 // the home values when it leaves.
 import { useEffect } from 'react';
-import { BRAND_NAME } from './brand';
+import { HOME_DESCRIPTION, HOME_TITLE, pageTitle } from './pageMeta.js';
 
-export const HOME_TITLE = 'FitLink — Run your coaching business from one app';
-export const HOME_DESCRIPTION = 'FitLink is where independent coaches sell passes, build seasons and run their athletes’ weeks. Athletes pay on the web or in the app; Stripe pays the coach.';
+export { HOME_DESCRIPTION, HOME_TITLE };
 
 /** Adds a class to <body> while the page is mounted (overscroll colour). */
 export function useBodyClass(name) {
@@ -17,7 +16,7 @@ export function useBodyClass(name) {
 
 export function usePageMeta(title, description) {
   useEffect(() => {
-    document.title = title ? `${title} — ${BRAND_NAME}` : HOME_TITLE;
+    document.title = pageTitle(title);
     const tag = document.querySelector('meta[name="description"]');
     if (tag) tag.setAttribute('content', description || HOME_DESCRIPTION);
     return () => {

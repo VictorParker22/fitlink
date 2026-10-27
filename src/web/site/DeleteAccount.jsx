@@ -31,13 +31,13 @@ import {
 import { APPLE_WEB_ENABLED } from '../authConfig';
 import AppleButton from '../AppleButton';
 import { usePageMeta } from './meta';
-import { SUPPORT_EMAIL } from './pricing';
+import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
 
 const STEP = { email: 'email', code: 'code', loading: 'loading', confirm: 'confirm', deleting: 'deleting', done: 'done' };
 
 const COACH_POLICY = 'Athletes who prepaid are refunded the time they have not had, from your balance; they keep their accounts and history.';
 const ATHLETE_POLICY = 'Deleting ends every pass you hold today, before the account goes: it stops billing and won’t renew, and any unpaid amount on it is forgiven. Time already paid isn’t refunded. If a pass can’t be ended, nothing is deleted.';
-const UNKNOWN_OUTCOME = 'We couldn’t reach FitLink, so we can’t tell whether your account was deleted. Check your connection, then reload this page to see whether it is still there.';
+const UNKNOWN_OUTCOME = `We couldn’t reach ${BRAND_NAME}, so we can’t tell whether your account was deleted. Check your connection, then reload this page to see whether it is still there.`;
 
 /**
  * A deletion went out and no decided answer came back (no answer, a gateway
@@ -49,7 +49,7 @@ function unknownOutcome(err) {
   const check = 'Reload this page to see whether it is still there.';
   return err.fromServer
     ? `${err.message} We can’t tell from this answer whether your account was deleted. ${check}`
-    : `FitLink didn’t answer clearly, so we can’t tell whether your account was deleted. ${check}`;
+    : `${BRAND_NAME} didn’t answer clearly, so we can’t tell whether your account was deleted. ${check}`;
 }
 
 /**
@@ -78,7 +78,7 @@ function money(cents, currency) {
 }
 
 export default function DeleteAccount() {
-  usePageMeta('Delete your account', 'Delete your FitLink account from the web: sign in, see what goes, confirm. Immediate and permanent.');
+  usePageMeta('Delete your account', `Delete your ${BRAND_NAME} account from the web: sign in, see what goes, confirm. Immediate and permanent.`);
   const [step, setStep] = useState(STEP.loading);
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
@@ -316,7 +316,7 @@ export default function DeleteAccount() {
 
   return (
     <div className="s-wrap tight s-delete">
-      <h1 className="s-h1 sm">{step === STEP.done ? 'Deleted.' : 'Delete your FitLink account'}</h1>
+      <h1 className="s-h1 sm">{step === STEP.done ? 'Deleted.' : `Delete your ${BRAND_NAME} account`}</h1>
       {step !== STEP.done && <p className="s-copy">{account.unfinished ? UNFINISHED_DELETE_INTRO : intro}</p>}
 
       {step === STEP.email && (
@@ -464,7 +464,7 @@ export default function DeleteAccount() {
             <svg width="30" height="30" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" style={{ fill: 'none', stroke: '#fff', strokeWidth: 2.8, strokeLinecap: 'round', strokeLinejoin: 'round' }} /></svg>
           </div>
           <p className="s-copy">
-            Your FitLink account is gone and this browser is signed out.
+            Your {BRAND_NAME} account is gone and this browser is signed out.
             {outcome.role === 'coach' && outcome.departure && (
               <> {outcome.departure.athletes === 1 ? '1 athlete was' : `${outcome.departure.athletes ?? 0} athletes were`} released from your roster
                 {Number(outcome.departure.refundCents) > 0 ? `, and ${money(outcome.departure.refundCents, preview?.currency)} went back to them` : ''}.
@@ -477,9 +477,9 @@ export default function DeleteAccount() {
             )}
           </p>
           {outcome.mediaIncomplete && <p className="s-small">Some uploaded files could not be removed automatically. Write to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> and they will be removed for you.</p>}
-          <p className="s-small">If you had a subscription through Apple, cancel it in your Apple Account’s subscriptions: deleting the FitLink account does not cancel it.</p>
+          <p className="s-small">If you had a subscription through Apple, cancel it in your Apple Account’s subscriptions: deleting the {BRAND_NAME} account does not cancel it.</p>
           {outcome.usedApple && <p className="s-small">{APPLE_STILL_LISTED}</p>}
-          <Link className="fl-btn lg" to="/">Back to FitLink</Link>
+          <Link className="fl-btn lg" to="/">Back to {BRAND_NAME}</Link>
         </div>
       )}
 
@@ -496,7 +496,7 @@ export default function DeleteAccount() {
             </tr>
           </tbody>
         </table>
-        <p className="s-small">No longer have access to the email? Write to <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Delete my FitLink account')}`}>{SUPPORT_EMAIL}</a> with the subject “Delete my FitLink account”. We verify that the request comes from the account holder before deleting anything, and complete it within 30 days.</p>
+        <p className="s-small">No longer have access to the email? Write to <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Delete my ${BRAND_NAME} account`)}`}>{SUPPORT_EMAIL}</a> with the subject “Delete my {BRAND_NAME} account”. We verify that the request comes from the account holder before deleting anything, and complete it within 30 days.</p>
       </section>
     </div>
   );

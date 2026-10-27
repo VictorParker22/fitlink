@@ -47,6 +47,7 @@ import { APP_SCHEME } from './supabase';
 import Checkout from './Checkout';
 import FoundingBadge from './FoundingBadge';
 import './web.css';
+import { BRAND_NAME } from './site/brand';
 
 const Check = ({ dark }) => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -133,7 +134,7 @@ export default function CoachPublicPage() {
 
   useEffect(() => {
     const coach = state.card?.coach;
-    document.title = coach?.name ? `${coach.name} — FitLink` : 'FitLink';
+    document.title = coach?.name ? `${coach.name} — ${BRAND_NAME}` : BRAND_NAME;
   }, [state.card]);
 
   // The badge: the server's column only; absent (before the migration), unreadable or false → no badge.
@@ -172,7 +173,7 @@ export default function CoachPublicPage() {
     const msg = state.error === 'rate_limited'
       ? 'Too many lookups from this connection. Try again in a little while.'
       : state.error === 'failed'
-        ? 'Couldn’t reach FitLink. Check your connection and reload.'
+        ? `Couldn’t reach ${BRAND_NAME}. Check your connection and reload.`
         : 'This link doesn’t point to a coach. Check it with whoever sent it.';
     return (
       <div className="fl"><div className="fl-empty">
@@ -191,8 +192,8 @@ export default function CoachPublicPage() {
     return (
       <div className="fl"><div className="fl-empty">
         <h1 className="fl-title">{card.live?.title || 'A live session'}</h1>
-        <p className="fl-sub">{coach.name ? `${coach.name} shared a live session.` : 'A coach shared a live session.'} Open it in the FitLink app with this link.</p>
-        <div className="fl-actions"><a className="fl-btn accent lg" href={appLink}>Open in FitLink</a></div>
+        <p className="fl-sub">{coach.name ? `${coach.name} shared a live session.` : 'A coach shared a live session.'} Open it in the {BRAND_NAME} app with this link.</p>
+        <div className="fl-actions"><a className="fl-btn accent lg" href={appLink}>Open in {BRAND_NAME}</a></div>
       </div></div>
     );
   }
@@ -206,7 +207,7 @@ export default function CoachPublicPage() {
     );
   }
 
-  const brand = coach.name || 'FitLink';
+  const brand = coach.name || BRAND_NAME;
   const kicker = [coach.specialization, ...(Array.isArray(coach.specializations) ? coach.specializations.filter((s) => s !== coach.specialization) : [])]
     .filter(Boolean).slice(0, 2).join(' · ');
   // A session that already started is not listed; a block outside its sign-up window is listed, not buyable.
@@ -346,7 +347,7 @@ export default function CoachPublicPage() {
         <h2 id="how-h" className="fl-h2">How it works</h2>
         <ol className="fl-steps">
           <li className="fl-step"><span className="n">1</span><b>Buy a pass here</b><p>Card checkout, about a minute. Tell {first} your schedule, your lifts and anything that hurts.</p></li>
-          <li className="fl-step"><span className="n">2</span><b>Get your first week</b><p>{first} writes it for your week. Open it in the FitLink app whenever you’re ready.</p></li>
+          <li className="fl-step"><span className="n">2</span><b>Get your first week</b><p>{first} writes it for your week. Open it in the {BRAND_NAME} app whenever you’re ready.</p></li>
           <li className="fl-step"><span className="n">3</span><b>Train, check in, adjust</b><p>Log your sets, say how it felt. The plan changes when you need it to.</p></li>
         </ol>
       </section>
@@ -358,7 +359,7 @@ export default function CoachPublicPage() {
             {forSale.length > 0 && <a className="fl-btn accent xl" href="#passes">Choose a pass</a>}
           </div>
           <div className="fl-cta-foot">
-            <span>Payments, plans and messages run on FitLink.</span>
+            <span>Payments, plans and messages run on {BRAND_NAME}.</span>
             <span>Questions? Message {first} after checkout.</span>
           </div>
         </div>

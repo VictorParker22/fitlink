@@ -26,9 +26,9 @@ ids (invite code, plan id, client id), never a price or a payee: the server comp
 from `plans`.
 
 - **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
-  is the layout route (glass header with the F mark + Home / Pricing / For athletes / Help,
+  is the layout route (glass header with the brand mark + Home / Pricing / For athletes / Help,
   Sign in → `/coach`, Get the app → the App Store; footer with Help · Privacy · Terms ·
-  Delete account · support@fitlink.coach; scroll-to-top; a `body` class so overscroll is
+  Delete account · `SUPPORT_EMAIL`; scroll-to-top; a `body` class so overscroll is
   cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
   `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,
   titles and section lists in `legalMeta.js`), `DeleteAccount.jsx`, `NotFound.jsx`.
@@ -37,6 +37,23 @@ from `plans`.
   artboard is the same page at 390 px: one column, the header pill becomes a box with the
   nav on its own row (`@media (max-width: 720px)`); keep every new section
   `minmax(min(Npx, 100%), 1fr)` so it collapses without horizontal scroll.
+- **The brand is one file (launch plan W1, 2026-10-25; branch `launch/w1-brand-config`).** `src/web/site/brand.js`
+  holds the name (`BRAND_NAME`), the mark letter (`BRAND_MARK`), the founder's first name, the host and origin
+  (`SITE_HOST`, `SITE_ORIGIN`), the mailbox (`SUPPORT_EMAIL`), the App Store id and URL, the app's URL scheme
+  (`APP_SCHEME`, re-exported by `supabase.js`), the manifest description and theme colour, and the share image
+  (`OG_IMAGE_*`, `public/og-image.png`). Every page, the legal text (`termsContent.jsx`, `privacyContent.jsx`,
+  `legalMeta.js`), the sign-in sentences (`appleAuth.js`), the coach page and its link previews import it.
+  `index.html` carries tokens (`__BRAND_NAME__`, `__THEME_COLOR__`) and a `<!--site-head-->` marker that
+  `vite.config.js` (`brandHtml`, `transformIndexHtml` order pre) fills from `brand.js` + `site/pageMeta.js`
+  (`siteHeadTags`: title, description, og/twitter with the share image, NO canonical in the SPA shell, which answers
+  every route); a token left behind fails the build. The PWA manifest's name, short name, description and colours
+  come from `brand.js` too. `coachMeta.injectHead` drops the shell's og/twitter/canonical tags before adding a
+  coach's, so an unfurler never reads the site's og:title first. `node --test src/web/brand.test.js` fails on any
+  name, host, mailbox or App Store address spelled outside `brand.js` (comments excepted; `pricingConfig.json` is the
+  server's byte copy and stays as it is). Storage keys (`fitlink-web`, `fitlink-web-*`) are NOT brand: renaming them
+  would sign everyone out and drop parked checkouts. **The rename:** change `brand.js`, run `node scripts/og-image.mjs`
+  (Playwright, local; not part of the build) to redraw the share image, then the owner's steps outside this repo (the
+  AASA app id and domain, the Apple Services ID return URLs, Supabase redirect URLs, the mailbox, Vercel's domain).
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and
@@ -279,8 +296,7 @@ from `plans`.
   - **The badge** is `src/web/FoundingBadge.jsx` ("Founding 15"), shown on the coach page when
     `trainers_public.founding_member` is true (`api.js foundingMember`: any failed read, a missing column before the
     migration included, means no badge). PR 3 moves it to `/c/<handle>` with the component as is.
-  - **Brand.** The product is being renamed: new copy takes the name from `src/web/site/brand.js` (`BRAND_NAME`,
-    `FOUNDER_FIRST_NAME`), never a new hard-coded "FitLink".
+  - **Brand.** The name comes from `src/web/site/brand.js` (see "The brand is one file" below).
   - Owner: set `VITE_FOUNDING_CALENDAR_URL` on Vercel (production) before the page is linked. Deploy this page only
     AFTER the server migration: before it the page says applications aren't open yet, AND the live `handle_new_user`
     ignores the `founding_web` marker, so an email sign-up here would still publish the address's local part.
@@ -484,8 +500,7 @@ from `plans`.
     false, redirect}` → `navigate(replace)` to `/c/<new>` (query kept); `{found: false}` or a handle that cannot be a page
     (checked before any call) → the 404 page; a refusal (`rate_limited`, the server's HINT) or a failed read → "Couldn't
     load this page" with Try again. A handle typed in capitals is replaced by the page's own (`/c/Dana` → `/c/dana`).
-    Brand: the page, the checkout sheet, the 404 page and the API sentences take the name from `brand.js` only; the
-    sign-in sentences in `appleAuth.js` still spell "FitLink" (the rename PR moves them).
+    Brand: every sentence takes the name from `brand.js` (W1, below).
   - **Buying** reuses `Checkout.jsx` (not a fork): `pageHandle` in place of `code`. The invite code comes from
     `page_invite(handle)` (it renews or makes the coach's standing link: a write) only after the person acted (their own
     code typed in the sheet, their own Apple return, or Continue under "Signed in as …") and after the page's sale checks,

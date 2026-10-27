@@ -4,6 +4,7 @@
 // enforced on the server (RLS, definer RPCs, edge functions).
 import { createClient } from '@supabase/supabase-js';
 import { DEFAULT_SUPABASE_KEY, DEFAULT_SUPABASE_URL } from './supabaseDefaults';
+import { APP_SCHEME as BRAND_APP_SCHEME, SITE_ORIGIN } from './site/brand.js';
 
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_KEY;
@@ -20,5 +21,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce', storageKey: 'fitlink-web' },
 });
 
-export const APP_SCHEME = 'fitlink://';
-export const WEB_ORIGIN = 'https://fitlink.coach';
+/** brand.js holds the scheme; re-exported here for the pages that already import it from this module. */
+export const APP_SCHEME = BRAND_APP_SCHEME;
+export const WEB_ORIGIN = SITE_ORIGIN;
