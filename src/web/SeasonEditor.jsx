@@ -21,10 +21,28 @@
 //
 // Not drawn: the assistant's "Suggested Week 4" card (no server support)
 // and templates (no rows).
+//
+// Blocks and single sessions (2026-10-25, fitlink-app migration 20261025120000; rules and words in blocks.js). New
+// pass makes a block (a length, default 8 weeks from the server's config; a start date and a last sign-up day,
+// both optional) or a single session (a time, optional, and its minutes), priced at least the $25 minimum per
+// payment, with a plain plans INSERT (plans_insert: the coach's own trainer_id). The kind is chosen once, at
+// creation, and never shown as editable (guard_plan_shape kind_fixed). Pass details edits a block's start date and
+// last sign-up day, or a session's time and minutes (plans_update); the server refuses moving a held block's start
+// (block_has_holders) and clearing or back-dating a held session's time (session_held), and its sentence is shown.
+// A session has no weeks: its page is the details. Cancellation policy edits trainers.cancellation_policy on the
+// coach's own row (trainers_update_own, at most 600 characters, public through trainers_public); "Saved" only once
+// the row came back.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from './supabase';
-import { coachPriceLine, lengthChangeLine, passBilling, payingFor, usdFromCents } from './season';
+import { coachPriceLine, lengthChangeLine, passBilling, payingFor, seasonWeeks, usdFromCents } from './season';
+import {
+  BLOCK_DEFAULT_WEEKS, POLICY_MAX, SESSION_MINUTES_DEFAULT, SESSION_MINUTES_MAX, SESSION_MINUTES_MIN, SESSION_FREE_CANCEL_HOURS,
+  editorKindLine, isoToLocalInput, lengthBreaksSignUpWindow, lengthWriteError, localInputToIso, newPassRow, passKind,
+  planWriteError, timeZoneNote,
+} from './blocks';
+import { createPass, myCancellationPolicy, saveCancellationPolicy, updatePass } from './api';
+import { MINIMUM_CHARGE_USD, usd } from './site/pricing';
 import {
   blocksFromWeeks, buildProtectedSnapshot, describeChanges, diffTracks, emptyDays, liveHoldersFor,
   nodeKey, seasonToTrack, trackToSeason,
@@ -34,9 +52,10 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const BLOCK_FILLS = ['#15171C', '#3A3D45', '#5B5F68', '#D6D1C7'];
 
-/** The sidebar's short line for a pass: "8 weeks · $180 / month", "$20 / month". */
+/** The sidebar's short line for a pass: "8 weeks · $180 / month", "$20 / month", "Session · $40". */
 function passSideLabel(p) {
   const b = passBilling(p);
+  if (passKind(p) === 'session') return `Session · ${b.priced ? usdFromCents(b.priceCents) : 'no price yet'}`;
   const price = b.priced ? `${usdFromCents(b.priceCents)} / ${b.period}` : 'no price yet';
   return b.kind === 'season' ? `${b.weeks} weeks · ${price}` : price;
 }
@@ -63,6 +82,10 @@ export default function SeasonEditor({ session }) {
   const [stale, setStale] = useState(false); // publish answered stale_version
   const [picker, setPicker] = useState(null); // { dayIndex, workoutId } exercise picker
   const [chooser, setChooser] = useState(null); // rail item awaiting a day
+  const [creating, setCreating] = useState(false); // the New pass sheet
+  const [editingDetails, setEditingDetails] = useState(false); // the Pass details sheet
+  const [editingPolicy, setEditingPolicy] = useState(false); // the Cancellation policy sheet
+  const [now] = useState(() => Date.now());
   const toastTimer = useRef();
 
   const plan = useMemo(() => data.plans.find((p) => p.id === planId) ?? data.plans[0] ?? null, [data.plans, planId]);
@@ -112,7 +135,9 @@ export default function SeasonEditor({ session }) {
     const track = plan.track ?? [];
     const season = trackToSeason(track, plan.duration_weeks, names);
     let ws = season.weeks;
-    if (ws.length === 1 && track.length === 0 && !plan.duration_weeks) ws = Array.from({ length: 4 }, () => ({ days: emptyDays(), label: '', isRest: false }));
+    // An empty track (a pass just made here, 2026-10-25) starts as its weeks, none of them a rest week
+    // (trackToSeason pads an empty track with a rest-marked first week); an open pass starts with four.
+    if (track.length === 0) ws = Array.from({ length: seasonWeeks(plan.duration_weeks) ?? 4 }, () => ({ days: emptyDays(), label: '', isRest: false }));
     setWeeks(ws);
     setFinalMilestones(season.finalMilestones);
     setBaseline([...track].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
@@ -193,15 +218,22 @@ export default function SeasonEditor({ session }) {
       // The length sets how many payments a buyer makes from now on, so a write
       // that did not land is said, never assumed.
       let lengthKept = null;
+      let lengthWhy = null;
       if (plan.duration_weeks && plan.duration_weeks !== weeks.length) {
         const { error: lenErr } = await supabase.from('plans').update({ duration_weeks: weeks.length }).eq('id', plan.id);
-        if (lenErr) lengthKept = plan.duration_weeks;
+        if (lenErr) {
+          lengthKept = plan.duration_weeks;
+          // plans_enrollment_closes_window: the last sign-up day would fall after the new end (said specifically).
+          lengthWhy = String(lenErr.message ?? '').includes('plans_enrollment_closes_window') ? lengthWriteError(lenErr) : null;
+        }
       }
       setBaseline(newTrack);
       setReview(false);
       const n = typeof moved === 'number' ? moved : snapshots.length;
       const done = n > 0 ? `Published · ${n} athlete${n === 1 ? '' : 's'} updated` : 'Published';
-      say(lengthKept !== null ? `${done}. The season length didn’t save: it is still ${lengthKept} weeks, and buyers pay for that.` : done);
+      say(lengthKept !== null
+        ? `${done}. The season length didn’t save: ${lengthWhy ? `${lengthWhy} ` : ''}It is still ${lengthKept} weeks, and buyers pay for that.`
+        : done);
       seededFor.current = null;
       await load();
     } catch (e) {
@@ -239,24 +271,42 @@ export default function SeasonEditor({ session }) {
 
   if (!data.loaded) return <div className="fl-empty"><p className="fl-note">Loading your seasons…</p></div>;
   if (data.error) return <div className="fl-empty"><h1 className="fl-title">Couldn’t load</h1><p className="fl-sub">{data.error}</p></div>;
+  const afterCreate = async (made) => {
+    setCreating(false);
+    seededFor.current = null;
+    await load();
+    navigate(`/coach/seasons/${made.id}`);
+    say(`${made.name} is made. ${passKind(made) === 'session' ? 'Athletes can book it from your page.' : 'Build its weeks, then publish.'}`);
+  };
+
   if (!plan) {
     return (
       <div className="fl-empty">
         <h1 className="fl-title">No pass yet</h1>
-        <p className="fl-sub">A season lives on a pass. Make your first pass in the FitLink app; it shows up here to build.</p>
+        <p className="fl-sub">Make a block (a set number of weeks, with a start date if you like) or a single session. A block’s weeks are built here.</p>
+        <div className="fl-actions"><button type="button" className="fl-btn accent lg" onClick={() => setCreating(true)}>New pass</button></div>
+        {creating && <NewPassSheet uid={uid} onClose={() => setCreating(false)} onMade={afterCreate} />}
       </div>
     );
   }
 
+  const isSession = passKind(plan) === 'session';
+
   const cur = weeks[week] ?? { days: emptyDays(), label: '', isRest: false };
   const lengthLine = lengthChangeLine(plan, weeks.length, payingFor(data.subscriptions, plan.id));
+  // A shorter dated block whose last sign-up day would fall after its new end: the server refuses the length.
+  const lengthBlocked = plan.duration_weeks && plan.duration_weeks !== weeks.length ? lengthBreaksSignUpWindow(plan, weeks.length) : null;
   const holdersHere = plan.duration_weeks ? data.enrollments.filter((e) => e.plan_id === plan.id && e.status === 'active').length : holders.length;
 
   return (
     <div className="fl-editor">
       <aside className="fl-side" aria-label="Seasons">
         <section>
-          <h2>Your seasons</h2>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '0 12px 8px' }}>
+            <button type="button" className="fl-btn accent sm" onClick={() => setCreating(true)}>New pass</button>
+            <button type="button" className="fl-btn ghost sm" onClick={() => setEditingPolicy(true)}>Cancellation policy</button>
+          </div>
+          <h2>Your passes</h2>
           {data.plans.map((p) => {
             const n = data.enrollments.filter((e) => e.plan_id === p.id && e.status === 'active').length;
             return (
@@ -282,8 +332,19 @@ export default function SeasonEditor({ session }) {
           <span className="fl-meta">
             {[`${weeks.length} week${weeks.length === 1 ? '' : 's'}`, daysPerWeek ? `${daysPerWeek} day${daysPerWeek === 1 ? '' : 's'} a week` : null, `${holdersHere} athlete${holdersHere === 1 ? '' : 's'} on it`].filter(Boolean).join(' · ')}
           </span>
-          <span className="fl-meta">{coachPriceLine(plan) ?? 'No price yet. Set one in the FitLink app; nobody can buy this pass until then.'}</span>
+          <span className="fl-meta">{isSession
+            ? (passBilling(plan).priced ? `${usdFromCents(passBilling(plan).priceCents)} · one payment` : 'No price yet. Set one in the FitLink app; nobody can buy this pass until then.')
+            : (coachPriceLine(plan) ?? 'No price yet. Set one in the FitLink app; nobody can buy this pass until then.')}</span>
+          <div className="fl-pass-details" aria-label="Pass details">
+            <span className="fl-meta">{editorKindLine(plan, now)}</span>
+            {(isSession || passBilling(plan).kind === 'season') && (
+              <div><button type="button" className="fl-btn ghost sm" onClick={() => setEditingDetails(true)}>{isSession ? 'Edit time' : 'Edit dates'}</button></div>
+            )}
+            {isSession && <p className="fl-note">Athletes cancel for a full refund up to {SESSION_FREE_CANCEL_HOURS} hours before; inside that, your cancellation policy applies (it’s on your page).</p>}
+          </div>
         </div>
+
+        {!isSession && (<>
 
         {blocks.length > 0 && (
           <div className="fl-blocks" aria-label="Season blocks" style={{ gridTemplateColumns: blocks.map((b) => `${b.to - b.from + 1}fr`).join(' ') }}>
@@ -384,19 +445,31 @@ export default function SeasonEditor({ session }) {
         {data.workouts.length === 0 && (
           <p className="fl-note">No workouts yet. Build one in the FitLink app (Seasons → New workout); it appears here to drag onto days.</p>
         )}
+        </>)}
       </main>
 
+      {!isSession && (
       <aside className="fl-rail" aria-label="Your workouts">
         <Rail workouts={data.workouts} onPick={(w) => setChooser(w)} />
         <span className="hint">Drag onto any day, or tap Add and pick the day. Exercises you write once stay here for every season.</span>
       </aside>
+      )}
 
+      {!isSession && (
       <div className="fl-float fl-glass">
         <button type="button" className="fl-btn" style={{ background: 'rgba(21,23,28,0.06)' }} onClick={() => setPreview(true)}>Preview as athlete</button>
         <button type="button" className="fl-btn accent" disabled={changes.length === 0 && baseline.length > 0} onClick={() => setReview(true)}>
           {changes.length > 0 ? `Publish ${changes.length} change${changes.length === 1 ? '' : 's'}` : (baseline.length === 0 ? 'Publish season' : 'Published')}
         </button>
       </div>
+      )}
+
+      {creating && <NewPassSheet uid={uid} onClose={() => setCreating(false)} onMade={afterCreate} />}
+      {editingDetails && (
+        <DetailsSheet plan={plan} onClose={() => setEditingDetails(false)}
+          onSaved={async () => { setEditingDetails(false); await load(); say('Saved'); }} />
+      )}
+      {editingPolicy && <PolicySheet uid={uid} onClose={() => setEditingPolicy(false)} onSaved={() => { setEditingPolicy(false); say('Cancellation policy saved'); }} />}
 
       {chooser && (
         <Sheet title={`${chooser.name} on which day?`} onClose={() => setChooser(null)}>
@@ -425,7 +498,8 @@ export default function SeasonEditor({ session }) {
               return <li key={i}><span>{c.kind === 'added' ? 'Added' : 'Removed'} {labelOf(c.node)} · week {c.week}</span><small>{note}</small></li>;
             })}
           </ul>
-          {lengthLine && <p className="fl-copy">{lengthLine}</p>}
+          {lengthLine && !lengthBlocked && <p className="fl-copy">{lengthLine}</p>}
+          {lengthBlocked && <div className="fl-error" role="alert">{lengthBlocked} Publishing now keeps the block at {plan.duration_weeks} weeks.</div>}
           <p className="fl-note">The pass and every athlete's copy update together. A week an athlete has started keeps what it had.</p>
           <button type="button" className="fl-btn accent lg" disabled={publishing} onClick={publish}>{publishing ? 'Publishing…' : 'Publish changes'}</button>
         </Sheet>
@@ -536,6 +610,185 @@ function ExercisePicker({ uid, workout, onClose, onPick }) {
         )}
         <p className="fl-note">Adding here changes <b>{workout?.name}</b> everywhere it is used, the same as the app's builder.</p>
       </div>
+    </Sheet>
+  );
+}
+
+/**
+ * New pass: a block or a single session. The kind is picked here, once; nothing about it is editable afterwards.
+ * newPassRow decides what is sent (only the columns the kind allows); the server's refusal is shown in its words.
+ */
+function NewPassSheet({ uid, onClose, onMade }) {
+  const [form, setForm] = useState({ kind: 'block', name: '', price: '', weeks: String(BLOCK_DEFAULT_WEEKS), startsOn: '', enrollmentCloses: '', sessionAt: '', minutes: String(SESSION_MINUTES_DEFAULT) });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const block = form.kind === 'block';
+
+  async function submit(e) {
+    e.preventDefault();
+    setError(null);
+    const made = newPassRow({ ...form, weeks: Number(form.weeks), minutes: Number(form.minutes) }, uid);
+    if (made.error) { setError(made.error); return; }
+    setBusy(true);
+    const res = await createPass(made.row);
+    setBusy(false);
+    if (res.error) { setError(planWriteError(res.error)); return; }
+    onMade(res.plan);
+  }
+
+  return (
+    <Sheet title="New pass" onClose={() => !busy && onClose()}>
+      <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <fieldset className="fl-kind" style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend className="fl-note" style={{ marginBottom: 8 }}>What are you selling? This can’t be changed once the pass exists.</legend>
+          <button type="button" className="fl-chip" aria-pressed={block} onClick={() => setForm((f) => ({ ...f, kind: 'block' }))}>Block of weeks</button>
+          <button type="button" className="fl-chip" aria-pressed={!block} onClick={() => setForm((f) => ({ ...f, kind: 'session' }))}>Single session</button>
+        </fieldset>
+        <div className="fl-field"><label htmlFor="np-name">Name</label><input id="np-name" value={form.name} onChange={set('name')} maxLength={120} required /></div>
+        <div className="fl-field">
+          <label htmlFor="np-price">{block ? 'Price per month (USD)' : 'Price (USD)'}</label>
+          <input id="np-price" type="number" inputMode="decimal" min={MINIMUM_CHARGE_USD} step="0.01" value={form.price} onChange={set('price')} required />
+          <span className="fl-note">At least {usd(MINIMUM_CHARGE_USD)} per payment.{block ? ' A block is paid monthly until its weeks are paid for, then billing stops.' : ' One payment.'}</span>
+        </div>
+        {block ? (
+          <>
+            <div className="fl-form-row">
+              <div className="fl-field"><label htmlFor="np-weeks">Length (weeks)</label><input id="np-weeks" type="number" min={1} max={520} step={1} value={form.weeks} onChange={set('weeks')} required /></div>
+              <div className="fl-field"><label htmlFor="np-start">Start date (optional)</label><input id="np-start" type="date" value={form.startsOn} onChange={set('startsOn')} /></div>
+            </div>
+            <div className="fl-field">
+              <label htmlFor="np-closes">Last sign-up day (optional)</label>
+              <input id="np-closes" type="date" value={form.enrollmentCloses} onChange={set('enrollmentCloses')} disabled={!form.startsOn} />
+              <span className="fl-note">{form.startsOn
+                ? 'Leave it empty to close sign-ups the day before the start. A later day lets athletes join in progress; week 1 is still the start date.'
+                : 'Without a start date, each athlete starts the day they join.'}</span>
+            </div>
+          </>
+        ) : (
+          <div className="fl-form-row">
+            <div className="fl-field"><label htmlFor="np-at">Date and time (optional)</label><input id="np-at" type="datetime-local" value={form.sessionAt} onChange={set('sessionAt')} aria-describedby="np-at-zone" /><span id="np-at-zone" className="fl-note">{timeZoneNote()}</span></div>
+            <div className="fl-field"><label htmlFor="np-min">Minutes</label><input id="np-min" type="number" min={SESSION_MINUTES_MIN} max={SESSION_MINUTES_MAX} step={1} value={form.minutes} onChange={set('minutes')} required /></div>
+          </div>
+        )}
+        {!block && <p className="fl-note">The time is public on your page. Leave it empty to arrange it with each athlete; your cancellation policy then applies.</p>}
+        {error && <div className="fl-error" role="alert">{error}</div>}
+        <button type="submit" className="fl-btn accent lg" disabled={busy}>{busy ? 'Making it…' : block ? 'Make the block' : 'Make the session'}</button>
+      </form>
+    </Sheet>
+  );
+}
+
+/**
+ * A pass's details: a block's start date and last sign-up day, a session's time and minutes. The kind is not here.
+ * The server refuses moving a held block's start (block_has_holders) and clearing or back-dating a held session's
+ * time (session_held); that sentence is shown as it came.
+ */
+function DetailsSheet({ plan, onClose, onSaved }) {
+  const session = passKind(plan) === 'session';
+  const [startsOn, setStartsOn] = useState(plan.starts_on ?? '');
+  const [closes, setCloses] = useState(plan.enrollment_closes ?? '');
+  const [at, setAt] = useState(isoToLocalInput(plan.session_at));
+  const [minutes, setMinutes] = useState(String(plan.session_minutes ?? SESSION_MINUTES_DEFAULT));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function save(e) {
+    e.preventDefault();
+    setError(null);
+    let patch;
+    if (session) {
+      const iso = at ? localInputToIso(at) : null;
+      if (at && !iso) { setError('Pick a date and time, or leave it empty to arrange it with each athlete.'); return; }
+      const m = Number(minutes);
+      if (!Number.isInteger(m) || m < SESSION_MINUTES_MIN || m > SESSION_MINUTES_MAX) { setError(`A session lasts ${SESSION_MINUTES_MIN} to ${SESSION_MINUTES_MAX} minutes.`); return; }
+      patch = { session_at: iso, session_minutes: m };
+    } else {
+      // Validated with the same rule a new block uses (a last sign-up day needs a start and falls inside the block).
+      const check = newPassRow({ kind: 'block', name: plan.name, price: Math.max(Number(plan.price) || 0, MINIMUM_CHARGE_USD), weeks: plan.duration_weeks, startsOn, enrollmentCloses: closes }, plan.trainer_id);
+      if (check.error) { setError(check.error); return; }
+      patch = { starts_on: check.row.starts_on, enrollment_closes: check.row.enrollment_closes };
+    }
+    setBusy(true);
+    const res = await updatePass(plan.id, patch);
+    setBusy(false);
+    if (res.error) { setError(planWriteError(res.error)); return; }
+    onSaved(res.plan);
+  }
+
+  return (
+    <Sheet title={session ? `${plan.name}: time` : `${plan.name}: dates`} onClose={() => !busy && onClose()}>
+      <form onSubmit={save} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {session ? (
+          <div className="fl-form-row">
+            <div className="fl-field"><label htmlFor="pd-at">Date and time</label><input id="pd-at" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} aria-describedby="pd-at-zone" /><span id="pd-at-zone" className="fl-note">{timeZoneNote()}</span></div>
+            <div className="fl-field"><label htmlFor="pd-min">Minutes</label><input id="pd-min" type="number" min={SESSION_MINUTES_MIN} max={SESSION_MINUTES_MAX} step={1} value={minutes} onChange={(e) => setMinutes(e.target.value)} /></div>
+          </div>
+        ) : (
+          <>
+            <div className="fl-form-row">
+              <div className="fl-field"><label htmlFor="pd-start">Start date</label><input id="pd-start" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} /></div>
+              <div className="fl-field"><label htmlFor="pd-closes">Last sign-up day</label><input id="pd-closes" type="date" value={closes} onChange={(e) => setCloses(e.target.value)} disabled={!startsOn} /></div>
+            </div>
+            <p className="fl-note">Empty start date: each athlete starts the day they join. Empty last sign-up day: sign-ups close the day before the start. Once athletes hold the block, its start date stays.</p>
+          </>
+        )}
+        {session && <p className="fl-note">Once booked, the time can’t be cleared or moved into the past. Any change lets the athlete cancel for a full refund until it starts.</p>}
+        {error && <div className="fl-error" role="alert">{error}</div>}
+        <button type="submit" className="fl-btn accent lg" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button>
+      </form>
+    </Sheet>
+  );
+}
+
+/** The coach's own cancellation policy (trainers.cancellation_policy, at most 600 characters, public on their page). */
+function PolicySheet({ uid, onClose, onSaved }) {
+  const [state, setState] = useState({ loading: true, available: true, error: null });
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    myCancellationPolicy(uid)
+      .then((r) => { if (!alive) return; setText(r.policy); setState({ loading: false, available: r.available, error: null }); })
+      .catch(() => { if (alive) setState({ loading: false, available: true, error: 'Couldn’t load your policy.' }); });
+    return () => { alive = false; };
+  }, [uid, attempt]);
+
+  async function save(e) {
+    e.preventDefault();
+    setError(null);
+    if (text.trim().length > POLICY_MAX) { setError(`Keep the policy to ${POLICY_MAX} characters.`); return; }
+    setBusy(true);
+    const err = await saveCancellationPolicy(uid, text);
+    setBusy(false);
+    if (err) { setError(planWriteError(err)); return; }
+    onSaved();
+  }
+
+  return (
+    <Sheet title="Your cancellation policy" onClose={() => !busy && onClose()}>
+      <p className="fl-note">Athletes cancel a session for a full refund up to {SESSION_FREE_CANCEL_HOURS} hours before it. Inside that, and for a session with no time set, your own policy applies. It’s shown on your page under your sessions, as plain text.</p>
+      {state.loading ? <p className="fl-note" aria-live="polite">Loading…</p>
+        : state.error ? (
+          <>
+            <div className="fl-error" role="alert">{state.error}</div>
+            <button type="button" className="fl-btn accent" onClick={() => { setState({ loading: true, available: true, error: null }); setAttempt((n) => n + 1); }}>Try again</button>
+          </>
+        ) : !state.available ? <p className="fl-copy">Cancellation policies aren’t available on the server yet.</p>
+          : (
+            <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div className="fl-field">
+                <label htmlFor="pol-text">Your policy</label>
+                <textarea id="pol-text" value={text} maxLength={POLICY_MAX} onChange={(e) => setText(e.target.value)} placeholder="For example: inside 24 hours, I move the session once at no cost; a no-show is not refunded." />
+                <span className="fl-note">{text.length} / {POLICY_MAX}</span>
+              </div>
+              {error && <div className="fl-error" role="alert">{error}</div>}
+              <button type="submit" className="fl-btn accent lg" disabled={busy}>{busy ? 'Saving…' : 'Save policy'}</button>
+            </form>
+          )}
     </Sheet>
   );
 }

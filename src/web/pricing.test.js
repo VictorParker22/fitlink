@@ -12,11 +12,11 @@ import { readFileSync } from 'node:fs';
 import CONFIG from './pricingConfig.json' with { type: 'json' };
 import * as P from './site/pricing.js';
 
-// The sha256 of fitlink-app `supabase/config/pricing.json` at commit 323786f (branch launch/2-founding, "Merge
-// launch/1-fee-engine (review fixes, a365ddd) into launch/2-founding"), the commit this copy was taken from. A re-copy
+// The sha256 of fitlink-app `supabase/config/pricing.json` at commit d4b0267 (branch launch/4-blocks, "Blocks review
+// fixes: a held session's time, one refund per payment, counted installments"), the commit this copy was taken from. A re-copy
 // that does not update this pin (and the commit named here) fails, so a changed config is always a reviewed change.
 // Re-sync: copy the server file byte for byte, then `sha256sum src/web/pricingConfig.json` and paste the hash here.
-const SERVER_CONFIG_SHA256 = 'bb9da028168b13e0f509cd90a6693e94b46bb15b930dd684f183cdf397f78a8f';
+const SERVER_CONFIG_SHA256 = '201ec4c34793fa55949adf2bb89a71b59b1ddae497998d5ca759d126aa9672d5';
 
 test('the copy is the server file at the pinned commit (sha256)', () => {
   const raw = readFileSync(new URL('./pricingConfig.json', import.meta.url));
@@ -45,6 +45,9 @@ test('every value the site uses, pinned', () => {
   assert.equal(CONFIG.model_b.coach_fee_bps, 200);
   assert.deepEqual(CONFIG.model_b.booking_fee_cents, { single_session: 400, block_payment: 1200 });
   assert.equal(CONFIG.minimum_charge_cents, 2500);
+  assert.equal(CONFIG.blocks.default_weeks, 8);
+  assert.equal(CONFIG.blocks.sale_opens_days_before, 90);
+  assert.equal(CONFIG.sessions.free_cancel_hours, 24);
   assert.deepEqual(CONFIG.payouts, { interval: 'weekly', weekly_anchor: 'monday' });
   assert.equal(CONFIG.disputes.recovery_cents, 1500);
   assert.equal(CONFIG.stripe_processing_estimate.percent_bps, 290);
@@ -69,6 +72,9 @@ test('pricing.js derives each constant from the config', () => {
   assert.equal(P.FOUNDING_CLOSES_ON, '2026-12-31');
   assert.equal(P.FOUNDING_CLOSES_TZ, 'America/Los_Angeles');
   assert.equal(P.MINIMUM_CHARGE_USD, 25);
+  assert.equal(P.BLOCK_DEFAULT_WEEKS, 8);
+  assert.equal(P.BLOCK_SALE_OPENS_DAYS_BEFORE, 90);
+  assert.equal(P.SESSION_FREE_CANCEL_HOURS, 24);
   assert.equal(P.DISPUTE_FEE_USD, 15);
   assert.equal(P.PAYOUT_INTERVAL, 'weekly');
   assert.equal(P.PAYOUT_WEEKLY_ANCHOR, 'monday');

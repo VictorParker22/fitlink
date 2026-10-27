@@ -43,6 +43,23 @@
 // (plans.duration_weeks) is billed a fixed number of payments and then stops
 // by itself (2026-10-17; season.js holds the server's formula). The sheet
 // says which, with the number of payments and the total, before the card form.
+//
+// Blocks and single sessions (2026-10-25, fitlink-app migration 20261025120000; words in blocks.js): the sheet says
+// what is bought, "Starts Dec 1 · 8 weeks · $320 / month · 2 payments" (+ "($640 in all)" once create-subscription
+// answered) or "Session · Thu, Dec 3, 6:00 PM EST
+// · 60 min · $40 · one payment · nothing renews". Before create-subscription answers, a dated block's payments are the
+// page's count from now (season.js datedBlockPayments, the server's formula); once it answers, its `seasonPayments` is
+// the number on every line. A pass outside its sale window (a session that started, a dated block before its sale
+// opens or after its last sign-up day) stops the sheet before anything can end a pass; the server's own refusals
+// (409 session_over / block_closed / block_not_open) are shown in its words. A pass priced under the minimum charge
+// (made before guard_plan_minimum; live has $1, $5 and $20 ones) is not for sale either (below_minimum).
+//
+// Review 2026-10-25: the athlete-exit preview and confirm carry the plan id, so the SERVER refuses, before it ends
+// anything, a plan create-subscription would refuse (archived, unpriced, under the minimum, outside its sale window, a
+// session about to start), in create-subscription's sentence plus "Nothing was changed."; and right before the confirm
+// the sheet reads the plan again and re-runs its own sale check (a coach can archive or reprice it, and a session can
+// start, while the confirmation is on screen). The "($X in all)" total waits for create-subscription's answer: a Model
+// B coach's athletes pay a booking fee on top of plans.price, and the invite page cannot read whether this coach uses it.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -50,9 +67,10 @@ import { supabase, APP_SCHEME } from './supabase';
 import {
   acceptInvite, appConfig, appleAvailableHere, claimAthleteRole, clearParkedCheckout, coachTakesCards, confirmSubscription,
   createSubscription, finishAthleteSignUp, firstName, freshUser, functionError, isStandaloneHere, myClient, parkCheckout,
-  planIsPriced, previewInvite, session, signInWithApple, signOutLocal,
+  planNow, previewInvite, session, signInWithApple, signOutLocal,
 } from './api';
-import { chargedTotal, checkoutChargeLine, passBilling, passPriceParts, passPriceText, passSeasonLine } from './season';
+import { chargedTotal, passBilling, passPriceParts } from './season';
+import { chargeLine as blockChargeLine, passKind, paymentsFor, priceLine, saleCheck, scheduleLine, sessionCancelNote } from './blocks';
 import {
   accountLabel, appleSignUpUnfinished, cleanName, metadataName, nameStepHint, nameStepTitle, signInHint, siteCopy, usedApple,
   whoStepBody, APPLE_PARK_FAILED, OR_EMAIL, SETTING_UP,
@@ -69,6 +87,7 @@ const WHO_STEPS = new Set([STEP.who, STEP.name, STEP.switch, STEP.pay, STEP.stop
 const FINAL_CODES = new Set([
   'invite_not_found', 'invite_expired', 'invite_already_accepted', 'cannot_coach_yourself',
   'athlete_only', 'plan_archived', 'plan_not_found', 'coach_not_found', 'plan_unpriced', 'payouts_not_ready', 'trainer_in_use',
+  'below_minimum', 'session_over', 'block_closed', 'block_not_open',
 ]);
 
 function cents(amount) {
@@ -77,6 +96,8 @@ function cents(amount) {
 }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+/** The clock, read when a check runs (never during render). */
+const clockNow = () => Date.now();
 
 /** A refusal this page raises itself, before it sent anything. */
 function stop(message, code = null) {
@@ -154,6 +175,8 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   const stripeKey = useRef(null);
   /** A switch confirm whose answer was lost: what it was asked to do, until a preview shows where things stand. */
   const lostSwitch = useRef(null);
+  /** When the sheet opened: the moment its payment count is predicted for (create-subscription's answer replaces it). */
+  const [openedAt] = useState(() => Date.now());
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape' && !busy && !appleBusy) onClose(); };
@@ -253,9 +276,10 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
    * sentence that ends "Nothing was changed."
    */
   async function assertSellable() {
-    if (!planIsPriced(plan)) {
-      throw stop(`This pass has no price set, so it can’t be bought yet. Ask ${first} to set one. Nothing was changed.`, 'plan_unpriced');
-    }
+    // No price, a price under the minimum charge, a session that started, a dated block before its sale opens or after
+    // its last sign-up day (create-subscription's own refusals): judged now, before a switch could end a pass for a
+    // purchase that would be refused.
+    assertOnSale(plan);
     let cfg;
     try {
       cfg = await appConfig();
@@ -329,7 +353,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
       }
       await assertSellable();
       setCheckingNote('Checking your passes…');
-      const v = await previewInvite(code);
+      const v = await previewInvite(code, { planId: plan.id });
       const lost = lostSwitch.current;
       lostSwitch.current = null;
       if (lost && v?.currentCoach?.id && v.currentCoach.id === v?.newCoach?.id) {
@@ -366,11 +390,28 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** The person said yes to what the preview listed. */
+  /** The page's own sale check on a plan row, now: throws the sentence, ending "Nothing was changed.". */
+  function assertOnSale(p) {
+    const check = saleCheck(p, clockNow(), { first });
+    if (!check.ok) throw stop(`${check.sentence} Nothing was changed.`, check.code);
+  }
+
+  /**
+   * The person said yes to what the preview listed. The confirm can end another pass, so right before it the plan is
+   * read again and checked again (the server checks the same with the planId; this is the second lock).
+   */
   async function confirmSwitch() {
     setError(null);
     setBusy(true);
     try {
+      let fresh;
+      try {
+        fresh = await planNow(plan.id);
+      } catch {
+        throw stop(`We couldn’t check that ${plan.name} is still on sale. Nothing was changed. Try again in a moment.`);
+      }
+      if (!fresh || fresh.trainer_id !== plan.trainer_id) throw stop(`${plan.name} is no longer on sale. Ask ${first}. Nothing was changed.`, 'plan_archived');
+      assertOnSale(fresh);
       await join(true);
     } catch (err) {
       stopWith(err);
@@ -383,7 +424,7 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   async function join(confirm) {
     let accepted;
     try {
-      accepted = await acceptInvite(code, { confirm });
+      accepted = await acceptInvite(code, { confirm, planId: plan.id });
     } catch (err) {
       // The server found something to confirm that the preview did not show
       // (a pass started in between): show its list, ask again.
@@ -496,14 +537,26 @@ export default function Checkout({ plan, coach, code, onClose, returnNote = null
   // Model B: create-subscription's own total (the booking fee inside it) replaces plans.price on every line from the
   // card form on; the booking fee is named as part of that total, never as a surcharge line of its own.
   const total = owing ? null : chargedTotal(purchase);
-  // Per period, as create-subscription bills it; a season of one payment reads "$X for the N-week season".
-  const price = passPriceText(plan, total) ?? 'no price set';
-  const seasonLine = passSeasonLine(plan, total);
+  // How many payments this purchase makes: create-subscription's seasonPayments once it answered, else the page's
+  // count from when the sheet opened (a dated block's from now; a session 1; an open pass null).
+  const payments = paymentsFor(plan, openedAt, owing ? null : purchase);
   const billing = passBilling(plan, total);
-  // A season of one payment has nothing left to cancel once it is paid.
+  const isSession = passKind(plan) === 'session';
+  // Per period, as create-subscription bills it; one payment (a session, a block of one payment) is the amount alone.
+  const amount = passPriceParts(plan, total)?.amount ?? null;
+  const due = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : null;
+  // Paying what is owed on a pass already held says what is owed, never this page's payment-count prediction (the
+  // held pass bills by the count stamped when it was bought; the iOS rule).
+  const price = owing ? (due ? `you owe ${due}` : 'what you owe')
+    : !amount ? 'no price set' : isSession || payments === 1 ? amount : `${amount} / ${billing.period}`;
+  // What is bought: "Starts Dec 1 · 8 weeks · $320 / month · 2 payments", and "($640 in all)" only once
+  // create-subscription answered (its total holds a Model B booking fee); an open pass has no such line.
+  const what = scheduleLine(plan, openedAt, { first });
+  const seasonLine = what ? [what, priceLine(plan, { payments, total, serverTotal: Boolean(purchase?.clientSecret) })].filter(Boolean).join(' · ') : null;
+  // One payment has nothing left to cancel once it is paid; a session says the 24-hour rule instead.
   const chargeLine = owing
-    ? 'Charged today. Cancel any time from the app.'
-    : `${checkoutChargeLine(plan, total)}${billing.kind === 'season' && billing.payments === 1 ? '' : ' Cancel any time from the app.'}`;
+    ? `${due ?? 'Charged'} today, for the payment you owe on the pass you hold.`
+    : `${blockChargeLine(plan, { nowMs: openedAt, payments, total })}${isSession ? ` ${sessionCancelNote(plan, first)}` : payments === 1 ? '' : ' Cancel any time from the app.'}`;
   const payLabel = owing && Number(purchase?.amountDueCents) > 0 ? cents(purchase.amountDueCents) : (passPriceParts(plan, total)?.amount ?? '');
   const ending = Array.isArray(view?.passesEnding) ? view.passesEnding.filter((p) => p && typeof p.line === 'string' && p.line) : [];
   const currentName = view?.currentCoach?.name || null;

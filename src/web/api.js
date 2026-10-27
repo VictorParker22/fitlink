@@ -359,13 +359,23 @@ async function athleteExit(body) {
   return data ?? {};
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** `{ planId }` for the pass being bought, when it is a plan id (else nothing is sent). */
+const planField = (planId) => (UUID.test(String(planId ?? '')) ? { planId: String(planId) } : {});
+
 /**
  * What joining this coach would end, changing nothing: `{ preview: true,
  * kind, newCoach: {id, name}, currentCoach: {id, name} | null, needsSwitch,
  * needsConfirmation, passesEnding: [{ line, … }], refund: 'none' }`.
+ *
+ * `planId` (fitlink-app launch/4-blocks, review 2026-10-25): the pass this join
+ * is for. The server then refuses, before it ends anything, a plan
+ * create-subscription would refuse (plan_archived, plan_unpriced,
+ * below_minimum, session_over, block_closed, block_not_open, a session about
+ * to start), in create-subscription's sentence plus "Nothing was changed.".
  */
-export function previewInvite(code) {
-  return athleteExit({ action: 'accept_invite', code, preview: true });
+export function previewInvite(code, { planId = null } = {}) {
+  return athleteExit({ action: 'accept_invite', code, ...planField(planId), preview: true });
 }
 
 /**
@@ -377,19 +387,35 @@ export function previewInvite(code) {
  * needs one is refused 409 `needs_confirmation` with the same view as the
  * preview in the body.
  */
-export function acceptInvite(code, { confirm = false } = {}) {
-  return athleteExit({ action: 'accept_invite', code, ...(confirm ? { confirm: true } : {}) });
+export function acceptInvite(code, { confirm = false, planId = null } = {}) {
+  return athleteExit({ action: 'accept_invite', code, ...planField(planId), ...(confirm ? { confirm: true } : {}) });
+}
+
+/**
+ * The pass as the server has it now, read right before a confirm that can end
+ * another pass: the row, `null` when it is gone or archived (no longer for
+ * sale), and a failed read throws.
+ */
+export async function planNow(planId) {
+  const { data, error } = await supabase.from('plans').select('*').eq('id', planId).limit(1);
+  if (error) throw error;
+  const row = data?.[0] ?? null;
+  return row && !row.archived_at ? row : null;
 }
 
 /**
  * create-subscription. 200 answers: `{ clientSecret, customerId,
- * subscriptionId }` (a payment to confirm), `{ alreadyActive: true,
- * subscriptionId, customerId }`, or the same pass owed: `{ clientSecret, …,
- * payingOpenInvoice: true, amountDueCents }`. A refusal throws `{ status,
- * code, message }`: 400 bad_request / payouts_not_ready, 403 athlete_only,
- * 404 plan_not_found / coach_not_found, 409 plan_archived / plan_unpriced /
- * cannot_coach_yourself / live_subscription / roster_full /
- * payment_processing, 502 stripe_error, 500 db_error.
+ * subscriptionId, amountCents?, bookingFeeCents?, seasonPayments? }` (a payment
+ * to confirm; `seasonPayments` is how many payments this purchase makes: a
+ * block's P, a dated block's count from now, 1 for a session, absent for an
+ * open pass), `{ alreadyActive: true, subscriptionId, customerId }`, or the
+ * same pass owed: `{ clientSecret, …, payingOpenInvoice: true, amountDueCents }`.
+ * A refusal throws `{ status, code, message }`: 400 bad_request /
+ * payouts_not_ready, 403 athlete_only, 404 plan_not_found / coach_not_found,
+ * 409 plan_archived / plan_unpriced / below_minimum / cannot_coach_yourself /
+ * live_subscription / roster_full / payment_processing / session_over /
+ * block_closed / block_not_open (blocks, 2026-10-25: each sentence ends "You
+ * haven't been charged."), 502 stripe_error, 500 db_error.
  */
 export async function createSubscription(planId, clientId) {
   const { data, error } = await supabase.functions.invoke('create-subscription', { body: { planId, clientId } });
@@ -577,6 +603,60 @@ export async function signOutLocal() {
   if (failed) {
     try { window.localStorage.removeItem('fitlink-web'); window.localStorage.removeItem('fitlink-web-code-verifier'); } catch { /* storage blocked */ }
   }
+}
+
+// ── Blocks and single sessions (fitlink-app migration 20261025120000) ──────────
+
+/**
+ * The coach's own cancellation policy as anyone reads it (trainers_public.cancellation_policy): a string, or null when
+ * none is written. Before the migration the column is missing (42703): null as well. Any other failed read throws.
+ */
+export async function coachCancellationPolicy(coachId) {
+  const { data, error } = await supabase.from('trainers_public').select('cancellation_policy').eq('id', coachId).limit(1);
+  if (error?.code === '42703') return null;
+  if (error) throw error;
+  const v = data?.[0]?.cancellation_policy;
+  return typeof v === 'string' && v.trim() ? v : null;
+}
+
+/**
+ * The signed-in coach's own policy (trainers, their own row): `{ policy, available }`; `available` false before the
+ * migration (42703). A failed read throws.
+ */
+export async function myCancellationPolicy(uid) {
+  const { data, error } = await supabase.from('trainers').select('cancellation_policy').eq('id', uid).limit(1);
+  if (error?.code === '42703') return { policy: '', available: false };
+  if (error) throw error;
+  return { policy: typeof data?.[0]?.cancellation_policy === 'string' ? data[0].cancellation_policy : '', available: true };
+}
+
+/**
+ * Save the coach's policy on their own row (trainers_update_own; the server's CHECK keeps it to 600 characters and
+ * sync_trainer_public copies it to the public table). An empty text clears it. Returns the error or null; the row
+ * must come back, so a write the server did not make is never reported as saved.
+ */
+export async function saveCancellationPolicy(uid, text) {
+  const value = String(text ?? '').trim();
+  const { data, error } = await supabase.from('trainers').update({ cancellation_policy: value || null }).eq('id', uid).select('cancellation_policy');
+  if (error) return error;
+  if (!data?.length) return { code: 'no_row', message: 'not saved' };
+  return null;
+}
+
+/** Insert a new pass (plans_insert: the coach's own trainer_id). Answers `{ plan }` or `{ error }`. */
+export async function createPass(row) {
+  const { data, error } = await supabase.from('plans').insert(row).select('*');
+  if (error) return { error };
+  if (!data?.length) return { error: { code: 'no_row', message: 'not saved' } };
+  return { plan: data[0] };
+}
+
+/** Change a pass's details (plans_update: the coach's own). Answers `{ plan }` or `{ error }`. */
+export async function updatePass(planId, patch) {
+  const { data, error } = await supabase.from('plans').update(patch).eq('id', planId).select('*');
+  if (error) return { error };
+  if (!data?.length) return { error: { code: 'no_row', message: 'not saved' } };
+  return { plan: data[0] };
 }
 
 /** The coach's standing invite (created once, reused): the public page URL. */
