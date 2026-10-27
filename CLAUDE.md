@@ -1,6 +1,6 @@
 # CLAUDE.md — FitLink Project Memory
 
-> **Last updated**: 2026-05-06
+> **Last updated**: 2026-10-21
 > **Project**: FitLink — Gym Trainer Referral & Client Management Platform
 > **Location**: `c:\projects\fitlink`
 > **Dev server**: `npm run dev` → http://localhost:5173 (or next available port)
@@ -12,6 +12,280 @@
 A **mobile-first PWA** for gym trainers to manage clients, send referral invites, track subscriptions, schedule sessions, build workouts, and message clients — all from one premium dark dashboard. Clients get their own portal to view workouts, log exercises, and chat with their trainer.
 
 The project idea came from a conversation with a real gym trainer who wanted a referral/subscription system for their business.
+
+---
+
+## Coach-led web pages (2026-10-16) — `src/web/`, `public/`, `vercel.json`
+
+The site is React routes in `src/main.jsx`: the marketing and policy pages under one shell
+(`src/web/site/`), a coach's public page with web checkout (`/i/:code`, `/live/:code` →
+`src/web/CoachPublicPage.jsx` + `Checkout.jsx`), the coach's season editor (`/coach/*` →
+`CoachWeb.jsx` + `SeasonEditor.jsx`, pure track maths in `passTrack.js`) and a 404 for
+everything else. `src/web/api.js` wraps the edge functions and RPCs; a page only ever sends
+ids (invite code, plan id, client id), never a price or a payee: the server computes money
+from `plans`.
+
+- **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
+  is the layout route (glass header with the F mark + Home / Pricing / For athletes / Help,
+  Sign in → `/coach`, Get the app → the App Store; footer with Help · Privacy · Terms ·
+  Delete account · support@fitlink.coach; scroll-to-top; a `body` class so overscroll is
+  cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
+  `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,
+  titles and section lists in `legalMeta.js`), `DeleteAccount.jsx`, `NotFound.jsx`.
+  `site.css` is scoped under `.fl-site`; the root also carries `.fl`, so tokens, `.fl-btn`,
+  `.fl-field`, `.fl-error` and the glass pill come from `web.css`. The Web-Home-Mobile
+  artboard is the same page at 390 px: one column, the header pill becomes a box with the
+  nav on its own row (`@media (max-width: 720px)`); keep every new section
+  `minmax(min(Npx, 100%), 1fr)` so it collapses without horizontal scroll.
+- **Numbers come from `src/web/site/pricing.js`, nowhere else.** `STANDARD_FEE_PERCENT` 10,
+  `ELITE_FEE_PERCENT` 5 and `FREE_ROSTER_CAP` 5 are what the server enforces
+  (`platform_config.platform_fee_bps` 1000, `payment_split_for_trainer()` 500 bps on
+  Elite, `enforce_roster_cap`); `ELITE_MONTHLY_USD` 29.99 / `ELITE_YEARLY_USD` 249 are the
+  figures in fitlink-app `lib/revenuecat.ts` and App Store Connect is the truth: confirm
+  before launch. In a dev build every rendered figure carries a red `[confirm]` marker
+  (`NEEDS_CONFIRM = import.meta.env.DEV`); production never shows it. Quotes stay dashed
+  placeholders and the footer says `[Legal entity name]` until the founder fills them.
+  Illustrations (phone mocks, the money card) are `aria-hidden` and compute their sample
+  arithmetic from the same constants.
+- **Support answers must be true for the shipped product**: iPhone only, no Android app,
+  card checkout by Stripe (no Apple Pay claim), Apple Health optional and off by default (the
+  coach sees resting HR and sleep only when the athlete also turns on sharing; no Health
+  Connect), the assistant is Coach Elite and the coach sends every message, refunds through
+  the app within 90 days of the payment, a coach who leaves refunds undelivered time
+  automatically, and an athlete who
+  switches coach or deletes their account ends the old pass that day with no refund of time
+  already paid ("ask your coach before you switch"; operator decision 2026-10-17). A season
+  is billed a fixed number of payments and stops by itself; an open pass renews until
+  cancelled; a cancelled pass keeps access to the plan until the paid time ends, and after
+  that the plan "is no longer part of the pass" (never "access closes": see below). A coach
+  can also train (two modes); `Support.jsx` says so, but the Terms' "In plain words" still
+  says "either a coach or an athlete, not both" and needs the founder's wording. The contact
+  form composes a `mailto:` to `SUPPORT_EMAIL`; there is no ticket backend. The search
+  filters the page's own questions.
+- **Delete account is a real flow** (`DeleteAccount.jsx`, helpers in `api.js`): email code
+  (`signInWithOtp({ shouldCreateUser: false })` → code) or Sign in with Apple → `myRole()`
+  (a `trainers` row → coach, a `clients` row → athlete, neither → `none`; a read that fails throws and the page
+  says it couldn't check, with Check again, never "no profile"). A session already in the
+  browser skips the code.
+  - Coach: `departurePreview()` = `delete-trainer-account {preview: true}` (athletes, refund
+    total, and `ownPassesEnding[].line`: the coach's own passes with other coaches and their
+    placeholders', listed verbatim under "Also ending today"; 3/hour; a 429 or a Stripe 502
+    is shown in words with Check again) → checkbox → `deleteCoachAccount()` (the function,
+    then `auth.getUser()` must fail before the page says Deleted; 2/day). The Delete button
+    stays disabled until the preview is on screen: step 0 ends the coach's own passes with
+    other coaches, no refund, and the preview is the only place they are listed.
+  - Athlete, and a `none` account (athlete-exit deletes an account with neither row too; a
+    deleted account's stale session gets its 401 and goes back to the email step)
+    (fitlink-app 2026-10-17, athlete-exit is the athletes' one exit; no app calls
+    `delete-account-media` or `delete_client_account` any more): `previewAthleteDeletion()` =
+    `athlete-exit {action: 'delete_account', preview: true}` → each `passesEnding[].line` and
+    `coachNotice` verbatim → checkbox → `deleteAthleteAccount()` = `{action:
+    'delete_account', confirm: true}` → Deleted and local sign-out only on `deleted: true`.
+    The Delete button stays disabled until a preview body is on screen (preview 10/h + 60/day,
+    delete 3/day: a failed preview must not leave a commit that ends unlisted passes); a
+    preview refusal shows the server's sentence (guardRate's hourly or daily one included)
+    with Check again. Refusals (`needs_confirmation`, `coach_account` → read the role again,
+    `live_subscription`, `stripe_error` / `db_error` / `delete_failed`, which say what ended)
+    are shown as sent; a refusal with `passesEnded > 0` reloads the preview.
+  - Never say "deleted" before the server answered. A commit with no decided answer (status
+    0, a gateway timeout, any 5xx that is not `{error, code}`) says the outcome is unknown and
+    to reload; a 401 drops the local session and goes back to the email step.
+- **Sign-in on the web (2026-10-21).**
+  - **PKCE.** `src/web/supabase.js` runs `flowType: 'pkce'`. A session is made only by a flow this
+    browser started (the verifier lives in `fitlink-web-code-verifier`) or by a six-digit code typed
+    here. Tokens in a URL are refused; under the old implicit flow `/i/CODE#access_token=…` signed a
+    visitor into someone else's account, and the card form then paid onto it.
+  - **After the client initializes, clean the URL.** The exchange runs once, at import. `/coach`,
+    `/delete-account` and `/join` then call `takeAuthReturnNote()`, which strips every auth parameter
+    and shows one fixed sentence, never the URL's text. Other pages clean silently; SiteShell skips
+    `/delete-account` (its effect runs after the page's and would clean the URL first). Never call
+    `exchangeCodeForSession` from a page. A sentence for the sign-in screen is set BEFORE a sign-out:
+    signing out clears the session and ends the effect that would have set it.
+  - **`/coach` is for coach accounts.** `myRole()` is `coach` (trainers row) → the editor; `athlete` /
+    `none` → "isn't a coach account" with Sign out; a failed read → Check again, never the editor. A
+    gate result is kept with the uid it checked, so another account never sees it. An account whose
+    every identity is Apple and whose metadata has no `role` (`appleSignUpUnfinished`) is a sign-up
+    nobody finished. Its default trainers row (made by `handle_new_user`) carries Apple's full name,
+    or the email's local part, and `trainers_public` lists it to anyone, so every web path that meets
+    one removes it before anything can stop: `/coach` drops the row (`claim_athlete_role`) and signs
+    it out; checkout makes it an athlete, `claim_athlete_role` FIRST (before the name step and the
+    sellable checks), then `role: 'client'`, the iOS rule; `/join` with nothing parked, and a pass
+    gone on the way back from Apple, drop the row and sign out (`leaveUnfinishedAppleSignUp`);
+    `/delete-account` lets it delete itself. Never call `claim_athlete_role` for an account with a
+    role. Open (fitlink-app, server): `handle_new_user` still inserts that row for a role-less Apple
+    or Google sign-up, so one abandoned before any of these paths (an Apple sign-in on
+    `/delete-account` that never deletes, an iOS sign-up left at the role screen) keeps it.
+  - **Who the account is comes from the server.** `freshUser()` (GET `/auth/v1/user`) decides every
+    write that depends on it (`claim_athlete_role`, `role: 'client'`) and the `/coach` and
+    `/delete-account` reads; never the stored session, which can be an hour old (review 2026-10-21:
+    an Apple sign-up that picked Coach in the app since still read as unfinished, and `/coach` deleted
+    the new coach's trainers row). A read that fails writes nothing: `/coach` says it couldn't check
+    (Check again), a 401/403 or a missing session goes back to sign-in.
+  - **Every sign-out is `signOutLocal()`** (scope `local`; when `/logout` can't be reached, the stored
+    session and verifier are removed by hand). Never `supabase.auth.signOut()` bare: it is global (it
+    also signs the coach out of the app) and auth-js keeps the session when `/logout` fails, so on a
+    shared computer the editor stayed signed in.
+  - **Sign in with Apple** shows only when `VITE_APPLE_WEB_SIGN_IN=on` was set at build time, on
+    `https://fitlink.coach` or localhost, and not in a Home Screen web app.
+    - The owner's console steps are in fitlink-app's threat model (Apple vendor row): Services ID
+      `fitlink.app.web` FIRST in Supabase's Apple Client IDs, client secret expiry.
+    - Return paths are fixed: `/coach`, `/delete-account`, `/join`. Never `/i/*` or `/live/*` (the
+      AASA paths). Never from a query.
+    - Checkout parks `{code, planId, name}` in sessionStorage (`fitlink-web-checkout-return`, 30
+      minutes). `/join` moves client-side to `/i/CODE`, which reopens the sheet (no who step: the
+      session is this tab's own, unless the return came back with a failure note). With nothing
+      parked, `/join` never leaves a silent sign-in: an unfinished sign-up is left as above, any
+      other account is named ("Signed in as … with Apple.") with Sign out.
+  - **The button** is `AppleButton.jsx`: Apple's logo file unmodified (`public/apple/`), black,
+    "Continue with Apple", title at 43 % of the height, never smaller than the email button beside it.
+  - **Copy.** Never ask an Apple user for a personal email; point them to the Apple button. Every
+    sign-in sentence lives in `appleAuth.js` (`node --test src/web/appleAuth.test.js`). The iPhone path
+    to the Sign in with Apple list is "Settings, then your name, then Sign in with Apple" (iPhone User
+    Guide, iOS 26).
+- **Checkout joins through athlete-exit, then buys** (`Checkout.jsx`). A session already in the
+  browser that the sheet did not make (not a code typed in it, not this tab's own Apple return
+  through `/join` with no failure note) is somebody's: the sheet opens on "Signed in as <email, or
+  the phone with its +>[ with Apple] · Not you? Sign out" with Continue, and nothing is finished,
+  joined or bought before that tap (review 2026-10-21: with a coach's session left on a shared
+  computer, opening another coach's checkout put that coach on the roster before any who-line).
+  Signed out, the sheet first checks
+  what the page can see would make create-subscription refuse (`planIsPriced`, the server's
+  `planAmountCents` rule; `coachTakesCards` = `trainers_public.stripe_charges_enabled`; the
+  Stripe key from `app-config`; an `app-config` call that fails says so in its own words,
+  only a 2xx without a `pk_` key is "not set up") and stops with "Nothing was changed"
+  (`CoachPublicPage` never offers Buy on an unpriced pass, and with no priced pass it shows
+  no "Choose a pass" prompt) → email code or Sign in with Apple (a new Apple account is
+  finished as an athlete first, BEFORE the same checks run again, so a refusal there never leaves
+  it a coach row named after the person) → `previewInvite` = `athlete-exit
+  {action: 'accept_invite', code, preview: true}` → when `needsConfirmation`, the
+  `passesEnding[].line` list and "this happens as soon as you confirm, before the card form"
+  → `acceptInvite(code, {confirm: true})`, which ends those passes at Stripe NOW (no refund,
+  open invoices forgiven) and moves the athlete → `create-subscription {planId, clientId}`
+  (`alreadyActive` is a success; `payingOpenInvoice` + `amountDueCents` is "pay what you owe")
+  → Stripe PaymentElement → `confirm-subscription {clientId, subscriptionId}` (three tries,
+  1.5 s apart, on no answer, a 5xx without a code, or `active: false` without a code; a 4xx
+  or coded 5xx shows its sentence at once; `{active: false, code: 'roster_full', error}`
+  shows `error`) → "You're in" only on `active: true`. "Switched" and "your previous pass has
+  ended" come only from the confirm's own `switched` / `passesEnded`. A confirm whose answer is
+  lost says nobody can tell whether the pass ended (Check again re-runs the preview; when it
+  shows this coach as the athlete's own, the sheet says the switch went through and the
+  listed passes ended before the card form); a 401 offers Sign in again. What only the server
+  can know can still refuse after a confirmed switch (`live_subscription` on a second pass with
+  the new coach, `stripe_error`, `db_error`), and the sheet then keeps saying the old pass
+  ended.
+- **A season stops billing after its weeks (owner decision 2026-10-17; fitlink-app
+  `_shared/season.ts`, migration 20261017130000).** A pass with `duration_weeks` is billed
+  `price` every month (`period: 'year'` → every year; any other period bills monthly) for
+  P = `seasonPayments(weeks, period)` payments, then stops: month `max(1, ceil(weeks × 7 /
+  30.4375))`, year `max(1, ceil(weeks × 7 / 365.25))` (4 w → 1, 8 w → 2, 12 w → 3, 52 w → 12).
+  An open pass (no `duration_weeks`) renews until cancelled. `src/web/season.js` is the web's
+  copy (integer maths, the server's table pinned in `src/web/season.test.js`: run
+  `node --test src/web/season.test.js`; change both repos or neither) and every season
+  sentence comes from it: the card reads "$180 / month" + "8-week season · 2 monthly payments
+  ($360 in all)", a one-payment season "$90 for the 4-week season" + "One payment · nothing
+  renews"; the checkout's line under the card form is "$180 today, then monthly: 2 payments
+  in all. Billing stops after the season." / "$90 today. One payment for the season." (open
+  passes keep "Charged today, then every month until you cancel."); the season editor shows
+  "$180 / month · Athletes pay 2 monthly payments ($360)" and, in the publish review, what a
+  new week count does to buyers' payments (publishing writes `plans.duration_weeks`, and a
+  write that fails is said). Never "$X once". The price stays per period. Whether a pass is a
+  season is `passBilling(plan).kind` (1..520 whole weeks, the server's `seasonWeeks`), never a
+  truthy `duration_weeks`: a 600-week pass is an open pass that renews, so its card says "Buy
+  <name>", not "Join the season". When billing ends the history stays and a season paid in
+  full keeps its own copy ('completed'); Help, For athletes and Terms §4 say the plan "is no
+  longer part of the pass" / "may be closed", NOT "access closes" (review 2026-10-17: the
+  athlete can mark their own season 'completed' through `guard_enrollment_columns`, live
+  stripe-webhook's `endPassAccess` moves only active/paused rows, and `my_track_ids` serves
+  'completed' snapshots, so a season skipped to the end and cancelled early is still served;
+  fitlink-app's review fix makes an early end cancel a 'completed' row too, not yet deployed,
+  and a season with no subscription at all never ends; the softer words are true either way,
+  so change them only with the server's proof). A signed-in athlete whose
+  season with the coach reads 'completed' and who holds no running pass with them (status
+  active / trialing / past_due / unpaid / paused) gets "Start another season with <first>" on
+  the coach's page (`api.js finishedSeasonWith`, reads only; a failed read shows nothing).
+  "Every payment is made, so nothing more is charged" appears ONLY with a 'season_complete'
+  notification for that plan created at or after the season's `started_at` (only stripe-webhook
+  inserts that type, after all P payments; `season.js finishedSeason` → `paidInFull`); a season
+  that reads 'completed' without one says "You finished your <plan> season. Everything you
+  logged stays with you." **Lengths and athletes already paying:** a subscription bought
+  before create-subscription stamped `fitlink_season_weeks` / `fitlink_season_payments` is
+  billed by the plan's CURRENT `duration_weeks` (server `seasonFor`; live: one, the 8-week
+  "Spring" pass, renewing 2026-11-08). The editor reads the coach's running
+  `client_subscriptions` per pass (`payingFor`) and, when a new length changes P, the review
+  adds "N athlete(s) pay for this pass now. A pass bought before seasons were billed a fixed
+  number of payments may be billed by the new length too, so tell them before you publish."
+  (unknown count → "Athletes may already pay for this pass."). Terms §4 ("that number is
+  fixed when you buy") and Help are true for that subscription only once the server stamps it
+  (weeks '8', payments '2'): a fitlink-app rollout step, required before this site's deploy.
+  The web has no manage-pass screen and no inbox, so `client_subscriptions.ends_at` and the
+  `season_complete` notice are the apps' to show (the web reads the notice only for the
+  payment sentence above). **Deploy order:** the site goes out after
+  the server's season deploy (migration 20261017130000, then stripe-webhook,
+  confirm-subscription, create-subscription). That deploy is DONE (2026-10-17 ~19:44 UTC:
+  stripe-webhook v41, confirm-subscription v7, create-subscription v28), so the season copy
+  is now true for new purchases; the site still waits on the Terms §16 decision below, and the
+  one unstamped live subscription is billed by the plan's current length until it is stamped.
+- **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
+  (it never mounted the trainer/client PWA under `src/pages` — nothing imports
+  `src/context`), so nothing was reachable there except that page, which `/` replaces.
+  `vite.config.js` keeps the PWA plugin (manifest, service worker); `index.html` carries the
+  home title and description, and each page sets its own through `usePageMeta` (`meta.js`).
+- **Universal links.** `public/.well-known/apple-app-site-association` (JSON, no extension, no
+  comments) lists `applinks` for `SCJ422P9KZ.fitlink.app` with components `/i/*` and `/live/*`,
+  plus `webcredentials`. `vercel.json` gives it `Content-Type: application/json` and
+  `Cache-Control: public, max-age=3600`, and the SPA catch-all rewrite excludes it explicitly;
+  `navigateFallbackDenylist` in `vite.config.js` holds `/^\/\.well-known\//` for the same
+  reason (the service worker's default `navigateFallback` is `index.html`). The iOS build
+  needs the `applinks:fitlink.coach` + `webcredentials:fitlink.coach` associated-domains
+  entitlement; Apple's CDN fetches the file
+  (`https://app-site-association.cdn-apple.com/a/v1/fitlink.coach`), so a change can take a
+  day to reach phones.
+- **Legal pages are routes, not files** (since 2026-10-16 evening; `public/terms.html`,
+  `privacy.html`, `delete-account.html` and their rewrites are gone). `/terms` is the Terms
+  of Service the app's Elite paywall and the web checkout link to; two bracketed founder
+  placeholders (legal entity in §1, governing law and venue in §15) are highlighted with
+  `<mark class="s-fill">`. `/privacy` is kept in step with fitlink-ios `docs/SUBMISSION.md`
+  (App Privacy table): Apple Health only by choice, no Health Connect, 16+, and Stripe /
+  Apple + RevenueCat / Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo as the
+  processors. Change the table, change `privacyContent.jsx`. Every address on the site is
+  `support@fitlink.coach` (the iOS submission pack's mailbox); the getfitlink.com addresses
+  are gone. **Open, founder decision before the next Vercel deploy:** `TERMS_UPDATED`
+  (`legalMeta.js`) is 17 October 2026 and the Terms now say switching coach or deleting an
+  account ends the pass with no refund of time already paid (In plain words, §3, §4, §5,
+  §11), and that a season is billed a fixed number of payments and then stops, the plan no
+  longer being part of a pass that stopped billing (In plain words, §4). §16 promises at
+  least 14 days' notice for a material change and says the date at the top is when the
+  version took effect: either give notice and show the later effective date, or record why
+  §16's exception (required by law or a payment/platform partner) applies.
+- **Plans for sale are `archived_at is null`** (`api.js plansFor`). An archived pass stays with
+  its holders and in the coach's editor list (tagged "archived"); `create-subscription`
+  refuses it on the server as well. The `42703` fallback in `plansFor` exists for a deploy that
+  lands ahead of the `plans.archived_at` migration and can go once it is applied.
+- **Publish carries the version.** The editor loads `plans.track_version` with the plan and
+  passes it as `p_expected_version` to `publish_plan_track`; a `stale_version` error shows
+  "This season changed on another device. Reload to see the latest before publishing." with
+  Reload (the latest season replaces the screen) or Keep editing (the edits stay and the
+  baseline becomes the latest track, so the next review lists everything a publish would
+  change). Never publish without the version; never drop the coach's edits silently. The
+  `PGRST202` retry with the three-argument RPC covers a deploy ahead of the migration.
+- **Lint.** `npm run lint` fails on pre-existing errors in the legacy app (`src/pages`,
+  `src/components`, `src/context`, `src/App.jsx`); the web pages are kept clean with
+  `npx eslint src/web src/main.jsx vite.config.js`. The react-refresh rule wants a `.jsx`
+  file to export only components: constants and hooks go in `.js` modules (`pricing.js`,
+  `meta.js`, `legalMeta.js`).
+- **Checking a build without the network.** `npm run build && npx vite preview --port 4173`,
+  then headless Chromium through the globally installed Playwright (`createRequire` from the
+  repo's package.json) renders every route; Google Fonts fail in the container (two console
+  errors per page), everything else must be clean and `scrollWidth` must equal the viewport
+  at 390 px. The delete flow can be driven with `page.route` stubs for `/auth/v1/*`,
+  `/rest/v1/*` and `/functions/v1/*`. Apple flows: build with `VITE_APPLE_WEB_SIGN_IN=on`; stub
+  `/auth/v1/authorize` with a 302 to the return path and `/auth/v1/token?grant_type=pkce` with a
+  session.
+- fitlink.coach is not reachable from the build container. After a deploy check
+  `curl -sI https://fitlink.coach/.well-known/apple-app-site-association` (application/json),
+  every route answers 200 with `text/html` (`/`, `/pricing`, `/athletes`, `/support`,
+  `/privacy`, `/terms`, `/delete-account`, an unknown path → the 404 page), `/privacy` and
+  `/terms` render their text, and the delete flow against a throwaway account.
 
 ---
 
