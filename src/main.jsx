@@ -6,6 +6,7 @@ import CoachPublicPage from './web/CoachPublicPage.jsx'
 import CoachPage from './web/CoachPage.jsx'
 import CoachWeb from './web/CoachWeb.jsx'
 import JoinReturn from './web/JoinReturn.jsx'
+import AdminDashboard from './web/admin/AdminDashboard.jsx'
 import SiteShell from './web/site/SiteShell.jsx'
 import Home from './web/site/Home.jsx'
 import Pricing from './web/site/Pricing.jsx'
@@ -20,7 +21,8 @@ import NotFound from './web/site/NotFound.jsx'
 // public page at /i/CODE (and /live/CODE, the same card for a live link), the
 // coach page at /c/<handle> (2026-10-25: one hero, the passes, a footer; no site nav),
 // the coach's web editor under /coach and /join (where Sign in with Apple
-// returns when it started at checkout) keep their own chrome; everything else
+// returns when it started at checkout) keep their own chrome, and so does /admin (the operator's
+// dashboard, 2026-10-25: linked from nowhere, noindex); everything else
 // is the 404. The legacy dark landing page (src/App.jsx) and the legacy
 // trainer/client PWA under src/pages are kept in the tree but not routed:
 // the PWA was already unreachable (App.jsx rendered only the landing page),
@@ -44,6 +46,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/c/:handle" element={<CoachPage />} />
         <Route path="/coach/*" element={<CoachWeb />} />
         <Route path="/join" element={<JoinReturn />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

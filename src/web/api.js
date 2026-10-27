@@ -845,3 +845,51 @@ export async function myPageStats(days = 30) {
   if (error) throw rpcError(error, status, 'We couldn’t load your page’s numbers right now. Try again in a moment.');
   return data;
 }
+
+// ── The operator dashboard (/admin; fitlink-app migration 20261025140000, launch plan Sprint 1 PR 6) ──
+// Three reads; the server decides who may read them (`platform_admins`): anyone else gets `not_admin`. Every failure
+// throws `{ code, message }`: not_admin, rate_limited (the server's HINT), unauthorized, not_deployed, network, failed.
+
+export const ADMIN_LOAD_FAILED = 'We couldn’t load these numbers right now. Check again in a moment.';
+
+function adminRpcError(error, status) {
+  const st = Number(status) || 0;
+  const msg = String(error?.message ?? '');
+  const hint = typeof error?.hint === 'string' && error.hint ? error.hint : null;
+  if (error?.code === 'PGRST202' || error?.code === '42883') {
+    return Object.assign(new Error('The dashboard isn’t on the server yet.'), { code: 'not_deployed', status: st });
+  }
+  if (error?.code === 'P0001' && msg === 'not_admin') {
+    return Object.assign(new Error(hint ?? 'This account isn’t an operator account.'), { code: 'not_admin', status: st });
+  }
+  if (error?.code === 'P0001' && msg === 'rate_limited') {
+    return Object.assign(new Error(hint ?? 'Too many dashboard reads. Try again in an hour.'), { code: 'rate_limited', status: st });
+  }
+  if (st === 401) return Object.assign(new Error(SIGNED_OUT_SENTENCE), { code: 'unauthorized', status: st });
+  if (st === 0) return Object.assign(new Error(NETWORK_SENTENCE), { code: 'network', status: st });
+  return Object.assign(new Error(ADMIN_LOAD_FAILED), { code: 'failed', status: st });
+}
+
+async function adminRpc(name, args) {
+  let res;
+  try { res = await supabase.rpc(name, args); } catch { throw adminRpcError(null, 0); }
+  const { data, error, status } = res;
+  if (error) throw adminRpcError(error, status);
+  if (!data || typeof data !== 'object') throw adminRpcError(null, status || 500);
+  return data;
+}
+
+/** admin_scorecard(p_month): the five numbers for one UTC month ('YYYY-MM-01'; null = this month) and the month before. */
+export function adminScorecard(month = null) {
+  return adminRpc('admin_scorecard', { p_month: month });
+}
+
+/** admin_coaches(p_days): one row per coach with a page, a paid payment or a page visit in the window. */
+export function adminCoaches(days = 30) {
+  return adminRpc('admin_coaches', { p_days: days });
+}
+
+/** admin_page_funnel(p_days): platform-wide sessions per stage with drop-off, top referrers and UTM sources. */
+export function adminPageFunnel(days = 30) {
+  return adminRpc('admin_page_funnel', { p_days: days });
+}

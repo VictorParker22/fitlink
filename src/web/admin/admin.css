@@ -1,0 +1,64 @@
+/* /admin — the operator dashboard. Builds on web.css (.fl tokens, .fl-panel, .fl-btn, .fl-chip); everything here is
+   scoped under .ad. Plain and readable on a laptop and a 390 px phone; no chart library, the funnel bars are CSS. */
+.ad .ad-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ad .ad-form { display: flex; flex-direction: column; gap: 14px; }
+.ad .ad-dash { max-width: 1120px; gap: 20px; }
+.ad .ad-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.ad .ad-who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--fl-text-2); min-width: 0; overflow-wrap: anywhere; }
+.ad .ad-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.ad .ad-window { font-size: 15px; color: var(--fl-text-2); }
+.ad .ad-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ad .fl-chip[aria-pressed="true"] { background: var(--fl-ink); color: var(--fl-on-ink); }
+.ad .ad-pick { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fl-text-2); }
+.ad .ad-pick select { min-height: 40px; border-radius: 12px; border: 1px solid var(--fl-border); background: var(--fl-surface); padding: 0 10px; font-size: 15px; color: var(--fl-text); max-width: 100%; }
+.ad .ad-fail { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.ad .ad-none { font-size: 15px; color: var(--fl-text-2); }
+.ad .ad-muted { color: var(--fl-text-2); font-style: italic; }
+.ad .ad-detail { font-size: 13px; color: var(--fl-text-2); line-height: 1.4; }
+.ad .ad-note { font-size: 12px; color: var(--fl-text-2); line-height: 1.4; margin-top: 2px; }
+.ad h3 { margin: 0; font-size: 16px; font-weight: 700; }
+
+.ad .ad-metrics { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 12px; }
+.ad .ad-metric { background: var(--fl-bg); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ad .ad-values { display: grid; grid-template-columns: 3fr 2fr; gap: 12px; }
+.ad .ad-now, .ad .ad-prev { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ad .ad-now b { font-size: 34px; line-height: 1.1; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ad .ad-qual { font-size: 13px; font-weight: 600; color: var(--fl-text-2); }
+.ad .ad-prev b { font-size: 20px; line-height: 1.2; font-weight: 600; color: var(--fl-text-2); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ad .ad-when { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fl-text-3); }
+.ad .ad-def { font-size: 13px; line-height: 1.45; color: var(--fl-text-2); }
+.ad .ad-targets { font-size: 13px; font-weight: 600; color: var(--fl-accent-ink); }
+.ad .ad-notin { background: var(--fl-bg); border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.ad .ad-notin ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; color: var(--fl-text-2); }
+
+.ad .ad-funnel { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.ad .ad-stage { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 15px; }
+.ad .ad-stage b { font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ad .ad-stage b small { font-size: 13px; font-weight: 500; color: var(--fl-text-2); }
+.ad .ad-bar { height: 12px; border-radius: 999px; background: var(--fl-raised); overflow: hidden; margin: 6px 0 4px; }
+.ad .ad-bar span { display: block; height: 100%; background: var(--fl-accent); border-radius: 999px; }
+.ad .ad-sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; margin-top: 6px; }
+.ad .ad-sources > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ad .ad-src { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ad .ad-src li { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 0; border-bottom: 1px solid var(--fl-raised); min-width: 0; }
+.ad .ad-src li span { overflow-wrap: anywhere; min-width: 0; }
+.ad .ad-src li b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ad .ad-src li b small { font-weight: 500; color: var(--fl-text-2); }
+
+.ad .ad-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ad .ad-table th, .ad .ad-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--fl-raised); vertical-align: top; font-variant-numeric: tabular-nums; }
+.ad .ad-table thead th { font-size: 12px; font-weight: 600; color: var(--fl-text-2); text-transform: uppercase; letter-spacing: 0.03em; }
+.ad .ad-table tbody th { font-weight: 700; }
+.ad .ad-table tbody th small { display: block; font-weight: 500; color: var(--fl-text-2); }
+
+/* A phone: each coach is a block, each figure a labelled line. */
+@media (max-width: 720px) {
+  .ad .ad-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ad .ad-table, .ad .ad-table tbody, .ad .ad-table tr, .ad .ad-table th, .ad .ad-table td { display: block; width: 100%; }
+  .ad .ad-table tr { background: var(--fl-bg); border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+  .ad .ad-table tbody th { border: 0; padding: 0 0 6px; font-size: 16px; }
+  .ad .ad-table td { border: 0; padding: 3px 0; display: flex; justify-content: space-between; gap: 12px; overflow-wrap: anywhere; }
+  .ad .ad-table td::before { content: attr(data-label); color: var(--fl-text-2); font-weight: 500; }
+  .ad .ad-values { grid-template-columns: 1fr 1fr; }
+  .ad .ad-now b { font-size: 28px; }
+}
