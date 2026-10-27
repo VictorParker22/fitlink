@@ -54,7 +54,7 @@ export const LEGAL_DOCS = {
   },
   terms: {
     title: 'Terms of Service',
-    description: `The terms for using ${BRAND_NAME}: coaches sell training passes, athletes buy them, payments run through Stripe, Coach Elite is sold through Apple and on our website.`,
+    description: `The terms for using ${BRAND_NAME}: coaches sell training passes, athletes buy them, payments run through Stripe, Coach Elite is sold through Apple and, in the United States, on our website.`,
     updated: TERMS_UPDATED,
     sections: TERMS_SECTIONS,
   },
