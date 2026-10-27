@@ -7,9 +7,9 @@
 // Pure ES module with no imports: Vite's config, the Vercel function `api/coach-meta` and `node --test` read it too.
 
 /** The product's name as people read it. */
-export const BRAND_NAME = 'FitLink';
+export const BRAND_NAME = 'Benchside';
 /** The one-letter mark drawn in the header, the footer and the share image. */
-export const BRAND_MARK = 'F';
+export const BRAND_MARK = 'B';
 /** Who runs the Founding setup calls and writes to applicants (no email provider sends anything). */
 export const FOUNDER_FIRST_NAME = 'Victor';
 
@@ -18,11 +18,11 @@ export const FOUNDER_FIRST_NAME = 'Victor';
  * link previews' og:url), and Sign in with Apple is offered only on `SITE_ORIGIN`. The rename may move the domain;
  * change it here, and the AASA file / Apple Services ID return URLs with it (an owner step, not this file).
  */
-export const SITE_HOST = 'fitlink.coach';
+export const SITE_HOST = 'benchside.coach';
 export const SITE_ORIGIN = `https://${SITE_HOST}`;
 
 /** The mailbox the iOS submission pack names. It must exist before launch. */
-export const SUPPORT_EMAIL = 'support@fitlink.coach';
+export const SUPPORT_EMAIL = 'support@benchside.coach';
 
 /** App Store Connect's app id: the rename makes a NEW App Store Connect record (decision L2), so a new id. */
 export const APP_STORE_ID = '6779058450';

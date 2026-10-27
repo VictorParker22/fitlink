@@ -212,7 +212,7 @@ test('dashboard: set_handle answers in words, my_page_stats in four stages', () 
   assert.equal(setHandleOutcome({ ok: true, handle: 'dana', previous: 'dana', changed: false }, host).message, 'That’s already your page’s name.');
   const down = setHandleOutcome({ ok: true, handle: null, previous: 'dana', changed: true, path: null }, host);
   assert.equal(down.handle, null);
-  assert.match(down.message, /^Your page is down\. fitlink\.coach\/c\/dana no longer opens it/);
+  assert.ok(down.message.startsWith(`Your page is down. ${SITE_HOST}/c/dana no longer opens it`), down.message);
 
   const v = statsView({ days: 30, since: '2026-09-25T00:00:00Z', page_view: 41, pass_tap: 12, checkout_start: 5, paid: 2 });
   assert.equal(v.days, 30);
