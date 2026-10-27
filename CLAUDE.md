@@ -37,16 +37,23 @@ from `plans`.
   artboard is the same page at 390 px: one column, the header pill becomes a box with the
   nav on its own row (`@media (max-width: 720px)`); keep every new section
   `minmax(min(Npx, 100%), 1fr)` so it collapses without horizontal scroll.
-- **Numbers come from `src/web/site/pricing.js`, nowhere else.** `STANDARD_FEE_PERCENT` 10,
-  `ELITE_FEE_PERCENT` 5 and `FREE_ROSTER_CAP` 5 are what the server enforces
-  (`platform_config.platform_fee_bps` 1000, `payment_split_for_trainer()` 500 bps on
-  Elite, `enforce_roster_cap`); `ELITE_MONTHLY_USD` 29.99 / `ELITE_YEARLY_USD` 249 are the
-  figures in fitlink-app `lib/revenuecat.ts` and App Store Connect is the truth: confirm
-  before launch. In a dev build every rendered figure carries a red `[confirm]` marker
-  (`NEEDS_CONFIRM = import.meta.env.DEV`); production never shows it. Quotes stay dashed
-  placeholders and the footer says `[Legal entity name]` until the founder fills them.
-  Illustrations (phone mocks, the money card) are `aria-hidden` and compute their sample
-  arithmetic from the same constants.
+- **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
+  config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
+  `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and
+  `public.pricing_config()` are generated from the same file). pricing.js derives every constant from it: fee
+  percents from bps (`STANDARD_FEE_PERCENT` 10, `ELITE_FEE_PERCENT` 5, `FOUNDING_FEE_PERCENT` 5, `MODEL_B_FEE_PERCENT`
+  2), prices from cents (`ELITE_MONTHLY_USD` 29.99, `ELITE_YEARLY_USD` 249, `MINIMUM_CHARGE_USD` 25,
+  `DISPUTE_FEE_USD` 15, `MODEL_B_BOOKING_FEE_USD`), `FREE_ROSTER_CAP` 5, the Founding slots / days / notice / close,
+  the payout schedule and Stripe's processing estimate (`stripeEstimateWords()`, display only). When the owner changes
+  a number: copy the file again, then `node --test src/web/pricing.test.js` names every value that moved (it pins
+  them all, plus the pricing page's three owner-locked lines in `site/planLines.js`). Never type a price into a page.
+  **Re-sync:** copy fitlink-app `supabase/config/pricing.json` byte for byte, then put `sha256sum
+  src/web/pricingConfig.json` and the fitlink-app commit it came from into `SERVER_CONFIG_SHA256` in
+  `src/web/pricing.test.js` (pinned today: commit 323786f, `bb9da028…8a8f`); a copy without a new pin fails.
+  The dev `[confirm]` marker (`NEEDS_CONFIRM = import.meta.env.DEV`; production never shows it) stays only on what is
+  NOT in the config: `FOUNDING_MIN_PAYING_ATHLETES` and the founder's email promise on /founding. Quotes stay dashed
+  placeholders and the footer says `[Legal entity name]` until the founder fills them. Illustrations (phone mocks,
+  the money card) are `aria-hidden` and compute their sample arithmetic from the same constants.
 - **Support answers must be true for the shipped product**: iPhone only, no Android app,
   card checkout by Stripe (no Apple Pay claim), Apple Health optional and off by default (the
   coach sees resting HR and sleep only when the athlete also turns on sharing; no Health
@@ -239,9 +246,9 @@ from `plans`.
     application already pending or booked keeps its place: "Edit your contact details" (instagram, phone; the other
     fields locked, the server keeps them, `contactOnly`). A withdrawn one is a new one (`isNewApplication`).
   - **The offer's numbers** (15 spots, 12 months, $29.99, 5% vs 10%, 5 paying athletes, 30-day notice, 60 days without
-    a payment, Dec 31) are `FOUNDING_*` / `STANDARD_FEE_PERCENT` / `FREE_ROSTER_CAP` in `pricing.js` with the dev
-    `[confirm]` markers; the server's copy is fitlink-app `pricing.json` `tiers.founding` (`closes_on` 2026-12-31,
-    `closes_tz` America/Los_Angeles). Say the server's rules as they are (review 2026-10-25): the free year starts with
+    a payment, Dec 31) are `FOUNDING_*` / `STANDARD_FEE_PERCENT` / `FREE_ROSTER_CAP` in `pricing.js`, derived from the
+    config copy `pricingConfig.json` `tiers.founding` (`closes_on` 2026-12-31, `closes_tz` America/Los_Angeles) since
+    2026-10-25; only the "5+ paying athletes" eligibility line keeps a dev `[confirm]` marker (not in the config). Say the server's rules as they are (review 2026-10-25): the free year starts with
     the first athlete payment AFTER the grant; the 5% applies while the free year or Elite runs; after the free year
     without Elite the coach is on the free plan (10%, up to 5 paying athletes); with no athlete payment for 60 days
     (counted from the grant or the last athlete payment) Founding pricing ENDS (the server's suspension lasts until the
@@ -277,6 +284,84 @@ from `plans`.
   - Owner: set `VITE_FOUNDING_CALENDAR_URL` on Vercel (production) before the page is linked. Deploy this page only
     AFTER the server migration: before it the page says applications aren't open yet, AND the live `handle_new_user`
     ignores the `founding_web` marker, so an email sign-up here would still publish the address's local part.
+- **Fee engine, the web half (2026-10-25, launch plan Sprint 1 PR 1; server: fitlink-app PR #12 branch
+  `launch/1-fee-engine`, migration `20261025100000`, threat model B34–B37 — NOT live yet).** Branch
+  `launch/1-fee-engine-web`, stacked on `launch/2-founding` (the web Founding branch).
+  - **/pricing** (`site/Pricing.jsx`): "Free to try."; three plans in this order with the owner-locked lines
+    (`site/planLines.js PLAN_LINES`: "Free to try. Up to 5 athletes, 10% per pass." / "$29.99/mo. 5%, no cap, your
+    assistant." / "15 spots. Elite free for a year. Closes Dec 31."); a calculator of what the coach KEEPS per month
+    on Free / Elite / Founding (`pricing.js keepsByTier`; Elite minus its subscription, monthly or yearly; Founding's
+    first year has no subscription); a Founding column in the table; "Subscribe on the web; the app opens your
+    dashboard". All-in pricing: on the standard plans athletes pay exactly the price the coach sets, Stripe's
+    processing comes out of the platform's fee, and no page shows a processing line or surcharge. Every such sentence
+    is qualified so it stays true for a Model B coach ("On the standard plans, athletes pay exactly the price you
+    set"; a booking fee, when a coach uses one, is included in the total shown before paying, `MODEL_B_BOOKING_FEE_USD`).
+    No tax line anywhere: no fitlink-app function sets `automatic_tax` or tax rates (grep 2026-10-25).
+  - **Gate: Model B must not be switched on for a coach until the coach page shows the total before checkout (PR 3).**
+    Today `Checkout.jsx` shows create-subscription's `amountCents` (the booking fee inside it, said as "includes a $12
+    booking fee", never a separate surcharge line; `season.js chargedTotal`) in the title, the season line, the Pay
+    button and the charge line, but only from the card form on: athlete-exit's switch confirmation (which can end
+    another pass) runs before any total exists, and the coach page still shows plans.price. The cap in words (`SIXTH_ATHLETE_RULE`): the 6th paying athlete pays and
+    joins; the coach then needs Elite to keep changing plans (the server never refuses at the cap; it makes the roster
+    read-only, `guard_roster_read_only`). Home and Help say the same (no "Free until it works", no Elite "in the app
+    under Profile, billed through Apple"); App Store Elite is "managed in the App Store" for whoever already has it.
+  - **/coach is the dashboard** (`CoachDashboard.jsx`, rules and sentences in `coachMoney.js`, `node --test
+    src/web/coachMoney.test.js`); the index no longer redirects to Seasons (a redirect drops the `?elite=` return).
+    The Coach Elite panel reads `coach_fee_terms()` (authenticated, the caller's own row only): tier, fee, paying
+    athletes vs cap, the read-only warning, web Elite (renews / cancelled / set up after the free year / past due within
+    the 7-day grace / overdue), App Store Elite ("Managed in the App Store."), Founding (not started, free until,
+    ended, suspended). Dates in UTC, like the server's sentences. Buy buttons ("Subscribe monthly · $29.99" / "Yearly ·
+    $249", from the config) only when `eliteView().canBuy` (`buy` carries the line above them and the labels): never
+    with Elite from any source, a running/cancelled-but-paid web subscription or a past-due one. **Founding (owner
+    decision 2026-10-25):** before the first paid athlete no buttons, and the panel says elite-checkout's own
+    `founding_active` sentence (`FOUNDING_BEFORE_FIRST_PAYMENT`); in the free year (`founding.first_paid_at` set, no
+    web subscription) "Set up Elite for after your free year · Nothing is charged until <founding.free_until>" with
+    "Monthly · $29.99" / "Yearly · $249" (elite-checkout makes a subscription whose trial ends with the year,
+    `eliteTrialEndSec`); from the notice window (`notice_at`, or 30 days before the end) also "Your free year ends on
+    <date>. To keep Elite and your 5% fee, set up Elite before then; nothing is charged until that day." The page
+    leaves for Stripe only when the answer's `firstChargeAt` names the same day (`checkoutKeepsPromise`); otherwise
+    (the last 48 hours, where Stripe can't hold the charge) it says Stripe would charge today, with "Continue to
+    Stripe anyway". Inside those 48 hours the line already says Elite started now is charged from today. **Model B:**
+    the fee line is `model_b_fee_bps` with the $12 booking fee "in the total before they pay", and the pitch never
+    says Elite lowers the fee. **Org seat** (`org_seat`, fee 0): "No fee on the passes you sell: your gym's seat
+    covers it", and the pitch says the seat covers fee and cap and Elite adds the assistant. A tap POSTs `elite-checkout {interval, source:
+    'web'}` (never a price) and `window.location.assign`s the answer only when `isStripeCheckoutUrl` (https,
+    `checkout.stripe.com`, no credentials or port). Every refusal is the server's sentence; `already_elite*`,
+    `founding_active`, `elite_payment_due` re-read the terms; an answer that never came adds "Nothing is charged until
+    you pay on Stripe's page." Return: `?elite=started|cancelled` is read once (`readEliteReturn`) and removed; cancelled
+    → "Checkout was cancelled. Nothing was charged."; started → "Stripe is confirming your subscription…" with Check
+    again (and automatic re-reads at 3, 6 and 10 s) and NO buy buttons, until `coach_fee_terms` shows the web
+    subscription (`web_status` active or trialing): only then "Stripe confirmed your Coach Elite subscription."
+    Before the migration the RPC is missing (PGRST202) and the panel says Elite on the web isn't available yet.
+  - **/coach/earnings** (`CoachEarnings.jsx`, `api.js earningsData`, `coachMoney.js buildEarnings`): reads as the coach
+    only (RLS read 2026-10-25 on live: `payments_select`, `pass_refunds_select`, `payment_disputes_select` all admit
+    `trainer_id = auth.uid()`; the branch adds no payments policy). Payments `succeeded` or `refunded`, newest first, 500
+    at most; per row date (local), athlete first name (a former athlete's row is not the coach's to read → "Former
+    athlete"), pass, paid (`gross_cents`, else `amount`), platform fee with the rate (`fee_bps`; Model B rows say
+    "+ booking fee", and the booking fee is listed as inside the athlete's total), dispute fee, net payout. Per month:
+    athletes paid, refunded, platform fee, booking fees, dispute fees, net payout. A row without the breakdown (before
+    the engine, or the 42703 fallback before the migration) shows "—" and is out of the fee totals with one line saying
+    so. A `pass_refunds` row is its own negative row and in "Refunded", NOT in net payout (the coach's share of a refund
+    depends on the charge's split; the page says so). A refund is put on the latest earlier payment of the same athlete
+    and pass (nothing the coach reads joins a charge to a payment intent): "part refunded" while those refunds total
+    less than the payment's gross, else "refunded" (refund-pass marks a payment refunded after a half that ends the
+    pass). Disputes (`disputeNote`): inquiries (`warning_*`) and won ones are left out; open ones (needs_response,
+    under_review) say what they hold back, ones lost in the last 90 days what was taken back, and the note says the
+    payments below still show their full net. When either list hits 500 rows the page says the oldest month may be
+    missing some, and that month says so too. A failed payments or refunds read says so with Try again; failed names
+    or disputes say so beside the amounts.
+  - Checks: `node --test src/web/*.test.js`, eslint, build, and the headless run (390 and 1280 px; pricing at three
+    volumes, seven panel states, checkout start, every refusal, the started/cancelled returns with webhook lag, five
+    earnings cases) — 164/164 on 2026-10-25. After the review fixes (same day): 223/223, adding Founding before the
+    first payment / in the free year (buttons, wording, firstChargeAt kept or not) / in the notice window / in the last
+    48 hours / set up, the Model B fee line, the Model B checkout total, the org seat, a part refund, open / lost /
+    inquiry disputes and a truncated list; the new checks fail on the pre-fix build (8ca1aed). `node --test
+    src/web/*.test.js` 82/82.
+  - **Deploy order (`docs/DEPLOY_ORDER.md`):** fitlink-app migrations `20261025100000` then `20261025110000`, then
+    `elite-checkout` and `stripe-billing-webhook` deployed with their secrets (`STRIPE_ELITE_MONTHLY_PRICE`,
+    `STRIPE_ELITE_YEARLY_PRICE`, `STRIPE_BILLING_WEBHOOK_SECRET`), then this site. Before it, the pricing page describes rules the server does not enforce yet (the cap still
+    refuses on live) and /coach's panel says Elite on the web isn't available. The Terms (§6 "Coach Elite and the App
+    Store") and the Privacy Policy still say Elite is sold through Apple: founder wording, and Terms §16 notice.
 - **Legacy code stays unrouted, not deleted.** `src/App.jsx` is the old dark landing page
   (it never mounted the trainer/client PWA under `src/pages` — nothing imports
   `src/context`), so nothing was reachable there except that page, which `/` replaces.

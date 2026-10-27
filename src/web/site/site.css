@@ -402,3 +402,15 @@ body.fl-site-body-dark { background: #0B0C0F; }
 .s-founding-answers dt { color: var(--s-text-3); }
 .s-founding-answers dd { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 480px) { .s-founding { padding-top: 28px; gap: 28px; } .s-founding-card { padding: 20px; border-radius: 24px; } }
+
+/* Pricing with three plans and a three-column calculator (fee engine, 2026-10-25). */
+.s-plans.lg.three { grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
+.s-plans.lg.three .s-plan { padding: 28px; }
+.s-plans.lg.three .s-price b { font-size: 52px; }
+.s-plan .s-rule { font-size: 14px; line-height: 1.5; color: var(--s-text-3); }
+.s-plan .fl-btn + .foot { margin-top: 0; }
+.s-calc.three { grid-template-columns: minmax(0, 1fr); align-items: start; }
+.s-calc.three .s-calc-cards { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .s-calc.three .s-calc-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.s-calc.three .s-calc-card b { font-size: 30px; overflow-wrap: anywhere; }
+.s-calc-note { grid-column: 1 / -1; }

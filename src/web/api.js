@@ -9,6 +9,7 @@ import {
 } from './appleAuth';
 import { FOUNDING_RETURN_KEY, foundingReturnValue, parseSlots, readFoundingReturn } from './founding';
 import { APPLE_WEB_ENABLED } from './authConfig';
+import { BRAND_NAME } from './site/brand';
 
 export { normalizeCode } from './codes';
 
@@ -592,4 +593,96 @@ export function dollars(price) {
 
 export function firstName(name) {
   return String(name ?? '').trim().split(/\s+/)[0] || 'your coach';
+}
+
+// ── The coach's money (fee engine, fitlink-app migration 20261025100000) ──────
+
+/**
+ * coach_fee_terms(): the signed-in coach's own tier, fee, paying athletes vs cap,
+ * read-only state, web / App Store Elite and Founding dates (shape in coachMoney.js).
+ * Throws `{ code, message }`: `not_deployed` (the function is not on the server
+ * yet), `unauthorized` (session gone), `not_a_coach`, else a read failure.
+ */
+export async function coachFeeTerms() {
+  const { data, error, status } = await supabase.rpc('coach_fee_terms');
+  if (!error && data && typeof data === 'object') return data;
+  const code = error?.code === 'PGRST202' || error?.code === '42883' ? 'not_deployed'
+    : status === 401 ? 'unauthorized'
+      : error?.code === 'P0002' ? 'not_a_coach'
+        : 'read_failed';
+  const message = code === 'not_deployed' ? 'Coach Elite on the web isn’t available yet.'
+    : code === 'unauthorized' ? SIGNED_OUT_SENTENCE
+      : code === 'not_a_coach' ? 'This account has no coach profile.'
+        : status === 0 ? `We couldn’t reach ${BRAND_NAME} to load your plan. Check your connection, then check again.`
+          : 'We couldn’t load your plan right now. Check again in a moment.';
+  throw Object.assign(new Error(message), { code, status: Number(status) || 0 });
+}
+
+/**
+ * elite-checkout: opens a Stripe Checkout Session for Coach Elite on the web. The body
+ * names an interval (`month` | `year`) and the source, never a price or a coach.
+ * Answers `{ url, sessionId, firstChargeAt?, reused? }`; a refusal throws `{ status,
+ * code, message }` with the server's sentence (coach_only, already_elite,
+ * already_elite_app_store, founding_active, elite_payment_due, checkout_in_progress,
+ * not_configured, rate_limited, stripe_error, db_error).
+ */
+export async function startEliteCheckout(interval) {
+  const body = { interval: interval === 'year' ? 'year' : 'month', source: 'web' };
+  const { data, error } = await supabase.functions.invoke('elite-checkout', { body });
+  if (error) throw refusal(await functionError(error));
+  return data ?? {};
+}
+
+const PAYMENT_BASE = 'id, created_at, client_id, plan_id, amount, currency, status';
+const PAYMENT_FEES = 'gross_cents, platform_fee_cents, booking_fee_cents, dispute_fee_cents, coach_net_cents, fee_bps, tier_at_charge';
+export const EARNINGS_LIMIT = 500;
+
+/**
+ * What the coach may read for /coach/earnings, as the coach (RLS: payments,
+ * pass_refunds and payment_disputes rows whose trainer_id is theirs; clients on their
+ * roster; plans are public). Throws when payments or refunds can't be read; the names,
+ * passes and disputes are best effort and say so (`namesFailed`, `disputes: null`).
+ * Before the fee engine's migration the fee columns don't exist (42703): every row is
+ * then read without them and shows no breakdown.
+ */
+export async function earningsData(uid) {
+  let pay = await supabase.from('payments').select(`${PAYMENT_BASE}, ${PAYMENT_FEES}`)
+    .eq('trainer_id', uid).in('status', ['succeeded', 'refunded']).order('created_at', { ascending: false }).limit(EARNINGS_LIMIT);
+  if (pay.error?.code === '42703') {
+    pay = await supabase.from('payments').select(PAYMENT_BASE)
+      .eq('trainer_id', uid).in('status', ['succeeded', 'refunded']).order('created_at', { ascending: false }).limit(EARNINGS_LIMIT);
+  }
+  if (pay.error) throw earningsError(pay.status);
+  const ref = await supabase.from('pass_refunds').select('id, created_at, client_id, plan_id, amount_cents, currency, reason')
+    .eq('trainer_id', uid).order('created_at', { ascending: false }).limit(EARNINGS_LIMIT);
+  if (ref.error) throw earningsError(ref.status);
+  const payments = pay.data ?? [];
+  const refunds = ref.data ?? [];
+
+  const clientIds = [...new Set([...payments, ...refunds].map((r) => r.client_id).filter(Boolean))];
+  const planIds = [...new Set([...payments, ...refunds].map((r) => r.plan_id).filter(Boolean))];
+  const [cl, pl, disp] = await Promise.all([
+    clientIds.length ? supabase.from('clients').select('id, name').in('id', clientIds) : Promise.resolve({ data: [] }),
+    planIds.length ? supabase.from('plans').select('id, name').in('id', planIds) : Promise.resolve({ data: [] }),
+    supabase.from('payment_disputes').select('id, status, amount_cents, currency, created_at, updated_at').eq('trainer_id', uid).order('created_at', { ascending: false }).limit(EARNINGS_LIMIT),
+  ]);
+  const names = Object.fromEntries((cl.data ?? []).map((c) => [c.id, c.name]));
+  const passes = Object.fromEntries((pl.data ?? []).map((p) => [p.id, p.name]));
+  return {
+    payments,
+    refunds,
+    names,
+    passes,
+    namesFailed: Boolean(cl.error || pl.error),
+    disputes: disp.error ? null : (disp.data ?? []),
+    truncated: payments.length >= EARNINGS_LIMIT || refunds.length >= EARNINGS_LIMIT,
+  };
+}
+
+function earningsError(httpStatus) {
+  const status = Number(httpStatus) || 0;
+  const message = status === 401 ? SIGNED_OUT_SENTENCE
+    : status === 0 ? `We couldn’t reach ${BRAND_NAME} to load your earnings. Check your connection, then try again.`
+      : 'We couldn’t load your earnings right now. Try again in a moment.';
+  return Object.assign(new Error(message), { status, code: status === 401 ? 'unauthorized' : 'read_failed' });
 }

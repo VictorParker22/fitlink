@@ -67,14 +67,30 @@ export function usdFromCents(cents) {
 }
 
 /**
+ * create-subscription's own total for a Model B coach: `{ cents, bookingCents }`
+ * from its answer's `amountCents` (what the athlete is charged each payment,
+ * the booking fee inside it) and `bookingFeeCents`, or null when the answer
+ * carries none (every other coach: the athlete pays plans.price). The page
+ * shows this total and never adds a fee itself.
+ */
+export function chargedTotal(answer) {
+  const cents = answer?.amountCents;
+  if (typeof cents !== 'number' || !Number.isInteger(cents) || cents <= 0) return null;
+  const booking = answer?.bookingFeeCents;
+  const bookingCents = typeof booking === 'number' && Number.isInteger(booking) && booking > 0 && booking < cents ? booking : 0;
+  return { cents, bookingCents };
+}
+
+/**
  * What a plan bills, from its own row: `{ kind: 'open' | 'season', period,
  * adverb, priced, priceCents, weeks, payments, totalCents }`. `totalCents` is
- * price × P for a priced season, null otherwise.
+ * price × P for a priced season, null otherwise. `total` (chargedTotal) is the
+ * server's per-payment amount when it differs from plans.price (Model B).
  */
-export function passBilling(plan) {
+export function passBilling(plan, total = null) {
   const period = billingPeriod(plan?.period);
   const adverb = period === 'year' ? 'yearly' : 'monthly';
-  const cents = priceCents(plan?.price);
+  const cents = total?.cents ?? priceCents(plan?.price);
   const weeks = seasonWeeks(plan?.duration_weeks);
   const payments = weeks === null ? null : seasonPayments(weeks, period);
   return {
@@ -96,8 +112,8 @@ const paymentsWord = (p, adverb) => (p === 1 ? 'one payment' : `${p} ${adverb} p
  * without a price. A season of one payment reads "$X for the 4-week season";
  * every other pass "$X / month" (or "/ year").
  */
-export function passPriceParts(plan) {
-  const b = passBilling(plan);
+export function passPriceParts(plan, total = null) {
+  const b = passBilling(plan, total);
   if (!b.priced) return null;
   const amount = usdFromCents(b.priceCents);
   if (b.kind === 'season' && b.payments === 1) return { amount, unit: `for the ${b.weeks}-week season` };
@@ -105,8 +121,8 @@ export function passPriceParts(plan) {
 }
 
 /** The price as one phrase (a sheet title): "$180 / month", "$90 for the 4-week season". */
-export function passPriceText(plan) {
-  const parts = passPriceParts(plan);
+export function passPriceText(plan, total = null) {
+  const parts = passPriceParts(plan, total);
   return parts ? `${parts.amount} ${parts.unit}` : null;
 }
 
@@ -115,8 +131,8 @@ export function passPriceText(plan) {
  * pass. "8-week season · 2 monthly payments ($360 in all)"; one payment:
  * "One payment · nothing renews"; a season with no price yet: "8-week season".
  */
-export function passSeasonLine(plan) {
-  const b = passBilling(plan);
+export function passSeasonLine(plan, total = null) {
+  const b = passBilling(plan, total);
   if (b.kind !== 'season') return null;
   if (!b.priced) return `${b.weeks}-week season`;
   if (b.payments === 1) return 'One payment · nothing renews';
@@ -129,12 +145,16 @@ export function passSeasonLine(plan) {
  * Season: "$180 today, then monthly: 2 payments in all. Billing stops after
  * the season." One payment: "$90 today. One payment for the season."
  */
-export function checkoutChargeLine(plan) {
-  const b = passBilling(plan);
-  if (b.kind !== 'season' || !b.priced) return `Charged today, then every ${b.period} until you cancel.`;
+export function checkoutChargeLine(plan, total = null) {
+  const b = passBilling(plan, total);
+  // Model B: the amount is the server's total and the booking fee is said as part of it, never as a line of its own.
+  const inside = total?.bookingCents ? ` (includes a ${usdFromCents(total.bookingCents)} booking fee)` : '';
+  if (b.kind !== 'season' || !b.priced) {
+    return total ? `${usdFromCents(b.priceCents)}${inside} today, then every ${b.period} until you cancel.` : `Charged today, then every ${b.period} until you cancel.`;
+  }
   const today = usdFromCents(b.priceCents);
-  if (b.payments === 1) return `${today} today. One payment for the season.`;
-  return `${today} today, then ${b.adverb}: ${b.payments} payments in all. Billing stops after the season.`;
+  if (b.payments === 1) return `${today}${inside} today. One payment for the season.`;
+  return `${today}${inside} today, then ${b.adverb}: ${b.payments} payments in all. Billing stops after the season.`;
 }
 
 /**

@@ -1,0 +1,48 @@
+{
+  "_doc": "The owner's prices, rates and dates (launch plan 2026-10-25, decisions L5-L8). The ONE place they live: edit here, then run `node scripts/sync-pricing.js` (rewrites supabase/functions/_shared/pricingData.ts and prints the SQL for public.pricing_config(), which a NEW migration must carry). tests/pricingConfig.test.ts fails while any copy differs. Rates are basis points (1000 = 10%), money is US cents.",
+  "version": "2026-10-25",
+  "currency": "usd",
+  "tiers": {
+    "free": {
+      "fee_bps": 1000,
+      "active_athlete_cap": 5
+    },
+    "elite": {
+      "fee_bps": 500,
+      "monthly_cents": 2999,
+      "yearly_cents": 24900,
+      "past_due_grace_days": 7
+    },
+    "founding": {
+      "fee_bps": 500,
+      "slots": 15,
+      "free_days": 365,
+      "notice_day": 335,
+      "then_monthly_cents": 2999,
+      "suspend_after_days_without_paid_event": 60,
+      "closes_on": "2026-12-31",
+      "closes_tz": "America/Los_Angeles"
+    }
+  },
+  "model_b": {
+    "default_on": false,
+    "coach_fee_bps": 200,
+    "booking_fee_cents": {
+      "single_session": 400,
+      "block_payment": 1200
+    }
+  },
+  "minimum_charge_cents": 2500,
+  "payouts": {
+    "interval": "weekly",
+    "weekly_anchor": "monday"
+  },
+  "disputes": {
+    "recovery_cents": 1500
+  },
+  "stripe_processing_estimate": {
+    "_doc": "Stripe's standard US card price, for display arithmetic only (what comes out of the platform's fee on a destination charge). Not FitLink's number and never charged by FitLink.",
+    "percent_bps": 290,
+    "fixed_cents": 30
+  }
+}

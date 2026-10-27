@@ -209,3 +209,26 @@ test('"every payment is made" only from the server’s season_complete notice, n
   assert.equal(run([notice], [{ ...season, status: 'cancelled' }]), null);
   assert.equal(finishedSeason({ enrollments: [season], coachPlans: plans, subscriptions: [{ trainer_id: COACH, status: 'active' }], coachId: COACH, notices: [notice] }), null);
 });
+
+test('Model B: the server’s total replaces the price from the card form on, the booking fee inside it', async () => {
+  const { chargedTotal, checkoutChargeLine, passPriceParts, passPriceText, passSeasonLine } = await import('./season.js');
+  assert.equal(chargedTotal(null), null);
+  assert.equal(chargedTotal({ clientSecret: 'x' }), null);
+  assert.equal(chargedTotal({ amountCents: 0 }), null);
+  assert.equal(chargedTotal({ amountCents: '19200' }), null);
+  assert.deepEqual(chargedTotal({ amountCents: 19200, bookingFeeCents: 1200 }), { cents: 19200, bookingCents: 1200 });
+  assert.deepEqual(chargedTotal({ amountCents: 19200, bookingFeeCents: 99999 }), { cents: 19200, bookingCents: 0 });
+  const total = chargedTotal({ amountCents: 19200, bookingFeeCents: 1200 });
+  const season = { price: 180, period: 'month', duration_weeks: 8 };
+  assert.equal(passPriceParts(season, total).amount, '$192');
+  assert.equal(passPriceText(season, total), '$192 / month');
+  assert.equal(passSeasonLine(season, total), '8-week season · 2 monthly payments ($384 in all)');
+  assert.equal(checkoutChargeLine(season, total), '$192 (includes a $12 booking fee) today, then monthly: 2 payments in all. Billing stops after the season.');
+  const open = { price: 180, period: 'month' };
+  assert.equal(checkoutChargeLine(open, total), '$192 (includes a $12 booking fee) today, then every month until you cancel.');
+  const one = { price: 90, period: 'month', duration_weeks: 4 };
+  assert.equal(checkoutChargeLine(one, chargedTotal({ amountCents: 10200, bookingFeeCents: 1200 })), '$102 (includes a $12 booking fee) today. One payment for the season.');
+  // Without a total nothing moves.
+  assert.equal(checkoutChargeLine(open), 'Charged today, then every month until you cancel.');
+  assert.equal(passPriceText(season), '$180 / month');
+});
