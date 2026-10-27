@@ -27,10 +27,10 @@ export default function PrivacyBody() {
         <h2 id="collect-h">1. Information we collect</h2>
         <p>We collect the following categories of information:</p>
         <ul>
-          <li><strong>Account information:</strong> name, email address, date of birth (to confirm you are 16 or older) and, if you add one, a profile photo. A coach may also add a bio and a specialisation, which appear on their public page.</li>
+          <li><strong>Account information:</strong> name, email address and, if you add one, a profile photo. A coach may also add a bio and a specialisation, which appear on their public page.</li>
           <li><strong>Training data:</strong> the workouts, seasons and notes your coach writes for you; the sets, sessions and body weight you log; your weekly check-ins.</li>
-          <li><strong>Photos and videos:</strong> a profile photo, and any photo or video you choose to send in a chat with your coach.</li>
-          <li><strong>Payment information:</strong> pass payments are processed by Stripe. We never see or store card numbers; we keep a record of which pass you bought, when, and its status. A coach who connects payouts gives their identity and bank details directly to Stripe. Coach Elite is bought through Apple; we receive the subscription’s status from Apple and RevenueCat, not your payment details.</li>
+          <li><strong>Photos and videos:</strong> a profile photo, the meal photos you log, and any photo or video you choose to send in a chat with your coach.</li>
+          <li><strong>Payment information:</strong> pass payments are processed by Stripe. We never see or store card numbers; we keep a record of which pass you bought, when, and its status. A coach who connects payouts gives their identity and bank details directly to Stripe. Coach Elite is bought through Apple, or in the United States also on our website through Stripe; we receive the subscription’s status from Apple and RevenueCat or from Stripe, never your card details.</li>
           <li><strong>Communications:</strong> messages exchanged between coaches and athletes within the app.</li>
           <li><strong>Device information:</strong> device type, OS version, and a push notification token, used only to deliver the notifications you have allowed.</li>
           <li><strong>Website:</strong> a coach’s public page on {SITE_HOST} can be read by anyone with its link. You can sign in there with a six-digit code sent to your email or with Sign in with Apple. If you sign in with Apple, Apple gives us the same account identifier and email address (or private relay address) it gives the app, and your name the first time, if you choose to share it. Your sign-in session is kept in your browser’s local storage. When you continue with Apple from a coach’s page, that browser tab also keeps the link’s code, the pass you chose and any name you typed until you come back, for at most 30 minutes. We do not use advertising cookies.</li>
@@ -73,6 +73,7 @@ export default function PrivacyBody() {
           <li><strong>Payment processing:</strong> payment and payout data is handled by Stripe. The status of a Coach Elite subscription comes from Apple and RevenueCat.</li>
           <li><strong>Sign in with Apple:</strong> when you choose it, in the app or on the website, Apple confirms who you are and sends us an identifier and your email address or a private relay address that forwards to you.</li>
           <li><strong>The coach’s assistant:</strong> when a coach asks the assistant to draft a reply, the athlete’s check-in text is sent to Google (Gemini) to produce that draft and for nothing else. The coach must agree to the assistant in the app before it is used, and reads and approves every message before it is sent.</li>
+          <li><strong>Meal photo suggestions:</strong> when you allow it in the app, the photo of a meal you log is sent to Google (Gemini) to suggest what is on the plate, and for nothing else.</li>
           <li><strong>Infrastructure:</strong> Supabase hosts our database, sign-in and file storage.</li>
           <li><strong>Push notifications:</strong> device tokens are shared with the Apple Push Notification service (APNs) and Expo’s push service for notification delivery.</li>
           <li><strong>Legal requirements:</strong> when required by law or to protect our legal rights.</li>
@@ -105,7 +106,7 @@ export default function PrivacyBody() {
 
       <section id="children" aria-labelledby="children-h">
         <h2 id="children-h">7. Children’s privacy</h2>
-        <p>{BRAND_NAME} is for people aged 16 and over. We ask for a date of birth at sign-up and do not knowingly collect data from anyone under 16; if we learn that we have, we delete the account. If you believe a child has provided us with personal information, please contact us.</p>
+        <p>{BRAND_NAME} is for people aged 16 and over. We do not knowingly collect data from anyone under 16; if we learn that we have, we delete the account. If you believe a child has provided us with personal information, please contact us.</p>
       </section>
 
       <section id="changes" aria-labelledby="changes-h">
