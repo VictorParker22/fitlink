@@ -21,8 +21,8 @@ export const FOUNDER_FIRST_NAME = 'Victor';
 export const SITE_HOST = 'benchside.coach';
 export const SITE_ORIGIN = `https://${SITE_HOST}`;
 
-/** The mailbox the iOS submission pack names. It must exist before launch. */
-export const SUPPORT_EMAIL = 'support@benchside.coach';
+/** The mailbox the iOS submission pack names (Victor set it up 2026-10-28). */
+export const SUPPORT_EMAIL = 'hello@benchside.coach';
 
 /** App Store Connect's app id: the rename makes a NEW App Store Connect record (decision L2), so a new id. */
 export const APP_STORE_ID = '6779058450';
