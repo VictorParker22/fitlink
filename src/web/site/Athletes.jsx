@@ -1,11 +1,12 @@
-// /athletes (Web-Athletes): for the person who got a coach's link. Four
-// steps, the "no link yet" callout, the athlete questions. Every answer is
-// what the shipped app does today (iPhone only, card checkout by Stripe, no
-// Apple Health only by choice, the coach reads and sends every message).
-// How to sign in comes from siteCopy() (appleAuth.js): with Apple too when
-// this build offers it on the website.
-import { Link } from 'react-router-dom';
+// /athletes (the design's athletes.html): for the person who got a coach's
+// link. Hero, the four steps, the gym-floor feature, the athlete questions and
+// the final call. Every answer is what the shipped app does today (iPhone only,
+// card checkout by Stripe, Apple Health only by choice, the coach reads and
+// sends every message). How to sign in comes from siteCopy() (appleAuth.js):
+// with Apple too when this build offers it on the website. The brand and the
+// mailbox come from brand.js; the shared pieces from Pieces.jsx.
 import Faq from './Faq';
+import { Display, FinalCta, Kicker, LinkArrow, Phone, Reveal, Steps } from './Pieces';
 import { usePageMeta } from './meta';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
@@ -13,27 +14,12 @@ import { APP_STORE_URL, BRAND_NAME, SUPPORT_EMAIL } from './brand';
 
 const copy = siteCopy(APPLE_WEB_ENABLED);
 
-function PlanScreen() {
-  return (
-    <div className="s-screen" aria-hidden="true">
-      <span className="notch" />
-      <span className="greet">This week</span>
-      <span className="sub">Week 3 of 8</span>
-      <div className="mini-card">
-        <div className="mini-row"><span className="mini-avatar">M</span><span>Lower body</span><span className="mini-pill">Done · 52 min</span></div>
-        <div className="mini-row"><span className="mini-avatar">W</span><span>Upper body</span><span className="mini-pill accent">Today</span></div>
-        <div className="mini-row"><span className="mini-avatar">F</span><span>Full body</span><span className="mini-pill">Fri</span></div>
-        <div className="mini-row"><span className="mini-avatar">S</span><span>Check-in</span><span className="mini-pill">Sun</span></div>
-      </div>
-      <div className="mini-card ink">
-        <span className="sub">Next</span>
-        <b>Upper body · 5 exercises</b>
-        <span className="mini-btn">Open today’s session</span>
-      </div>
-      <div className="mini-tabs"><span>Today</span><span className="on">Plan</span><span>Coach</span><span>Progress</span></div>
-    </div>
-  );
-}
+const STEPS = [
+  { n: '01', title: 'Open your coach’s link', body: 'It shows their passes and prices, and for a season, how many payments it takes.' },
+  { n: '02', title: 'Pay on the web', body: copy.athletesStep2 },
+  { n: '03', title: 'Get the app', body: copy.athletesStep3 },
+  { n: '04', title: 'Train and check in', body: 'Log your sets, say how it felt, and your coach adjusts.' },
+];
 
 const FAQ = [
   { q: 'How do I cancel?', a: 'In the app: Profile, then Manage pass. Cancelling stops the next payment. You keep your coach’s plan until the end of what you’ve paid for; after that it is no longer part of your pass. Your logged sets, check-ins and messages stay. A season stops billing by itself after its last payment, so there is nothing to cancel when it ends.' },
@@ -47,43 +33,72 @@ const FAQ = [
 ];
 
 export default function Athletes() {
-  usePageMeta('For athletes', `Got a link from your coach? Open it, pay on the web, sign in to the ${BRAND_NAME} app the same way, and train. Here is how it works.`);
+  usePageMeta('For athletes', `Got a link from your coach? Pay on the web, get the iPhone app, and your coach’s plan is waiting. Here’s how ${BRAND_NAME} works for athletes.`);
   return (
     <>
-      <section className="s-wrap s-hero" aria-labelledby="a-h" style={{ paddingBottom: 72 }}>
-        <div className="s-hero-copy" style={{ gap: 20 }}>
-          <span className="s-kicker">For athletes</span>
-          <h1 id="a-h" className="s-h1 md">Got a link from your coach? You’re in the right place.</h1>
-          <p className="s-lede" style={{ maxWidth: '38ch' }}>{BRAND_NAME} is where your coach’s plan, your sessions and your messages live. Here’s how it works.</p>
-        </div>
-        <div className="s-center-art" role="img" aria-label="Athlete Plan screen on iPhone">
-          <div className="s-phone" aria-hidden="true"><PlanScreen /></div>
-        </div>
-      </section>
-
-      <section className="s-wrap s-section" aria-labelledby="as-h" style={{ paddingBottom: 72 }}>
-        <div className="s-stack" style={{ gap: 28 }}>
-          <h2 id="as-h" className="s-h2 sm">Four steps, no surprises</h2>
-          <ol className="s-steps">
-            <li className="s-step"><span className="s-num">1</span><b>Open your coach’s link</b><span>It shows their passes and prices, and for a season how many payments it takes.</span></li>
-            <li className="s-step"><span className="s-num">2</span><b>Pay on the web</b><span>{copy.athletesStep2}</span></li>
-            <li className="s-step"><span className="s-num">3</span><b>Get the app</b><span>{copy.athletesStep3}</span></li>
-            <li className="s-step"><span className="s-num">4</span><b>Train and check in</b><span>Log your sets, say how it felt, and your coach adjusts.</span></li>
-          </ol>
-          <div className="s-callout">
-            <span className="s-stack" style={{ gap: 4 }}><b>No link yet?</b><span>Ask your coach for theirs. {BRAND_NAME} doesn’t list or match coaches.</span></span>
-            <Link to="/">Are you a coach?</Link>
+      <section className="hero">
+        <div className="wrap">
+          <div className="hero-copy">
+            <Kicker>For athletes</Kicker>
+            {/* The design sizes this headline below the hero's default (it is one line longer). */}
+            <h1 className="display" style={{ fontSize: 'clamp(56px, 7.6vw, 112px)' }}>Got a link from your <span className="violet">coach?</span></h1>
+            <p className="lede">You’re in the right place. {BRAND_NAME} is where your coach’s plan, your sessions and your messages live.</p>
+            <div className="hero-actions">
+              <a className="btn btn-primary" href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>
+              <LinkArrow href="#questions">Athlete questions</LinkArrow>
+            </div>
+            <p className="hero-note">No link yet? Ask your coach for theirs. {BRAND_NAME} doesn’t list or match coaches.</p>
+          </div>
+          <div className="hero-art" role="img" aria-label={`The ${BRAND_NAME} app for athletes`}>
+            <Phone name="athlete-workout" alt="Logging a box squat with the rest timer running" className="back" eager />
+            <Phone name="athlete-today" alt="The athlete’s Today screen with the next session" className="front" eager />
           </div>
         </div>
       </section>
 
-      <section className="s-wrap narrow s-section" aria-labelledby="afaq-h">
-        <div className="s-stack" style={{ gap: 20 }}>
-          <h2 id="afaq-h" className="s-h2 sm">Athlete questions</h2>
-          <Faq items={FAQ} labelledBy="afaq-h" />
-          <p className="s-small">Ready to train? <a href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>.</p>
+      <section className="on-deep pad">
+        <div className="wrap">
+          <Reveal className="section-head">
+            <Kicker>How it works</Kicker>
+            <Display as="h2" size="l">Four steps, no surprises.</Display>
+          </Reveal>
+          <Steps items={STEPS} />
         </div>
       </section>
+
+      <section className="pad">
+        <div className="wrap">
+          <div className="feature">
+            <Reveal className="feature-copy">
+              <span className="tag">In the gym</span>
+              <Display as="h2" size="l">Built for the gym floor.</Display>
+              <p>Today’s session opens in one tap. Every lift has a form guide, and the rest timer keeps going with your phone locked in a pocket.</p>
+              <ul className="facts">
+                <li>Works offline: sets are saved and sent when you’re back</li>
+                <li>A weekly check-in your coach actually reads</li>
+                <li>Apple Health is optional and off by default</li>
+              </ul>
+            </Reveal>
+            <Reveal className="feature-art soft">
+              <Phone name="athlete-form-guide" alt="A form guide for the box squat" />
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      <section className="on-paper pad" id="questions">
+        <div className="wrap faq-grid">
+          <div className="section-head" style={{ margin: 0 }}>
+            <Kicker>Questions</Kicker>
+            <Display as="h2" size="l">Athlete questions.</Display>
+            <LinkArrow to="/support">More in Help</LinkArrow>
+            <LinkArrow to="/">Are you a coach?</LinkArrow>
+          </div>
+          <div><Faq items={FAQ} /></div>
+        </div>
+      </section>
+
+      <FinalCta title="Ready to train?" note="iPhone only for now. Buying a pass works in any browser." art="athlete-done" alt="Workout done screen" />
     </>
   );
 }
