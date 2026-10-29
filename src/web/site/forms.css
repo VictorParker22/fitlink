@@ -1,0 +1,137 @@
+/* The two site pages with no artboard in the Benchside design: /founding (the Founding
+   offer and application, Founding.jsx) and /delete-account (the delete flow,
+   DeleteAccount.jsx). Both keep the markup and class names they were proved with
+   (`s-wrap tight`, `s-form`, `s-who`, `s-preview`, `s-founding-*` …), whose rules
+   left site.css when it became the generated copy of the design's stylesheet. This
+   file carries those rules, re-tokened to the design (`--ink-2`, `--hair`, `--paper`,
+   `--violet-soft`, `--radius-lg`, the Archivo display face) and scoped under `.fl-site`
+   like before. web.css still provides `.fl-btn`, `.fl-field`, `.fl-code`, `.fl-error`,
+   `.fl-chip`, `.fl-or` and the Apple button; site.css the global tokens. Imported by
+   both pages (Vite dedupes), never by the shell. */
+
+/* ── layout and type ────────────────────────────────────────────────── */
+.fl-site .s-wrap { width: 100%; max-width: calc(var(--max) + var(--gutter) * 2); margin: 0 auto; padding-inline: var(--gutter); box-sizing: border-box; }
+.fl-site .s-wrap.narrow { max-width: calc(860px + var(--gutter) * 2); }
+.fl-site .s-wrap.tight { max-width: calc(560px + var(--gutter) * 2); }
+.fl-site .s-stack { display: flex; flex-direction: column; }
+
+/* The design's .kicker: a violet square, then the words. */
+.fl-site .s-kicker { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.fl-site .s-kicker::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 2px; background: var(--violet); }
+.fl-site .s-kicker.sm { font-size: 14px; }
+
+/* Headings in the display face, at the design's d-xl / d-l / d-s (the modifiers step down a size). */
+.fl-site .s-h1, .fl-site .s-h2, .fl-site .s-h3 {
+  font-family: var(--display);
+  font-stretch: 72%;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.fl-site .s-h1 { font-size: clamp(52px, 8vw, 112px); }
+.fl-site .s-h1.md { font-size: clamp(48px, 6.5vw, 88px); }
+.fl-site .s-h1.sm { font-size: clamp(44px, 5.6vw, 76px); }
+.fl-site .s-h2 { font-size: clamp(44px, 5.6vw, 76px); }
+.fl-site .s-h2.sm { font-size: clamp(34px, 3.6vw, 48px); }
+.fl-site .s-h2.xs { font-size: clamp(30px, 3vw, 40px); line-height: 0.95; }
+.fl-site .s-h3 { font-size: 28px; line-height: 0.95; }
+
+.fl-site .s-lede { font-size: clamp(18px, 1.6vw, 21px); line-height: 1.5; color: var(--ink-2); max-width: 34em; }
+.fl-site .s-copy { font-size: 17px; line-height: 1.55; color: var(--ink-2); }
+.fl-site .s-small { font-size: 15px; line-height: 1.55; color: var(--ink-3); }
+.fl-site .hint { font-size: 14px; line-height: 1.5; color: var(--ink-3); font-weight: 400; }
+/* The dev-only "[confirm]" marker on a number that is not in the server's config. */
+.fl-site .s-confirm { font-size: 11px; font-weight: 700; color: #B42332; margin-left: 4px; vertical-align: super; letter-spacing: 0; text-transform: none; }
+.fl-site .s-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ── buttons the pages use that web.css does not cover ──────────────── */
+/* The design's `a` rule (violet, underlined offset) outranks web.css's bare .fl-btn on a <Link className="fl-btn">. */
+.fl-site a.fl-btn { color: var(--ink); text-decoration: none; }
+.fl-site a.fl-btn:hover { color: var(--ink); }
+.fl-site .fl-btn.danger { background: #B42332; color: #fff; }
+.fl-site .fl-btn.danger:hover { color: #fff; background: #9A1C2A; }
+/* The design's :focus-visible sets a 6 px radius; the capsules keep their shape. */
+.fl-site .fl-btn:focus-visible, .fl-site .fl-chip:focus-visible, .fl-site .fl-apple:focus-visible { border-radius: 999px; }
+
+/* ── the form card (sign-in, the application, the delete confirmation) ─ */
+.fl-site .s-form { background: var(--paper); border-radius: var(--radius-lg); box-shadow: inset 0 0 0 1px var(--hair); padding: 28px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (max-width: 480px) { .fl-site .s-form { padding: 20px; } }
+.fl-site .s-form > b { font-size: 18px; line-height: 1.3; }
+.fl-site .s-form label { font-size: 15px; font-weight: 600; color: var(--ink); }
+.fl-site .s-form input, .fl-site .s-form select, .fl-site .s-form textarea {
+  box-sizing: border-box; width: 100%; min-width: 0; height: 52px; padding: 0 16px;
+  border: 0; border-radius: var(--radius); background: var(--paper); box-shadow: inset 0 0 0 1px var(--hair);
+  font: inherit; font-size: 17px; color: var(--ink);
+}
+.fl-site .s-form input::placeholder, .fl-site .s-form textarea::placeholder { color: var(--ink-3); }
+.fl-site .s-form input:focus, .fl-site .s-form select:focus, .fl-site .s-form textarea:focus { outline: none; box-shadow: inset 0 0 0 2px var(--violet); }
+.fl-site .s-form input[aria-invalid="true"] { box-shadow: inset 0 0 0 1.5px #B42332; }
+.fl-site .s-form input:disabled, .fl-site .s-form textarea:disabled { background: var(--ground); color: var(--ink-2); }
+.fl-site .s-form textarea { height: auto; padding: 14px 16px; resize: vertical; min-height: 130px; }
+.fl-site .s-form .fl-btn { min-height: 54px; }
+.fl-site .s-form .fl-code input { border-radius: var(--radius); }
+.fl-site .s-form .fl-error { font-size: 15px; line-height: 1.45; }
+
+/* "Signed in as … · Not you? Sign out" */
+.fl-site .s-who { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; font-size: 15px; color: var(--ink-3); }
+.fl-site .s-who b { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.fl-site .s-who button { border: 0; background: transparent; color: var(--violet-ink); font: inherit; font-weight: 600; padding: 0; min-height: 32px; cursor: pointer; }
+.fl-site .s-who button:hover { color: var(--violet-press); }
+/* The server's preview: what ends, who is told, the application's status. */
+.fl-site .s-preview { border-radius: var(--radius); padding: 16px 18px; background: var(--ground); display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
+.fl-site .s-preview b { font-size: 17px; color: var(--ink); }
+.fl-site .s-preview .fl-btn { align-self: flex-start; }
+.fl-site .s-bullets { display: flex; flex-direction: column; gap: 8px; margin: 0; padding-left: 22px; list-style: disc; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
+.fl-site .s-bullets li::marker { color: var(--violet); }
+.fl-site .s-checkrow { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.fl-site .s-form .s-checkrow { font-size: 16px; line-height: 1.45; font-weight: 500; color: var(--ink); }
+.fl-site .s-checkrow input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--violet); flex: none; }
+.fl-site .s-delete .s-checkrow input { accent-color: #B42332; }
+/* The "Deleted." mark. */
+.fl-site .s-done { width: 64px; height: 64px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; }
+
+/* ── /delete-account ─────────────────────────────────────────────────── */
+.fl-site .s-delete { padding-block: clamp(40px, 6vw, 72px) 72px; display: flex; flex-direction: column; gap: 20px; }
+.fl-site .s-delete .s-h1 { margin-bottom: 4px; }
+.fl-site .s-delete .s-form input[type="email"] { border-radius: 999px; height: 54px; padding: 0 20px; }
+/* "What is deleted, and what is kept" */
+.fl-site .s-doc { display: flex; flex-direction: column; gap: 28px; padding-top: 12px; }
+.fl-site .s-doc h2 { line-height: 1; }
+.fl-site .s-doc p, .fl-site .s-doc li { font-size: 17px; line-height: 1.6; color: var(--ink-2); }
+.fl-site .s-doc ul, .fl-site .s-doc ol { padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.fl-site .s-doc ul { list-style: disc; }
+.fl-site .s-doc ol { list-style: decimal; }
+.fl-site .s-doc strong { color: var(--ink); }
+.fl-site .s-doc a { text-decoration: underline; text-underline-offset: 3px; }
+.fl-site .s-kv { width: 100%; border-collapse: collapse; font-size: 16px; }
+.fl-site .s-kv th, .fl-site .s-kv td { text-align: left; vertical-align: top; padding: 12px 14px 12px 0; border-bottom: 1px solid var(--hair); line-height: 1.5; }
+.fl-site .s-kv th { font-weight: 600; color: var(--ink); width: 50%; }
+.fl-site .s-kv td { color: var(--ink-2); }
+.fl-site .s-kv strong { color: var(--ink); }
+
+/* ── /founding ───────────────────────────────────────────────────────── */
+.fl-site .s-founding { display: flex; flex-direction: column; gap: 40px; padding-top: clamp(40px, 6vw, 72px); padding-bottom: 72px; }
+.fl-site .s-founding-count { display: flex; flex-direction: column; gap: 10px; min-height: 28px; margin: 0; font-size: 18px; color: var(--ink-2); }
+.fl-site .s-founding-count b { font-size: 20px; color: var(--ink); }
+.fl-site .s-founding-count-failed .fl-btn { align-self: flex-start; }
+.fl-site .s-founding-meter { display: block; height: 10px; border-radius: 999px; background: var(--violet-soft); overflow: hidden; max-width: 360px; }
+.fl-site .s-founding-meter span { display: block; height: 100%; background: var(--violet); border-radius: 999px; }
+.fl-site .s-founding-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+.fl-site .s-founding-card { background: var(--paper); border-radius: var(--radius-lg); box-shadow: inset 0 0 0 1px var(--hair); padding: 28px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.fl-site .s-founding-set { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fl-site .s-founding-set legend { font-size: 15px; font-weight: 600; color: var(--ink); padding: 0; margin-bottom: 10px; }
+.fl-site .s-founding-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fl-site .s-founding-chips .fl-chip { min-height: 44px; padding: 0 16px; border-radius: 22px; font-size: 15px; font-weight: 500; background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px #CFCBDA; }
+.fl-site .s-founding-chips .fl-chip:hover { background: rgba(22, 10, 61, 0.04); }
+.fl-site .s-founding-chips .fl-chip[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: none; font-weight: 600; }
+.fl-site .s-founding-chips .fl-chip:disabled { opacity: 0.5; cursor: default; }
+.fl-site .s-founding-answers { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: 16px; }
+.fl-site .s-founding-answers dt { color: var(--ink-3); }
+.fl-site .s-founding-answers dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+@media (max-width: 480px) {
+  .fl-site .s-founding { gap: 28px; }
+  .fl-site .s-founding-card { padding: 20px; }
+}
