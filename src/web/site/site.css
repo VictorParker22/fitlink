@@ -6,6 +6,108 @@
 /* The shell's body classes: overscroll shows the canvas, or ink on the 404. */
 body.fl-site-body-dark { background: #0B0620; }
 
+/* The legacy stylesheet (src/index.css, loaded on every route) reverted inside the site, so the design's rules
+   below start from the browser's defaults as the design's own file does. */
+:where(.fl-site) *, :where(.fl-site) *::before, :where(.fl-site) *::after {
+    margin: revert;
+    padding: revert;
+    box-sizing: revert
+}
+html:where(:has(body.fl-site-body)) {
+    font-size: revert;
+    -webkit-font-smoothing: revert;
+    -moz-osx-font-smoothing: revert
+}
+body:where(.fl-site-body) {
+    font-family: revert;
+    background: revert;
+    color: revert;
+    line-height: revert;
+    min-height: revert;
+    overflow-x: revert
+}
+:where(.fl-site) a {
+    color: revert;
+    text-decoration: revert
+}
+:where(.fl-site) button {
+    cursor: revert;
+    border: revert;
+    background: revert;
+    font-family: revert;
+    color: revert
+}
+:where(.fl-site) input, :where(.fl-site) textarea, :where(.fl-site) select {
+    font-family: revert;
+    color: revert;
+    border: revert;
+    outline: revert;
+    background: revert
+}
+:where(.fl-site) ul, :where(.fl-site) ol {
+    list-style: revert
+}
+:where(.fl-site) img {
+    max-width: revert;
+    display: revert
+}
+:where(.fl-site) .btn {
+    display: revert;
+    align-items: revert;
+    justify-content: revert;
+    gap: revert;
+    border-radius: revert;
+    font-weight: revert;
+    font-size: revert;
+    transition: revert;
+    white-space: revert
+}
+:where(.fl-site) .btn-primary {
+    background: revert;
+    color: revert;
+    padding: revert
+}
+:where(.fl-site) .btn-primary:active {
+    opacity: revert;
+    transform: revert
+}
+:where(.fl-site) .btn-ghost {
+    background: revert;
+    color: revert;
+    padding: revert
+}
+:where(.fl-site) .btn-sm {
+    padding: revert;
+    font-size: revert;
+    border-radius: revert
+}
+:where(.fl-site) .badge {
+    display: revert;
+    align-items: revert;
+    gap: revert;
+    padding: revert;
+    border-radius: revert;
+    font-size: revert;
+    font-weight: revert;
+    text-transform: revert;
+    letter-spacing: revert
+}
+:where(.fl-site) .tag {
+    display: revert;
+    align-items: revert;
+    gap: revert;
+    padding: revert;
+    border-radius: revert;
+    font-size: revert;
+    font-weight: revert;
+    background: revert;
+    color: revert
+}
+:where(.fl-site) ::-webkit-scrollbar, html:where(:has(body.fl-site-body))::-webkit-scrollbar {
+    width: revert
+}
+
+
 :root {
   --ground: #F4F4F2;
   --paper: #FFFFFF;

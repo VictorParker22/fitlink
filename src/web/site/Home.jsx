@@ -48,14 +48,15 @@ function Feature({ tag, title, body, facts, flip = false, artClass = '', childre
   );
 }
 
-/** The fee receipt beside the Earnings phone. */
+/** The fee receipt beside the Earnings phone: its figures carry cents, as a receipt does (the design's `$120.00`). */
 function Receipt() {
+  const cents = { cents: true };
   return (
     <div className="receipt" aria-label={`Example: a ${usd(SAMPLE_PASS_PRICE)} pass on the free plan`}>
-      <div className="r-row"><span>Athlete pays</span><span>{usd(SAMPLE_PASS_PRICE)}</span></div>
-      <div className="r-row"><span>{BRAND_NAME} fee · {STANDARD_FEE_PERCENT}%</span><span>−{usd(sampleFee)}</span></div>
-      <div className="r-row r-total"><span>You get</span><span className="num">{usd(sampleKeep)}</span></div>
-      <div className="r-elite">On Coach Elite the fee is {ELITE_FEE_PERCENT}%, so you’d get {usd(sampleEliteKeep)}.</div>
+      <div className="r-row"><span>Athlete pays</span><span>{usd(SAMPLE_PASS_PRICE, cents)}</span></div>
+      <div className="r-row"><span>{BRAND_NAME} fee · {STANDARD_FEE_PERCENT}%</span><span>−{usd(sampleFee, cents)}</span></div>
+      <div className="r-row r-total"><span>You get</span><span className="num">{usd(sampleKeep, cents)}</span></div>
+      <div className="r-elite">On Coach Elite the fee is {ELITE_FEE_PERCENT}%, so you’d get {usd(sampleEliteKeep, cents)}.</div>
     </div>
   );
 }

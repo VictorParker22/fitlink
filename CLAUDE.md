@@ -40,7 +40,15 @@ from `plans`.
   header and footer). **The stylesheet is generated**: `scripts/site-css.mjs <design site.css>` writes
   `src/web/site/site.css` from the design's CSS scoped under `.fl-site` (the tokens `--ground`, `--ink`,
   `--violet`, `--lime` … and the `html` rule stay global; the design's `body` rule becomes `body.fl-site-body` +
-  `.fl-site`; Archivo's `@font-face` lives in `web.css`); never edit it by hand. `forms.css` keeps the old `.s-*`
+  `.fl-site`; Archivo's `@font-face` lives in `web.css`); never edit it by hand. The generated file opens with a
+  block that REVERTS the legacy stylesheet inside the site: `src/index.css` (the old PWA's design system, imported
+  by `main.jsx` on every route) styled the pages wherever the design was silent (its `.badge` uppercased the plan
+  chips, its `.btn { white-space: nowrap }` clipped the menu's two-line button, 2026-10-29), so every legacy
+  declaration on an element selector or on a class the design also uses is set to `revert` under `:where(.fl-site)`
+  (no added specificity: the revert beats the legacy rule by order alone, and whatever outranked the legacy rule,
+  `web.css`'s `.fl-btn` on the Founding page included, still does) before the design's rules. A page is checked against the design by pixel diff (the owner's static HTML served beside
+  the build): heights and pixels match except for the intended differences (the real `/c/` coach link, cents in
+  the receipt, the `siteCopy` sign-in sentence, the corrected legal text). `forms.css` keeps the old `.s-*`
   rules that `Founding.jsx` and `DeleteAccount.jsx` (no artboard; markup and logic unchanged) still use, re-tokened.
   `web.css` carries the Benchside tokens (`--fl-*`) and the Archivo display lines for every route that keeps `.fl`
   (the coach page, checkout, the editor, /admin's own `.ad` is untouched); the Google Fonts import is gone. The
@@ -320,9 +328,12 @@ from `plans`.
 - **Fee engine, the web half (2026-10-25, launch plan Sprint 1 PR 1; server: fitlink-app PR #12 branch
   `launch/1-fee-engine`, migration `20261025100000`, threat model B34–B37 — NOT live yet).** Branch
   `launch/1-fee-engine-web`, stacked on `launch/2-founding` (the web Founding branch).
-  - **/pricing** (`site/Pricing.jsx`): "Free to try."; three plans in this order with the owner-locked lines
+  - **/pricing** (`site/Pricing.jsx`): since the Benchside design (2026-10-29) "Free to start." with the design's own
+    plan cards (every number still from `pricing.js`); the owner-locked one-line summaries of 2026-10-25
     (`site/planLines.js PLAN_LINES`: "Free to try. Up to 5 athletes, 10% per pass." / "$29.99/mo. 5%, no cap, your
-    assistant." / "15 spots. Elite free for a year. Closes Dec 31."); a calculator of what the coach KEEPS per month
+    assistant." / "15 spots. Elite free for a year. Closes Dec 31.") stay pinned by `pricing.test.js` but no page
+    renders them; `FOUNDING_CLOSES_LABEL` and `SIXTH_ATHLETE_RULE` from the same file are what the pages use. A
+    calculator of what the coach KEEPS per month
     on Free / Elite / Founding (`pricing.js keepsByTier`; Elite minus its subscription, monthly or yearly; Founding's
     first year has no subscription); a Founding column in the table; "Subscribe on the web; the app opens your
     dashboard". All-in pricing: on the standard plans athletes pay exactly the price the coach sets, Stripe's

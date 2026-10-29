@@ -32,7 +32,8 @@ function ScrollToTop() {
       const el = document.getElementById(hash.slice(1));
       if (el) { el.scrollIntoView(); return; }
     }
-    window.scrollTo(0, 0);
+    // At once: the design's `html { scroll-behavior: smooth }` would animate the jump to the new page's top.
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }, [pathname, hash]);
   return null;
 }

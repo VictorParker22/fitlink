@@ -63,6 +63,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Not precached: the legacy landing page's images (unrouted, 2 MB), the share image (unfurlers only)
+        // and the app screens (loaded as the pages need them). The brand SVGs, icons and the font stay.
+        globIgnores: ['hero-mockup.png', 'feature-*.png', 'favicon.png', 'og-image.png', 'screens/**'],
         // The AASA file is a static file, not the SPA: a browser that has this
         // service worker must fetch it, never be handed the precached
         // index.html (the default navigateFallback). /privacy, /terms and
