@@ -1,28 +1,34 @@
-// /support (Web-Support): the help centre. The search filters the questions
-// on this page; the topic cards jump to a group; the contact form composes an
-// email to the support mailbox (there is no ticket backend). Every answer is
-// true for the shipped product: coach-led passes, invites, Stripe payouts,
-// Elite on the web through Stripe (fee engine, 2026-10-25; App Store Elite stays managed there), refunds at the coach's discretion through the app, two
-// modes on one account (coaching and training), and an athlete who switches
-// coach or deletes their account ends the old pass that day with no refund
-// (athlete-exit, operator decision 2026-10-17). A season is billed a fixed
-// number of payments and then stops by itself; an open pass renews until it
-// is cancelled; when billing ends, the coach's plan is no longer part of the
-// pass and the history stays (season billing, owner decision 2026-10-17). The
-// wording says what the pass includes, not that access is cut: the server
-// still serves a season the athlete marked 'completed' after an early end.
+// /support (the design's page_support.py, ported 2026-10-29): the help centre.
+// The search filters the questions on this page; the sticky topic nav jumps to
+// a group; the contact form composes an email to the support mailbox (there is
+// no ticket backend). Every answer is true for the shipped product: coach-led
+// passes, invites, Stripe payouts, Elite on the web through Stripe (fee engine,
+// 2026-10-25; App Store Elite stays managed there), refunds at the coach's
+// discretion through the app, two modes on one account (coaching and training),
+// and an athlete who switches coach or deletes their account ends the old pass
+// that day with no refund (athlete-exit, operator decision 2026-10-17). A season
+// is billed a fixed number of payments and then stops by itself; an open pass
+// renews until it is cancelled; when billing ends, the coach's plan is no longer
+// part of the pass and the history stays (season billing, owner decision
+// 2026-10-17). The wording says what the pass includes, not that access is cut:
+// the server still serves a season the athlete marked 'completed' after an early
+// end. The app collects no date of birth (review pack 2026-10-27), so the age
+// answer says only who the product is for.
 // Sign in with Apple on the website when this build offers it
 // (VITE_APPLE_WEB_SIGN_IN): the sign-in answers come from siteCopy() in
 // appleAuth.js, so a build without it never mentions a button it lacks.
+// Numbers come from pricing.js (the server's config copy); the name, the former
+// name and the mailbox from brand.js.
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Faq from './Faq';
+import { Display, Kicker } from './Pieces';
 import { usePageMeta } from './meta';
 import { DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, MINIMUM_CHARGE_USD, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { SIXTH_ATHLETE_RULE } from './planLines';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
-import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
+import { BRAND_NAME, FORMER_NAME, SUPPORT_EMAIL } from './brand';
 
 const copy = siteCopy(APPLE_WEB_ENABLED);
 
@@ -32,7 +38,7 @@ const GROUPS = [
     items: [
       { q: 'How do I get paid?', a: `Connect payouts in the app (Profile, then Payouts). Stripe opens inside the app, asks for your identity and bank details, and tells ${BRAND_NAME} when your account can take charges. Until then nobody can buy your pass. Stripe sends payouts to that bank.` },
       { q: `What does ${BRAND_NAME} take?`, a: (<p>{STANDARD_FEE_PERCENT}% of each pass payment, or {ELITE_FEE_PERCENT}% while Coach Elite or a Founding free year is active. On the standard plans your athlete pays exactly the price you set; that amount minus the {BRAND_NAME} fee goes to your Stripe balance. A booking fee, when a coach uses one, is included in the total the athlete is shown before paying. Stripe’s card processing fee comes out of {BRAND_NAME}’s share. See <Link to="/pricing">Pricing</Link>.</p>) },
-      { q: 'Where do I see what I earned?', a: (<p>The Money tab in the app, or <Link to="/coach/earnings">Earnings</Link> on the web: every pass payment with the fees on it and what reached you, by month. The payout date and the bank it goes to live in Stripe; the app opens your Stripe account from Payouts.</p>) },
+      { q: 'Where do I see what I earned?', a: (<p>The Earnings tab in the app, or <Link to="/coach/earnings">Earnings on the web</Link>: every pass payment with the fees on it and what reached you, by month. The payout date and the bank it goes to live in Stripe; the app opens your Stripe account from Payouts.</p>) },
       { q: 'Why does Payouts say “in progress” or “paused”?', a: 'Stripe still needs something from you (a document, a bank detail) or has paused payouts. Open Payouts in the app: it lists what is due and takes you to Stripe to finish it.' },
     ],
   },
@@ -55,14 +61,14 @@ const GROUPS = [
       { q: 'Does a refund end the pass?', a: 'Only if you choose that. You can end the pass with the refund, or refund as a goodwill gesture and let the pass run to the end of the period they paid for. Either way the athlete stays on your roster with their history; removing them from the roster is a separate action.' },
       { q: 'An athlete disputed a charge with their bank.', a: `Disputes run under Stripe’s and the card networks’ rules. While one is open the amount is held back from your payouts; if it closes in your favour the money is paid to you again. Each dispute costs you ${usd(DISPUTE_FEE_USD)}, won or lost (an inquiry costs nothing), taken from what Stripe pays you for that payment or for your next ones.` },
       { q: 'How do athletes cancel?', a: 'From the app: Profile, then Manage pass. Cancelling stops the next payment; they keep training until the period they paid for ends, and you can see the end date. After that the pass’s plan is no longer part of what they paid for. They stay on your roster with their history and can buy a pass again.' },
-      { q: 'What happens if I delete my account?', a: (<p>Every pass with you ends. Time your athletes prepaid and have not had is refunded to them automatically from your balance. They keep their accounts, logs and history and can join another coach. If you also train with another coach, that pass ends the same day; time you already paid for isn’t refunded. <Link to="/delete-account">Delete your account</Link> on the web or from Profile in the app.</p>) },
+      { q: 'What happens if I delete my account?', a: (<p>Every pass with you ends. Time your athletes prepaid and have not had is refunded to them automatically from your balance. They keep their accounts, logs and history and can join another coach. If you also train with another coach, that pass ends the same day; time you already paid for isn’t refunded. Delete your account <Link to="/delete-account">on the web</Link> or from Profile in the app.</p>) },
     ],
   },
   {
     id: 'coach-assistant', audience: 'For coaches', title: 'How the assistant works',
     items: [
       { q: 'What does the assistant do?', a: 'It reads an athlete’s check-in and their logged sets and drafts a reply in your voice. You edit, approve and send; nothing reaches an athlete on its own. It needs Coach Elite, and you agree to it in the app before the first draft.' },
-      { q: 'Where does the text go?', a: 'The check-in text is sent to Google (Gemini) to produce the draft and for nothing else. The Privacy Policy says so, and athletes are told their coach may use an assistant.' },
+      { q: 'Where does the text go?', a: (<p>The check-in text is sent to Google (Gemini) to produce the draft and for nothing else. The <Link to="/privacy">Privacy Policy</Link> says so, and athletes are told their coach may use an assistant.</p>) },
       { q: 'How do I get Coach Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, and manage or cancel it from the link in your Stripe receipt. If you already have Elite through the App Store, it stays managed in your Apple subscriptions.</p>) },
     ],
   },
@@ -72,7 +78,8 @@ const GROUPS = [
       { q: 'How do I sign in?', a: copy.supportSignInA },
       { q: 'I signed up with Sign in with Apple and hid my email.', a: copy.supportHidEmailA },
       { q: 'Can I also train with a coach?', a: 'Yes. From Profile, a coach can turn on training and open another coach’s link or enter their code. The account then has two modes, Coaching and Training, each with its own Home, messages and notifications; your athletes never see your own training, and you cannot coach yourself.' },
-      { q: 'How old do I have to be?', a: `${BRAND_NAME} is for people aged 16 and over. We ask for your date of birth at sign-up.` },
+      { q: 'How old do I have to be?', a: `${BRAND_NAME} is for people aged 16 and over.` },
+      { q: `${BRAND_NAME} used to be called ${FORMER_NAME}.`, a: `Yes. ${FORMER_NAME} is now ${BRAND_NAME}: the same app, the same account and the same payouts, with a new name and a new look.` },
     ],
   },
   {
@@ -112,6 +119,12 @@ const GROUPS = [
   },
 ];
 
+const AUDIENCES = ['For coaches', 'For athletes'];
+const ROLES = ['Coach', 'Athlete', 'Someone else'];
+/** The design's section rhythm below the hero (an inline style there too, not a class in site.css). */
+const SECTION_PAD = { paddingBottom: 'clamp(72px, 9vw, 120px)' };
+
+/** Every word of the query appears in the question or in a plain-text answer (a JSX answer is found by its question). */
 function matches(item, needle) {
   if (!needle) return true;
   const text = `${item.q} ${typeof item.a === 'string' ? item.a : ''}`.toLowerCase();
@@ -119,69 +132,100 @@ function matches(item, needle) {
 }
 
 export default function Support() {
-  usePageMeta('Help', `Answers for coaches and athletes on ${BRAND_NAME}: payouts and Stripe, passes, refunds, the assistant, paying and cancelling, finding your plan. Or write to us.`);
+  usePageMeta('Help', `Answers for coaches and athletes on ${BRAND_NAME}: payouts, passes, refunds, the assistant, signing in, cancelling and privacy. A person reads every message.`);
   const [query, setQuery] = useState('');
-  const [role, setRole] = useState('Coach');
+  const [role, setRole] = useState(ROLES[0]);
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const needle = query.trim().toLowerCase();
 
-  const visible = useMemo(() => GROUPS
-    .map((g) => ({ ...g, items: g.items.filter((it) => matches(it, needle)) }))
-    .filter((g) => g.items.length > 0), [needle]);
-  const total = visible.reduce((n, g) => n + g.items.length, 0);
+  // Every group stays in the DOM (the nav's anchors keep their targets); a group with nothing matching is hidden.
+  const groups = useMemo(() => GROUPS.map((g) => ({ ...g, items: g.items.filter((it) => matches(it, needle)) })), [needle]);
+  const shown = groups.reduce((n, g) => n + g.items.length, 0);
 
-  const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${BRAND_NAME} help · ${role}`)}&body=${encodeURIComponent(`${message}\n\n— ${email || 'my email'}`)}`;
+  function sendMail(e) {
+    e.preventDefault();
+    const subject = `${BRAND_NAME} help (${role})`;
+    const body = `${message.trim()}\n\n—\nReply to: ${email.trim()}\nI'm a: ${role}`;
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
 
+  // The shell owns the <main id="main"> landmark the skip link targets; the page is its sections.
   return (
-    <div className="s-wrap s-help">
-      <section className="s-help-head" aria-labelledby="h-h">
-        <h1 id="h-h" className="s-h1 md">How can we help?</h1>
-        <div className="s-search">
-          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2 }} /><path d="M15.5 15.5L20 20" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }} /></svg>
-          <label htmlFor="hs" className="s-visually-hidden">Search help</label>
-          <input id="hs" type="search" placeholder="Search: payouts, cancel a pass, refunds…" value={query} onChange={(e) => setQuery(e.target.value)} />
+    <>
+      <section className="page-hero">
+        <div className="wrap">
+          <Kicker>Help</Kicker>
+          <Display as="h1" size="xl">How can we help?</Display>
+          <div className="search" role="search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <label className="sr" htmlFor="help-search">Search help</label>
+            <input id="help-search" type="search" placeholder="Search: payouts, refund, cancel…" autoComplete="off" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </div>
         </div>
-        {needle && <p className="s-small" aria-live="polite">{total === 0 ? 'Nothing matches. Write to us below.' : `${total} ${total === 1 ? 'answer' : 'answers'}`}</p>}
       </section>
 
-      {!needle && (
-        <section className="s-topics" aria-label="Topics">
-          {['For coaches', 'For athletes'].map((aud) => (
-            <div className="s-topic" key={aud}>
-              <h2>{aud}</h2>
-              {GROUPS.filter((g) => g.audience === aud).map((g) => (
-                <a key={g.id} href={`#${g.id}`}>{g.title}<span aria-hidden="true">›</span></a>
-              ))}
+      <section style={SECTION_PAD}>
+        <div className="wrap help-grid">
+          <nav className="help-nav" aria-label="Help topics">
+            {AUDIENCES.map((aud) => (
+              <div key={aud}>
+                <h2>{aud}</h2>
+                <ul>
+                  {GROUPS.filter((g) => g.audience === aud).map((g) => (
+                    // A search that hid the group is cleared on the way, so the anchor lands on it.
+                    <li key={g.id}><a href={`#${g.id}`} onClick={() => setQuery('')}>{g.title}</a></li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+          <div>
+            <p className="no-results" role="status" style={shown === 0 ? { display: 'block' } : undefined}>Nothing matches that yet. Write to us below and a person will answer.</p>
+            {groups.map((g) => (
+              <div className="help-group" id={g.id} key={g.id} hidden={g.items.length === 0}>
+                <span className="label">{g.audience}</span>
+                <h2>{g.title}</h2>
+                <Faq items={g.items} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section style={SECTION_PAD} id="contact">
+        <div className="wrap">
+          <div className="contact">
+            <div style={{ display: 'grid', gap: 16, alignContent: 'start' }}>
+              <Display as="h2" size="l">Still stuck? Write to us.</Display>
+              <p style={{ color: '#DCD3FF' }}>A person reads every message. Send opens your email app with the message addressed to <a style={{ color: '#fff' }} href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
+              <p className="small" style={{ color: '#B9AEE6' }}>Want to leave {BRAND_NAME}? <Link style={{ color: '#fff' }} to="/delete-account">Delete your account</Link>.</p>
             </div>
-          ))}
-        </section>
-      )}
-
-      {visible.map((g) => (
-        <section className="s-qa" key={g.id} id={g.id} aria-labelledby={`${g.id}-h`}>
-          <h3>{g.audience}</h3>
-          <h2 id={`${g.id}-h`}>{g.title}</h2>
-          <Faq items={g.items} labelledBy={`${g.id}-h`} />
-        </section>
-      ))}
-
-      <section className="s-contact" aria-labelledby="c-h">
-        <div className="s-contact-copy">
-          <h2 id="c-h" className="s-h2 xs">Still stuck? Write to us.</h2>
-          <p className="s-copy">A person reads every message. Send opens your email app with the message addressed to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
-          <p className="s-small">Want to leave {BRAND_NAME}? <Link to="/delete-account">Delete your account</Link>.</p>
+            <form id="contact-form" action={`mailto:${SUPPORT_EMAIL}`} method="post" encType="text/plain" onSubmit={sendMail}>
+              <div className="field">
+                <label htmlFor="c-email">Your email</label>
+                <input id="c-email" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <fieldset className="field">
+                <legend>I’m a</legend>
+                <div className="chips">
+                  {ROLES.map((r) => (
+                    <label key={r}>
+                      <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} />
+                      <span>{r}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="field">
+                <label htmlFor="c-msg">What’s going on?</label>
+                <textarea id="c-msg" name="message" required value={message} onChange={(e) => setMessage(e.target.value)} />
+              </div>
+              <button className="btn btn-lime" type="submit" style={{ justifySelf: 'start' }} disabled={!message.trim()}>Send</button>
+            </form>
+          </div>
         </div>
-        <form className="s-form" onSubmit={(e) => { e.preventDefault(); window.location.href = mailto; }}>
-          <label htmlFor="cf-email">Email</label>
-          <input id="cf-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <label htmlFor="cf-role">I’m a</label>
-          <select id="cf-role" value={role} onChange={(e) => setRole(e.target.value)}><option>Coach</option><option>Athlete</option><option>Someone else</option></select>
-          <label htmlFor="cf-msg">What’s going on?</label>
-          <textarea id="cf-msg" rows={5} value={message} onChange={(e) => setMessage(e.target.value)} required />
-          <button type="submit" className="fl-btn accent lg" disabled={!message.trim()}>Send</button>
-        </form>
       </section>
-    </div>
+    </>
   );
 }
