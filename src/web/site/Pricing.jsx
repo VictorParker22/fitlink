@@ -29,6 +29,7 @@ import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { Display, FinalCta, Kicker, LinkArrow } from './Pieces';
 import { usePageMeta } from './meta';
+import { useWebEliteOffered } from '../useWebEliteOffered';
 import { APP_STORE_URL, BRAND_NAME } from './brand';
 import { FOUNDING_CLOSES_LABEL, SIXTH_ATHLETE_RULE } from './planLines';
 import {
@@ -56,7 +57,7 @@ const FAQ = [
   { q: 'Do my athletes pay anything extra?', a: `On the standard plans, athletes pay exactly the price you set: there is no processing charge or surcharge at checkout. A coach who uses a booking fee (${usd(MODEL_B_BOOKING_FEE_USD.block_payment)} a payment) has it included in the total the athlete is shown before paying, never added after.` },
   { q: 'Is there an athlete limit?', a: `${SIXTH_RULE} Coach Elite and Founding have no cap.` },
   { q: 'Is there a minimum price?', a: `Yes: a pass costs at least ${usd(MINIMUM_CHARGE_USD)} a payment.` },
-  { q: 'How do I start or stop Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, monthly ({usd(ELITE_MONTHLY_USD)}) or yearly ({usd(ELITE_YEARLY_USD)}). Manage or cancel it from the link in your Stripe receipt; Elite stays on until the end of the period you paid for. If you already have Elite through the App Store, it stays managed in the App Store.</p>) },
+  { q: 'How do I start or stop Elite?', a: (<p>In the United States, subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, monthly ({usd(ELITE_MONTHLY_USD)}) or yearly ({usd(ELITE_YEARLY_USD)}). Manage or cancel it from the link in your Stripe receipt; Elite stays on until the end of the period you paid for. Elsewhere, subscribe in the app through the App Store. If you already have Elite through the App Store, it stays managed in the App Store.</p>) },
   { q: 'How does the lower fee reach my existing passes?', a: 'The fee is set on the server from your plan and applied to every pass payment, including renewals of passes your athletes already hold.' },
   { q: 'What does a dispute cost?', a: `${usd(DISPUTE_FEE_USD)} for each dispute, won or lost; an inquiry costs nothing. It comes out of what Stripe pays you for that payment or for your next ones.` },
   { q: 'What is Founding?', a: (<p>{FOUNDING_SLOTS} coaches get Coach Elite free for {foundingFreeWords()} and a {FOUNDING_FEE_PERCENT}% fee. The free year starts with the first payment one of your athletes makes after your spot is granted. After it, Elite is {usd(FOUNDING_THEN_MONTHLY_USD)} a month if you keep it, or you move to the free plan. Applications close {CLOSES}. <Link to="/founding">Apply for a Founding spot</Link>.</p>) },
@@ -87,6 +88,7 @@ function CompareCell({ value }) {
 export default function Pricing() {
   usePageMeta('Pricing', `Free to start: ${BRAND_NAME} takes ${STANDARD_FEE_PERCENT}% of the passes you sell. Coach Elite is ${usd(ELITE_MONTHLY_USD)} a month and halves the fee to ${ELITE_FEE_PERCENT}%, with no athlete cap. Stripe card fees come out of our share.`);
   const [amountText, setAmountText] = useState(DEFAULT_AMOUNT);
+  const webElite = useWebEliteOffered();
   const [yearly, setYearly] = useState(false);
   const amount = parseAmount(amountText);
   const k = keepsByTier(amount, yearly);
@@ -135,8 +137,17 @@ export default function Pricing() {
                 <li>No athlete cap</li>
                 <li>Replies drafted in your voice from the check-in and logged sets. You approve every one</li>
               </ul>
-              <Link className="btn btn-lime" to="/coach">Subscribe on the web</Link>
-              <p className="plan-foot">You subscribe from your coach dashboard on the web and pay on Stripe’s page. Cancel from the link in your receipt.</p>
+              {webElite === false ? (
+                <>
+                  <a className="btn btn-lime" href={APP_STORE_URL}>Get it in the app</a>
+                  <p className="plan-foot">Outside the United States, Coach Elite is sold in the app through the App Store.</p>
+                </>
+              ) : (
+                <>
+                  <Link className="btn btn-lime" to="/coach">Subscribe on the web</Link>
+                  <p className="plan-foot">You subscribe from your coach dashboard on the web and pay on Stripe’s page. Cancel from the link in your receipt.</p>
+                </>
+              )}
             </article>
             <article className="plan">
               <div className="plan-name">Founding <span className="badge">{FOUNDING_SLOTS} spots · closes {CLOSES}</span></div>

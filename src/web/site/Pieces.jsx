@@ -9,6 +9,7 @@ import {
   STANDARD_FEE_PERCENT, foundingFreeWords, usd,
 } from './pricing';
 import { FOUNDING_CLOSES_LABEL } from './planLines';
+import { useWebEliteOffered } from '../useWebEliteOffered';
 
 const cx = (...parts) => parts.filter(Boolean).join(' ');
 
@@ -54,6 +55,7 @@ export function FinalCta({
 
 /** The three plan cards (Free / Coach Elite / Founding). The caller wraps them in a `.reveal` as the design does. */
 export function PlansShort() {
+  const webElite = useWebEliteOffered();
   const freeWords = foundingFreeWords();
   // "for the first year", or "for the first 6 months" should the offer change.
   const firstPeriod = freeWords === 'a year' ? 'year' : freeWords;
@@ -83,7 +85,9 @@ export function PlansShort() {
           <li>No athlete cap</li>
           <li>Your assistant drafts replies, you approve</li>
         </ul>
-        <Link className="btn btn-lime" to="/coach">Subscribe on the web</Link>
+        {webElite === false
+          ? <a className="btn btn-lime" href={APP_STORE_URL}>Get it in the app</a>
+          : <Link className="btn btn-lime" to="/coach">Subscribe on the web</Link>}
       </article>
       <article className="plan">
         <div className="plan-name">Founding <span className="badge">{FOUNDING_SLOTS} spots</span></div>

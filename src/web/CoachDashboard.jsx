@@ -23,7 +23,9 @@ import {
 } from './coachMoney';
 import { usePageMeta } from './site/meta';
 import CoachPagePanel from './CoachPagePanel';
-import { BRAND_NAME } from './site/brand';
+import { APP_STORE_URL, BRAND_NAME } from './site/brand';
+import { eliteElsewhereWords } from './eliteRegion';
+import { useWebEliteOffered } from './useWebEliteOffered';
 
 /** Re-reads after a "started" return while the webhook has not landed (ms after the first read). */
 const CONFIRM_RETRIES_MS = [3000, 6000, 10000];
@@ -75,6 +77,8 @@ function ElitePanel({ ret }) {
   const [returnState, setReturnState] = useState(ret);
   const [attempt, setAttempt] = useState(0);
   const retries = useRef(0);
+  // Web Elite is offered in the United States only (eliteRegion.js); null while the country is read.
+  const offeredHere = useWebEliteOffered();
 
   // One read per attempt; "Check again" and the confirming retries start a new attempt.
   useEffect(() => {
@@ -170,8 +174,15 @@ function ElitePanel({ ret }) {
       {v.lines.map((line) => <p key={line} className="fl-elite-line">{line}</p>)}
       {v.manage && <p className="fl-note">{v.manage}</p>}
 
+      {/* Outside the United States the website offers no Elite checkout, only the app (eliteRegion.js). */}
+      {v.canBuy && v.buy && offeredHere === false && (
+        <>
+          <p className="fl-elite-line fl-elite-offer">{eliteElsewhereWords(BRAND_NAME)}</p>
+          <div className="fl-btnrow"><a className="fl-btn lg accent" href={APP_STORE_URL}>Get the app</a></div>
+        </>
+      )}
       {/* While Stripe is confirming a checkout that just went through, no second one. */}
-      {v.canBuy && v.buy && !(returnState === 'started' && !confirmed) && (
+      {v.canBuy && v.buy && offeredHere === true && !(returnState === 'started' && !confirmed) && (
         <>
           <p className="fl-elite-line fl-elite-offer">{v.buy.intro}</p>
           <div className="fl-btnrow">

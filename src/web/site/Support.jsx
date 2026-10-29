@@ -69,7 +69,7 @@ const GROUPS = [
     items: [
       { q: 'What does the assistant do?', a: 'It reads an athlete’s check-in and their logged sets and drafts a reply in your voice. You edit, approve and send; nothing reaches an athlete on its own. It needs Coach Elite, and you agree to it in the app before the first draft.' },
       { q: 'Where does the text go?', a: (<p>The check-in text is sent to Google (Gemini) to produce the draft and for nothing else. The <Link to="/privacy">Privacy Policy</Link> says so, and athletes are told their coach may use an assistant.</p>) },
-      { q: 'How do I get Coach Elite?', a: (<p>Subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, and manage or cancel it from the link in your Stripe receipt. If you already have Elite through the App Store, it stays managed in your Apple subscriptions.</p>) },
+      { q: 'How do I get Coach Elite?', a: (<p>In the United States, subscribe on the web from your <Link to="/coach">coach dashboard</Link>; the app opens your dashboard. You pay on Stripe’s page, {usd(ELITE_MONTHLY_USD)} a month or {usd(ELITE_YEARLY_USD)} a year, and manage or cancel it from the link in your Stripe receipt. Elsewhere, subscribe in the app through the App Store. If you already have Elite through the App Store, it stays managed in your Apple subscriptions.</p>) },
     ],
   },
   {
