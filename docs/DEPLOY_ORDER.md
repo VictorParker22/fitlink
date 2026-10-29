@@ -118,3 +118,28 @@ change the site only; each says below what it waits for.
   (`facebookexternalhit`) still prints ONE `og:title`, the coach's. The rename (Track A) is `src/web/site/brand.js`
   plus `node scripts/og-image.mjs`; the AASA file, the Apple Services ID return URLs, Supabase's redirect URLs and
   Vercel's domain are the owner's.
+
+## The Benchside site (the rename and the design, 2026-10-29)
+
+Branch `launch/benchside-site`. The site keeps every route it served: the coach page and web
+checkout (`/c/<handle>`, `/i/<code>`), the dashboard and season editor (`/coach/*`), `/founding`,
+`/delete-account`, `/admin`, the link-preview function and the AASA file. What changed is the
+brand (`src/web/site/brand.js`: Benchside, benchside.coach, hello@benchside.coach) and the
+marketing, help and legal pages (the owner's design, `benchside-website`).
+
+1. Vercel: `benchside.coach` already points at the `fitlink` project (added 2026-10-28), so the
+   merge to `main` deploys it there. `fitlink.coach` stays on the project; `vercel.json` now
+   redirects every path on that host to `benchside.coach` (307, reversible) except the AASA file,
+   which Apple's CDN must read without a redirect, and `/api/`.
+2. The AASA file lists `SCJ422P9KZ.benchside.app` beside `SCJ422P9KZ.fitlink.app`, so both the
+   native builds open `/i/*` and `/live/*` links; Apple's CDN picks the change up within a day.
+3. After the deploy, check: `curl -sI https://benchside.coach/.well-known/apple-app-site-association`
+   (application/json), `curl -sI https://fitlink.coach/pricing` (307 to benchside.coach),
+   `curl -sI https://fitlink.coach/.well-known/apple-app-site-association` (200, no redirect),
+   every route answers 200 `text/html`, and `/privacy` and `/terms` render their text.
+4. The mailbox `hello@benchside.coach` must receive mail before this ships (the contact form and
+   the legal pages name it). The iOS submission pack still names `support@fitlink.coach`.
+5. Legal: the Terms and the Privacy Policy carry "Last updated 29 October 2026" and the operator
+   (ORYNTLabs LLC, New Jersey). Terms §16 promises 14 days' notice for a material change: the
+   owner decides whether to give that notice or record why the exception applies, before the
+   deploy (open since 2026-10-17).

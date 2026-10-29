@@ -98,10 +98,13 @@ export const STRIPE_ESTIMATE_FIXED_USD = centsToUsd(CONFIG.stripe_processing_est
 // `?? {}`: node --test imports this file too (no Vite there, so no import.meta.env).
 export const NEEDS_CONFIRM = Boolean((import.meta.env ?? {}).DEV);
 
-/** `$1,234` or `$12.50`: whole dollars when there are no cents. A negative amount reads `-$29.99`. */
-export function usd(amount) {
+/**
+ * `$1,234` or `$12.50`: whole dollars when there are no cents. A negative amount reads `-$29.99`.
+ * `{ cents: true }` always shows them (`$120.00`): the receipt on the home page reads like a receipt.
+ */
+export function usd(amount, { cents = false } = {}) {
   const n = Number(amount) || 0;
-  const whole = Math.abs(n - Math.round(n)) < 0.005;
+  const whole = !cents && Math.abs(n - Math.round(n)) < 0.005;
   return n.toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',

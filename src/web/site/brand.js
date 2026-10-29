@@ -6,10 +6,12 @@
 //
 // Pure ES module with no imports: Vite's config, the Vercel function `api/coach-meta` and `node --test` read it too.
 
-/** The product's name as people read it. */
-export const BRAND_NAME = 'FitLink';
-/** The one-letter mark drawn in the header, the footer and the share image. */
-export const BRAND_MARK = 'F';
+/** The product's name as people read it (Benchside since 2026-10-29; FitLink before). */
+export const BRAND_NAME = 'Benchside';
+/** The name the product had until October 2026: the legal pages say the two are one service. */
+export const FORMER_NAME = 'FitLink';
+/** The one-letter mark (the share-image script's fallback; the header draws the wordmark SVG). */
+export const BRAND_MARK = 'b';
 /** Who runs the Founding setup calls and writes to applicants (no email provider sends anything). */
 export const FOUNDER_FIRST_NAME = 'Victor';
 
@@ -18,11 +20,16 @@ export const FOUNDER_FIRST_NAME = 'Victor';
  * link previews' og:url), and Sign in with Apple is offered only on `SITE_ORIGIN`. The rename may move the domain;
  * change it here, and the AASA file / Apple Services ID return URLs with it (an owner step, not this file).
  */
-export const SITE_HOST = 'fitlink.coach';
+export const SITE_HOST = 'benchside.coach';
 export const SITE_ORIGIN = `https://${SITE_HOST}`;
 
-/** The mailbox the iOS submission pack names. It must exist before launch. */
-export const SUPPORT_EMAIL = 'support@fitlink.coach';
+/** The mailbox the site publishes (Victor set it up 2026-10-28; the iOS pack still names the old one). */
+export const SUPPORT_EMAIL = 'hello@benchside.coach';
+/** The brand's Instagram, linked from the footer. */
+export const INSTAGRAM_URL = 'https://www.instagram.com/benchside.coach/';
+/** The operator named in the Terms, the Privacy Policy and the footer (HANDOFF 2026-10-29). */
+export const LEGAL_ENTITY = 'ORYNTLabs LLC';
+export const LEGAL_ENTITY_STATE = 'New Jersey';
 
 /** App Store Connect's app id: the rename makes a NEW App Store Connect record (decision L2), so a new id. */
 export const APP_STORE_ID = '6779058450';
@@ -30,9 +37,9 @@ export const APP_STORE_URL = `https://apps.apple.com/app/id${APP_STORE_ID}`;
 /** The iOS app's URL scheme (invite hand-off from the web, "Open the app"). Changes with the bundle id. */
 export const APP_SCHEME = 'fitlink://';
 
-/** The PWA manifest's one-line description and the theme colour (the cream canvas). */
-export const APP_DESCRIPTION = 'Run your coaching business: passes, blocks, check-ins, payouts.';
-export const THEME_COLOR = '#F2F0EB';
+/** The PWA manifest's one-line description and the theme colour (the Benchside canvas). */
+export const APP_DESCRIPTION = 'The app that runs an independent coach’s business: passes, programs, check-ins and payouts.';
+export const THEME_COLOR = '#F4F4F2';
 
 /**
  * The share image for the site's own pages (og:image / twitter:image). `public/og-image.png`, 1200 × 630, drawn from
@@ -43,4 +50,4 @@ export const OG_IMAGE_PATH = '/og-image.png';
 export const OG_IMAGE_URL = `${SITE_ORIGIN}${OG_IMAGE_PATH}`;
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
-export const OG_IMAGE_ALT = `${BRAND_NAME}: coaching passes, blocks and payouts in one place`;
+export const OG_IMAGE_ALT = `${BRAND_NAME}: coach people, get paid for it`;

@@ -93,6 +93,8 @@ test('words built from the numbers', () => {
   assert.equal(P.usd(P.ELITE_MONTHLY_USD), '$29.99');
   assert.equal(P.usd(P.ELITE_YEARLY_USD), '$249');
   assert.equal(P.usd(-29.99), '-$29.99');
+  assert.equal(P.usd(120, { cents: true }), '$120.00');
+  assert.equal(P.usd(114, { cents: true }), '$114.00');
   assert.equal(P.foundingFreeWords(), 'a year');
   assert.equal(P.foundingFreeWords(6), '6 months');
   assert.equal(P.stripeEstimateWords(), 'about 2.9% + 30¢ a payment');

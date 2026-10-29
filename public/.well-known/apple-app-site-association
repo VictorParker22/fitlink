@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["SCJ422P9KZ.fitlink.app"],
+        "appIDs": ["SCJ422P9KZ.benchside.app", "SCJ422P9KZ.fitlink.app"],
         "components": [
           { "/": "/i/*" },
           { "/": "/live/*" }
@@ -11,6 +11,6 @@
     ]
   },
   "webcredentials": {
-    "apps": ["SCJ422P9KZ.fitlink.app"]
+    "apps": ["SCJ422P9KZ.benchside.app", "SCJ422P9KZ.fitlink.app"]
   }
 }

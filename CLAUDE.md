@@ -1,7 +1,7 @@
 # CLAUDE.md — FitLink Project Memory
 
-> **Last updated**: 2026-10-25
-> **Project**: FitLink — Gym Trainer Referral & Client Management Platform
+> **Last updated**: 2026-10-29
+> **Project**: Benchside (FitLink until October 2026) — the coaching platform's website
 > **Location**: `c:\projects\fitlink`
 > **Dev server**: `npm run dev` → http://localhost:5173 (or next available port)
 
@@ -25,35 +25,60 @@ everything else. `src/web/api.js` wraps the edge functions and RPCs; a page only
 ids (invite code, plan id, client id), never a price or a payee: the server computes money
 from `plans`.
 
-- **The site (2026-10-16 evening, designs Web-Home … Web-404).** `src/web/site/SiteShell.jsx`
-  is the layout route (glass header with the brand mark + Home / Pricing / For athletes / Help,
-  Sign in → `/coach`, Get the app → the App Store; footer with Help · Privacy · Terms ·
-  Delete account · `SUPPORT_EMAIL`; scroll-to-top; a `body` class so overscroll is
-  cream). Pages: `Home.jsx` (`/`), `Pricing.jsx`, `Athletes.jsx`, `Support.jsx`,
-  `Legal.jsx` (`/privacy`, `/terms`; text in `privacyContent.jsx` / `termsContent.jsx`,
-  titles and section lists in `legalMeta.js`), `DeleteAccount.jsx`, `NotFound.jsx`.
-  `site.css` is scoped under `.fl-site`; the root also carries `.fl`, so tokens, `.fl-btn`,
-  `.fl-field`, `.fl-error` and the glass pill come from `web.css`. The Web-Home-Mobile
-  artboard is the same page at 390 px: one column, the header pill becomes a box with the
-  nav on its own row (`@media (max-width: 720px)`); keep every new section
-  `minmax(min(Npx, 100%), 1fr)` so it collapses without horizontal scroll.
-- **The brand is one file (launch plan W1, 2026-10-25; branch `launch/w1-brand-config`).** `src/web/site/brand.js`
-  holds the name (`BRAND_NAME`), the mark letter (`BRAND_MARK`), the founder's first name, the host and origin
-  (`SITE_HOST`, `SITE_ORIGIN`), the mailbox (`SUPPORT_EMAIL`), the App Store id and URL, the app's URL scheme
-  (`APP_SCHEME`, re-exported by `supabase.js`), the manifest description and theme colour, and the share image
-  (`OG_IMAGE_*`, `public/og-image.png`). Every page, the legal text (`termsContent.jsx`, `privacyContent.jsx`,
-  `legalMeta.js`), the sign-in sentences (`appleAuth.js`), the coach page and its link previews import it.
-  `index.html` carries tokens (`__BRAND_NAME__`, `__THEME_COLOR__`) and a `<!--site-head-->` marker that
-  `vite.config.js` (`brandHtml`, `transformIndexHtml` order pre) fills from `brand.js` + `site/pageMeta.js`
-  (`siteHeadTags`: title, description, og/twitter with the share image, NO canonical in the SPA shell, which answers
-  every route); a token left behind fails the build. The PWA manifest's name, short name, description and colours
-  come from `brand.js` too. `coachMeta.injectHead` drops the shell's og/twitter/canonical tags before adding a
-  coach's, so an unfurler never reads the site's og:title first. `node --test src/web/brand.test.js` fails on any
-  name, host, mailbox or App Store address spelled outside `brand.js` (comments excepted; `pricingConfig.json` is the
-  server's byte copy and stays as it is). Storage keys (`fitlink-web`, `fitlink-web-*`) are NOT brand: renaming them
-  would sign everyone out and drop parked checkouts. **The rename:** change `brand.js`, run `node scripts/og-image.mjs`
-  (Playwright, local; not part of the build) to redraw the share image, then the owner's steps outside this repo (the
-  AASA app id and domain, the Apple Services ID return URLs, Supabase redirect URLs, the mailbox, Vercel's domain).
+- **The site is the Benchside design (2026-10-29; the owner's static reference site `benchside-website`, its
+  `HANDOFF.md` the brief).** Same routes, new pages: `SiteShell.jsx` (the sticky header with the wordmark SVG
+  `/brand/wordmark.svg`, Pricing / For athletes / Help, Sign in → `/coach`, "Get the app" → the App Store, the
+  mobile sheet menu with `aria-expanded`, the `scrolled` hairline, the skip link, `<main id="main">`, the ink
+  footer with four columns and the operator line; it adds `js` to `<html>` and runs `reveal.js useReveal()` so
+  every `.reveal` fades up once, only without reduced motion), `Pieces.jsx` (`Phone` = a design-kit screen from
+  `/screens/*.webp` in the CSS phone frame, `FinalCta` the violet closing band with the one lime button,
+  `PlansShort`, `Steps`, `Kicker`, `Display` (the Archivo headline: `display d-xl` …), `LinkArrow`, `Reveal`),
+  `Faq.jsx` (`<details>` list), the pages `Home.jsx`, `Pricing.jsx` (the calculator over `keepsByTier`),
+  `Athletes.jsx`, `Support.jsx` (search, sticky topic nav, the `mailto:` contact form), `Legal.jsx` (the sticky
+  "On this page" list, the "In plain words" card, the renamed-service sentence, the text in
+  `privacyContent.jsx` / `termsContent.jsx` as `Body` + `Plain`), `NotFound.jsx` ("Rest day", with the shell's
+  header and footer). **The stylesheet is generated**: `scripts/site-css.mjs <design site.css>` writes
+  `src/web/site/site.css` from the design's CSS scoped under `.fl-site` (the tokens `--ground`, `--ink`,
+  `--violet`, `--lime` … and the `html` rule stay global; the design's `body` rule becomes `body.fl-site-body` +
+  `.fl-site`; Archivo's `@font-face` lives in `web.css`); never edit it by hand. The generated file opens with a
+  block that REVERTS the legacy stylesheet inside the site: `src/index.css` (the old PWA's design system, imported
+  by `main.jsx` on every route) styled the pages wherever the design was silent (its `.badge` uppercased the plan
+  chips, its `.btn { white-space: nowrap }` clipped the menu's two-line button, 2026-10-29), so every legacy
+  declaration on an element selector or on a class the design also uses is set to `revert` under `:where(.fl-site)`
+  (no added specificity: the revert beats the legacy rule by order alone, and whatever outranked the legacy rule,
+  `web.css`'s `.fl-btn` on the Founding page included, still does) before the design's rules. A page is checked against the design by pixel diff (the owner's static HTML served beside
+  the build): heights and pixels match except for the intended differences (the real `/c/` coach link, cents in
+  the receipt, the `siteCopy` sign-in sentence, the corrected legal text). `forms.css` keeps the old `.s-*`
+  rules that `Founding.jsx` and `DeleteAccount.jsx` (no artboard; markup and logic unchanged) still use, re-tokened.
+  `web.css` carries the Benchside tokens (`--fl-*`) and the Archivo display lines for every route that keeps `.fl`
+  (the coach page, checkout, the editor, /admin's own `.ad` is untouched); the Google Fonts import is gone. The
+  images: `public/brand/` (wordmark, wordmark-on-dark, app-icon: outlined SVGs), `public/fonts/archivo-var.woff2`
+  (OFL, `public/fonts/OFL.txt`), `public/screens/` (twelve app screens rendered from the design canvas: replace with
+  real screenshots once the shipped UI is final), `og-image.png` (drawn by `node scripts/og-image.mjs` from the
+  brand files), `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`, `icon-192.png`. Every
+  page is phone-first at 390 px (the design's breakpoints), has no horizontal scroll, and keeps the design's
+  accessibility (skip link, `aria-current`, `role="img"` art, 44 px targets, the sideways screens row focusable).
+  The launch-plan website items W2–W8 (PRs #10–#16, unmerged) described the previous design and are superseded
+  by this one; W3's rule that every coach call to action leads to `/founding` while sign-up in the app is off is
+  NOT in the design (its coach buttons go to the App Store): an owner decision, recorded in the PR.
+- **The brand is one file (launch plan W1, 2026-10-25; renamed 2026-10-29).** `src/web/site/brand.js` holds the
+  name (`BRAND_NAME` Benchside; `FORMER_NAME` FitLink, for the "was called" sentences), the mark letter
+  (`BRAND_MARK`, a fallback: the header draws the wordmark SVG), the founder's first name, the host and origin
+  (`SITE_HOST` benchside.coach, `SITE_ORIGIN`), the mailbox (`SUPPORT_EMAIL` hello@benchside.coach, Victor's since
+  2026-10-28; the iOS submission pack still names support@fitlink.coach), `INSTAGRAM_URL`, the operator
+  (`LEGAL_ENTITY` ORYNTLabs LLC, `LEGAL_ENTITY_STATE` New Jersey: the footer and the legal pages), the App Store id
+  and URL, the app's URL scheme (`APP_SCHEME`, still `fitlink://`: the native builds in people's hands answer it,
+  and the Benchside build answers both; re-exported by `supabase.js`), the manifest description and theme colour,
+  and the share image (`OG_IMAGE_*`). Every page, the legal text, the sign-in sentences (`appleAuth.js`), the coach
+  page and its link previews import it. `index.html` carries tokens (`__BRAND_NAME__`, `__THEME_COLOR__`) and a
+  `<!--site-head-->` marker that `vite.config.js` (`brandHtml`) fills from `brand.js` + `site/pageMeta.js`
+  (`siteHeadTags`: title, description, the Smart App Banner `apple-itunes-app`, og/twitter with the share image, NO
+  canonical in the SPA shell); a token left behind fails the build. `node --test src/web/brand.test.js` fails on any
+  name, host, mailbox or App Store address spelled outside `brand.js` (comments excepted; `pricingConfig.json` is
+  the server's byte copy). Storage keys (`fitlink-web`, `fitlink-web-*`) are NOT brand: renaming them would sign
+  everyone out and drop parked checkouts. The owner's steps outside this repo after the rename: the Apple Services
+  ID return URLs and Supabase redirect URLs on the new host, and (done 2026-10-28) `benchside.coach` on the Vercel
+  project.
 - **Numbers come from `src/web/site/pricing.js`, nowhere else, and pricing.js takes them from the server's
   config (2026-10-25).** `src/web/pricingConfig.json` is a byte-for-byte copy of fitlink-app
   `supabase/config/pricing.json` (the owner's prices, rates and dates; the server's `_shared/pricingData.ts` and
@@ -82,10 +107,10 @@ from `plans`.
   is billed a fixed number of payments and stops by itself; an open pass renews until
   cancelled; a cancelled pass keeps access to the plan until the paid time ends, and after
   that the plan "is no longer part of the pass" (never "access closes": see below). A coach
-  can also train (two modes); `Support.jsx` says so, but the Terms' "In plain words" still
-  says "either a coach or an athlete, not both" and needs the founder's wording. The contact
-  form composes a `mailto:` to `SUPPORT_EMAIL`; there is no ticket backend. The search
-  filters the page's own questions.
+  can also train (two modes); `Support.jsx` and the Terms' "In plain words" both say so since
+  2026-10-29. No page says a date of birth is collected (the app collects none: "Benchside is
+  for people aged 16 and over." is the whole answer). The contact form composes a `mailto:` to
+  `SUPPORT_EMAIL`; there is no ticket backend. The search filters the page's own questions.
 - **Delete account is a real flow** (`DeleteAccount.jsx`, helpers in `api.js`): email code
   (`signInWithOtp({ shouldCreateUser: false })` → code) or Sign in with Apple → `myRole()`
   (a `trainers` row → coach, a `clients` row → athlete, neither → `none`; a read that fails throws and the page
@@ -303,9 +328,12 @@ from `plans`.
 - **Fee engine, the web half (2026-10-25, launch plan Sprint 1 PR 1; server: fitlink-app PR #12 branch
   `launch/1-fee-engine`, migration `20261025100000`, threat model B34–B37 — NOT live yet).** Branch
   `launch/1-fee-engine-web`, stacked on `launch/2-founding` (the web Founding branch).
-  - **/pricing** (`site/Pricing.jsx`): "Free to try."; three plans in this order with the owner-locked lines
+  - **/pricing** (`site/Pricing.jsx`): since the Benchside design (2026-10-29) "Free to start." with the design's own
+    plan cards (every number still from `pricing.js`); the owner-locked one-line summaries of 2026-10-25
     (`site/planLines.js PLAN_LINES`: "Free to try. Up to 5 athletes, 10% per pass." / "$29.99/mo. 5%, no cap, your
-    assistant." / "15 spots. Elite free for a year. Closes Dec 31."); a calculator of what the coach KEEPS per month
+    assistant." / "15 spots. Elite free for a year. Closes Dec 31.") stay pinned by `pricing.test.js` but no page
+    renders them; `FOUNDING_CLOSES_LABEL` and `SIXTH_ATHLETE_RULE` from the same file are what the pages use. A
+    calculator of what the coach KEEPS per month
     on Free / Elite / Founding (`pricing.js keepsByTier`; Elite minus its subscription, monthly or yearly; Founding's
     first year has no subscription); a Founding column in the table; "Subscribe on the web; the app opens your
     dashboard". All-in pricing: on the standard plans athletes pay exactly the price the coach sets, Stripe's
@@ -631,32 +659,35 @@ from `plans`.
   `vite.config.js` keeps the PWA plugin (manifest, service worker); `index.html` carries the
   home title and description, and each page sets its own through `usePageMeta` (`meta.js`).
 - **Universal links.** `public/.well-known/apple-app-site-association` (JSON, no extension, no
-  comments) lists `applinks` for `SCJ422P9KZ.fitlink.app` with components `/i/*` and `/live/*`,
-  plus `webcredentials`. `vercel.json` gives it `Content-Type: application/json` and
+  comments) lists `applinks` for `SCJ422P9KZ.benchside.app` and `SCJ422P9KZ.fitlink.app` (the
+  Benchside build and the builds already out) with components `/i/*` and `/live/*`, plus
+  `webcredentials` for both. `vercel.json` gives it `Content-Type: application/json` and
   `Cache-Control: public, max-age=3600`, and the SPA catch-all rewrite excludes it explicitly;
   `navigateFallbackDenylist` in `vite.config.js` holds `/^\/\.well-known\//` for the same
   reason (the service worker's default `navigateFallback` is `index.html`). The iOS build
-  needs the `applinks:fitlink.coach` + `webcredentials:fitlink.coach` associated-domains
-  entitlement; Apple's CDN fetches the file
-  (`https://app-site-association.cdn-apple.com/a/v1/fitlink.coach`), so a change can take a
-  day to reach phones.
-- **Legal pages are routes, not files** (since 2026-10-16 evening; `public/terms.html`,
-  `privacy.html`, `delete-account.html` and their rewrites are gone). `/terms` is the Terms
-  of Service the app's Elite paywall and the web checkout link to; two bracketed founder
-  placeholders (legal entity in §1, governing law and venue in §15) are highlighted with
-  `<mark class="s-fill">`. `/privacy` is kept in step with fitlink-ios `docs/SUBMISSION.md`
-  (App Privacy table): Apple Health only by choice, no Health Connect, 16+, and Stripe /
-  Apple + RevenueCat / Google Gemini (the coach's assistant, after consent) / Supabase / APNs + Expo as the
-  processors. Change the table, change `privacyContent.jsx`. Every address on the site is
-  `support@fitlink.coach` (the iOS submission pack's mailbox); the getfitlink.com addresses
-  are gone. **Open, founder decision before the next Vercel deploy:** `TERMS_UPDATED`
-  (`legalMeta.js`) is 17 October 2026 and the Terms now say switching coach or deleting an
-  account ends the pass with no refund of time already paid (In plain words, §3, §4, §5,
-  §11), and that a season is billed a fixed number of payments and then stops, the plan no
-  longer being part of a pass that stopped billing (In plain words, §4). §16 promises at
-  least 14 days' notice for a material change and says the date at the top is when the
-  version took effect: either give notice and show the later effective date, or record why
-  §16's exception (required by law or a payment/platform partner) applies.
+  needs the `applinks:` + `webcredentials:` associated-domains entitlement for both hosts
+  (the Benchside build lists benchside.coach first); Apple's CDN fetches the file
+  (`https://app-site-association.cdn-apple.com/a/v1/benchside.coach`, and the same for
+  fitlink.coach), so a change can take a day to reach phones. `vercel.json` redirects every
+  path on `fitlink.coach` to `benchside.coach` (307, `permanent: false`, reversible) EXCEPT the
+  AASA file and `/api/`: Apple's CDN must read the file without a redirect. Security headers on
+  every route (nosniff, referrer-policy, permissions-policy, `X-Frame-Options: DENY`), a year's
+  immutable cache on `/fonts/`, a day on `/screens/` and `/brand/`.
+- **Legal pages are routes, not files** (since 2026-10-16 evening). `/terms` is the Terms of Service the app's
+  Elite paywall and the web checkout link to; `/privacy` is kept in step with fitlink-ios `docs/SUBMISSION.md`
+  (App Privacy table). Since 2026-10-29 both are the owner's Benchside versions (`benchside-website/_source/page_legal.py`,
+  "Last updated 29 October 2026", `legalMeta.js`): the operator is `LEGAL_ENTITY`, a `LEGAL_ENTITY_STATE` LLC, the
+  governing law and venue `LEGAL_ENTITY_STATE` (the two placeholders are gone), Coach Elite is bought through Apple
+  on every storefront and, for coaches in the United States, on the website through Stripe (each billed, managed
+  and cancelled where it was bought; a web subscription ends with the account), the Founding paragraph is in §6,
+  Vercel is named in Privacy §4, meal photo suggestions (Google Gemini, when allowed in the app) in Privacy §1 and
+  §4, no date of birth anywhere, and the "In plain words" says a coach can also train. Every address on the site is
+  `SUPPORT_EMAIL`. The content modules export `Body` (the sections, `<h2 id>` per `legalMeta.js` entry) and
+  `Plain` (the plain-words card). **Open, founder decision before the deploy:** §16 promises at least 14 days'
+  notice for a material change and says the date at the top is when the version took effect: either give notice
+  and show the later effective date, or record why §16's exception (required by law or a payment/platform partner)
+  applies. The review-pack branch `claude/terms-privacy-benchside` (PR #18) and the rename branch (PR #17) are
+  folded into this text and can be closed.
 - **Plans for sale are `archived_at is null`** (`api.js plansFor`). An archived pass stays with
   its holders and in the coach's editor list (tagged "archived"); `create-subscription`
   refuses it on the server as well. The `42703` fallback in `plansFor` exists for a deploy that

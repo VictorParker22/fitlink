@@ -1,0 +1,10 @@
+/* What the shell's root needs beyond the generated site.css (never edited by hand). The design's
+   static pages laid header, main and footer out in the document flow; the SPA renders them inside
+   one root element, which the design's stylesheet has no rule for. */
+
+/* The root is a column, so a short page (the 404, a legal page before its text is long enough)
+   still ends with the footer at the bottom of the viewport instead of a strip of canvas below it. */
+.fl-site { display: flex; flex-direction: column; min-height: 100dvh; }
+
+/* The page takes the slack; the header and the footer keep their own height. */
+.fl-site > main { flex: 1 0 auto; }

@@ -2,11 +2,11 @@
 // Pure (no React): vite.config.js writes them into index.html at build time (W1), meta.js sets them at run time.
 import { escapeHtml } from '../coachMeta.js';
 import {
-  BRAND_NAME, OG_IMAGE_ALT, OG_IMAGE_HEIGHT, OG_IMAGE_URL, OG_IMAGE_WIDTH,
+  APP_STORE_ID, BRAND_NAME, OG_IMAGE_ALT, OG_IMAGE_HEIGHT, OG_IMAGE_URL, OG_IMAGE_WIDTH,
 } from './brand.js';
 
-export const HOME_TITLE = `${BRAND_NAME} — Run your coaching business from one app`;
-export const HOME_DESCRIPTION = `${BRAND_NAME} is where independent coaches sell passes, build seasons and run their athletes’ weeks. Athletes pay on the web or in the app; Stripe pays the coach.`;
+export const HOME_TITLE = `${BRAND_NAME} — Coach people. Get paid for it.`;
+export const HOME_DESCRIPTION = `${BRAND_NAME} runs an independent coach’s business from one app: a link that sells your passes, a Monday screen that shows who needs you, and Stripe payouts to your bank. Free to start.`;
 
 /** "Pricing — FitLink"; the home page's own title for null. */
 export function pageTitle(title) {
@@ -23,6 +23,8 @@ export function siteHeadTags({ title = HOME_TITLE, description = HOME_DESCRIPTIO
   return [
     `<title>${escapeHtml(title)}</title>`,
     n('description', description),
+    // Safari's Smart App Banner: the App Store record, on every page.
+    n('apple-itunes-app', `app-id=${APP_STORE_ID}`),
     url ? `<link rel="canonical" href="${escapeHtml(url)}" />` : null,
     m('og:type', 'website'),
     m('og:site_name', BRAND_NAME),

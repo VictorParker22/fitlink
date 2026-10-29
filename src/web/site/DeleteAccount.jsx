@@ -31,6 +31,7 @@ import {
 import { APPLE_WEB_ENABLED } from '../authConfig';
 import AppleButton from '../AppleButton';
 import { usePageMeta } from './meta';
+import './forms.css';
 import { BRAND_NAME, SUPPORT_EMAIL } from './brand';
 
 const STEP = { email: 'email', code: 'code', loading: 'loading', confirm: 'confirm', deleting: 'deleting', done: 'done' };
