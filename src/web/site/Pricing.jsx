@@ -30,7 +30,7 @@ import Faq from './Faq';
 import { Display, FinalCta, Kicker, LinkArrow } from './Pieces';
 import { usePageMeta } from './meta';
 import { useWebEliteOffered } from '../useWebEliteOffered';
-import { APP_STORE_URL, BRAND_NAME } from './brand';
+import { BRAND_NAME } from './brand';
 import { FOUNDING_CLOSES_LABEL, SIXTH_ATHLETE_RULE } from './planLines';
 import {
   DISPUTE_FEE_USD, ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, FOUNDING_FEE_PERCENT,
@@ -120,11 +120,11 @@ export default function Pricing() {
               <div className="fee"><b>{STANDARD_FEE_PERCENT}%</b> per pass sold · up to {FREE_ROSTER_CAP} paying athletes</div>
               <ul>
                 <li>Your coaching page and passes: monthly, yearly or a season</li>
-                <li>Checkout on the web and in the app, payouts through Stripe</li>
+                <li>Athletes pay on your page; payouts through Stripe</li>
                 <li>Workout builder, seasons and the season editor on the web</li>
                 <li>Check-ins, messages and athlete progress</li>
               </ul>
-              <a className="btn btn-ghost" href={APP_STORE_URL}>Start free in the app</a>
+              <Link className="btn btn-ghost" to="/founding">Start free</Link>
               <p className="plan-foot">{SIXTH_RULE}</p>
             </article>
             <article className="plan featured">
@@ -139,8 +139,8 @@ export default function Pricing() {
               </ul>
               {webElite === false ? (
                 <>
-                  <a className="btn btn-lime" href={APP_STORE_URL}>Get it in the app</a>
-                  <p className="plan-foot">Outside the United States, Coach Elite is sold in the app through the App Store.</p>
+                  <Link className="btn btn-lime" to="/founding">Apply for a Founding spot</Link>
+                  <p className="plan-foot">Outside the United States, Coach Elite is bought in the app once it is in the App Store. Founding coaches get it free for {foundingFreeWords()}.</p>
                 </>
               ) : (
                 <>

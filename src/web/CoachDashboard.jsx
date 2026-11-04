@@ -23,7 +23,7 @@ import {
 } from './coachMoney';
 import { usePageMeta } from './site/meta';
 import CoachPagePanel from './CoachPagePanel';
-import { APP_STORE_URL, BRAND_NAME } from './site/brand';
+import { BRAND_NAME } from './site/brand';
 import { eliteElsewhereWords } from './eliteRegion';
 import { useWebEliteOffered } from './useWebEliteOffered';
 
@@ -178,7 +178,7 @@ function ElitePanel({ ret }) {
       {v.canBuy && v.buy && offeredHere === false && (
         <>
           <p className="fl-elite-line fl-elite-offer">{eliteElsewhereWords(BRAND_NAME)}</p>
-          <div className="fl-btnrow"><a className="fl-btn lg accent" href={APP_STORE_URL}>Get the app</a></div>
+          <div className="fl-btnrow"><Link className="fl-btn lg accent" to="/founding">Apply for a Founding spot</Link></div>
         </>
       )}
       {/* While Stripe is confirming a checkout that just went through, no second one. */}

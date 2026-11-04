@@ -27,7 +27,9 @@ from `plans`.
 
 - **The site is the Benchside design (2026-10-29; the owner's static reference site `benchside-website`, its
   `HANDOFF.md` the brief).** Same routes, new pages: `SiteShell.jsx` (the sticky header with the wordmark SVG
-  `/brand/wordmark.svg`, Pricing / For athletes / Help, Sign in → `/coach`, "Get the app" → the App Store, the
+  `/brand/wordmark.svg`, Pricing / For athletes / Help, Sign in → `/coach`, "Claim a Founding spot" → `/founding` (since 2026-11-04;
+  `APP_STORE_LIVE` in `brand.js` is false because the store record answers 404, so no coach button and no Smart App
+  Banner names the store; the athletes page keeps its store link), the
   mobile sheet menu with `aria-expanded`, the `scrolled` hairline, the skip link, `<main id="main">`, the ink
   footer with four columns and the operator line; it adds `js` to `<html>` and runs `reveal.js useReveal()` so
   every `.reveal` fades up once, only without reduced motion), `Pieces.jsx` (`Phone` = a design-kit screen from
@@ -60,7 +62,8 @@ from `plans`.
   accessibility (skip link, `aria-current`, `role="img"` art, 44 px targets, the sideways screens row focusable).
   The launch-plan website items W2–W8 (PRs #10–#16, unmerged) described the previous design and are superseded
   by this one; W3's rule that every coach call to action leads to `/founding` while sign-up in the app is off is
-  NOT in the design (its coach buttons go to the App Store): an owner decision, recorded in the PR.
+  NOT in the design (its coach buttons went to the App Store); since 2026-11-04 every coach button goes to `/founding`
+  as W3 and decision R4 say, and `FinalCta` takes `cta` / `to` / `href` so the athletes page keeps the store link.
 - **The brand is one file (launch plan W1, 2026-10-25; renamed 2026-10-29).** `src/web/site/brand.js` holds the
   name (`BRAND_NAME` Benchside; `FORMER_NAME` FitLink, for the "was called" sentences), the mark letter
   (`BRAND_MARK`, a fallback: the header draws the wordmark SVG), the founder's first name, the host and origin

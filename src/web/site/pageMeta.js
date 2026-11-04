@@ -2,7 +2,7 @@
 // Pure (no React): vite.config.js writes them into index.html at build time (W1), meta.js sets them at run time.
 import { escapeHtml } from '../coachMeta.js';
 import {
-  APP_STORE_ID, BRAND_NAME, OG_IMAGE_ALT, OG_IMAGE_HEIGHT, OG_IMAGE_URL, OG_IMAGE_WIDTH,
+  APP_STORE_ID, APP_STORE_LIVE, BRAND_NAME, OG_IMAGE_ALT, OG_IMAGE_HEIGHT, OG_IMAGE_URL, OG_IMAGE_WIDTH,
 } from './brand.js';
 
 export const HOME_TITLE = `${BRAND_NAME} — Coach people. Get paid for it.`;
@@ -23,8 +23,8 @@ export function siteHeadTags({ title = HOME_TITLE, description = HOME_DESCRIPTIO
   return [
     `<title>${escapeHtml(title)}</title>`,
     n('description', description),
-    // Safari's Smart App Banner: the App Store record, on every page.
-    n('apple-itunes-app', `app-id=${APP_STORE_ID}`),
+    // Safari's Smart App Banner: the App Store record, on every page, once it is published.
+    APP_STORE_LIVE ? n('apple-itunes-app', `app-id=${APP_STORE_ID}`) : null,
     url ? `<link rel="canonical" href="${escapeHtml(url)}" />` : null,
     m('og:type', 'website'),
     m('og:site_name', BRAND_NAME),

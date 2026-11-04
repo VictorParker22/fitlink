@@ -98,7 +98,7 @@ export default function Athletes() {
         </div>
       </section>
 
-      <FinalCta title="Ready to train?" note="iPhone only for now. Buying a pass works in any browser." art="athlete-done" alt="Workout done screen" />
+      <FinalCta title="Ready to train?" note="iPhone only for now. Buying a pass works in any browser." art="athlete-done" alt="Workout done screen" cta={`Get ${BRAND_NAME} for iPhone`} href={APP_STORE_URL} />
     </>
   );
 }

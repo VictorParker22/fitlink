@@ -34,6 +34,12 @@ export const LEGAL_ENTITY_STATE = 'New Jersey';
 /** App Store Connect's app id: the rename makes a NEW App Store Connect record (decision L2), so a new id. */
 export const APP_STORE_ID = '6779058450';
 export const APP_STORE_URL = `https://apps.apple.com/app/id${APP_STORE_ID}`;
+/**
+ * Whether the App Store record is published. It is not (2026-11-04: the address answers 404; the FitLink build was
+ * never released and the Benchside record does not exist yet), so the Smart App Banner stays off and no coach button
+ * points at the store: coaches join on the web at /founding (owner decision R4). Flip to true when the record is live.
+ */
+export const APP_STORE_LIVE = false;
 /** The iOS app's URL scheme (invite hand-off from the web, "Open the app"). Changes with the bundle id. */
 export const APP_SCHEME = 'fitlink://';
 
