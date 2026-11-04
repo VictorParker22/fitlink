@@ -3,7 +3,6 @@
 // The markup and the words are the design's; every number is pricing.js's (the server's config);
 // the name, host and store address are brand.js's. Pages import from here and never redraw one.
 import { Link } from 'react-router-dom';
-import { APP_STORE_URL, BRAND_NAME, SITE_HOST } from './brand';
 import {
   ELITE_FEE_PERCENT, ELITE_MONTHLY_USD, ELITE_YEARLY_USD, FOUNDING_FEE_PERCENT, FOUNDING_SLOTS, FREE_ROSTER_CAP,
   STANDARD_FEE_PERCENT, foundingFreeWords, usd,
@@ -35,16 +34,21 @@ export function Phone({ name, alt, className, eager = false, style }) {
 /** The violet closing band with the one lime button. Defaults are the design's. */
 export function FinalCta({
   title = 'Your next athlete is one link away.',
-  note = `On a computer? Open ${SITE_HOST} on your iPhone and tap Get the app.`,
+  note = `${FOUNDING_SLOTS} coaches get Coach Elite free for ${foundingFreeWords()}. Applications close ${FOUNDING_CLOSES_LABEL}.`,
   art = 'coach-live',
   alt = 'A coach’s page is live, with a link to share',
+  cta = 'Claim a Founding spot',
+  to = '/founding',
+  href = null,
 }) {
   return (
     <section className="final on-violet pad">
       <div className="wrap">
         <div className="final-copy">
           <h2 className="display d-xl">{title}</h2>
-          <a className="btn btn-lime" href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>
+          {href
+            ? <a className="btn btn-lime" href={href}>{cta}</a>
+            : <Link className="btn btn-lime" to={to}>{cta}</Link>}
           <p className="small" style={{ color: '#F1ECFF' }}>{note}</p>
         </div>
         <div className="final-art" aria-hidden="true"><Phone name={art} alt={alt} /></div>
@@ -71,7 +75,7 @@ export function PlansShort() {
           <li>Programs, check-ins and messages</li>
           <li>Up to {FREE_ROSTER_CAP} paying athletes</li>
         </ul>
-        <a className="btn btn-ghost" href={APP_STORE_URL}>Start free in the app</a>
+        <Link className="btn btn-ghost" to="/founding">Start free</Link>
       </article>
       <article className="plan featured">
         <div className="plan-name">Coach Elite <span className="badge">{eliteBadge}</span></div>
@@ -86,7 +90,7 @@ export function PlansShort() {
           <li>Your assistant drafts replies, you approve</li>
         </ul>
         {webElite === false
-          ? <a className="btn btn-lime" href={APP_STORE_URL}>Get it in the app</a>
+          ? <Link className="btn btn-lime" to="/founding">Apply for a Founding spot</Link>
           : <Link className="btn btn-lime" to="/coach">Subscribe on the web</Link>}
       </article>
       <article className="plan">

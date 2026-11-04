@@ -4,13 +4,14 @@
 // pricing.js, the sign-in sentence from siteCopy(), and the shared pieces
 // (phones, steps, plans, the final CTA) from Pieces.jsx. The receipt's figures
 // are arithmetic from one sample price and the fee percents, never typed.
+import { Link } from 'react-router-dom';
 import Faq from './Faq';
 import { Display, FinalCta, Kicker, LinkArrow, Phone, PlansShort, Reveal, Steps } from './Pieces';
 import { usePageMeta } from './meta';
 import { ELITE_FEE_PERCENT, STANDARD_FEE_PERCENT, usd } from './pricing';
 import { siteCopy } from '../appleAuth';
 import { APPLE_WEB_ENABLED } from '../authConfig';
-import { APP_STORE_URL, BRAND_NAME, SITE_HOST } from './brand';
+import { BRAND_NAME, SITE_HOST } from './brand';
 
 /** The Money feature's receipt: one pass at this price, the fees from pricing.js. */
 const SAMPLE_PASS_PRICE = 120;
@@ -74,7 +75,7 @@ export default function Home() {
             </Display>
             <p className="lede">{BRAND_NAME} runs the business side of coaching. One link sells your passes, one screen shows who needs you on Monday, and Stripe pays you out to your bank.</p>
             <div className="hero-actions">
-              <a className="btn btn-primary" href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>
+              <Link className="btn btn-primary" to="/founding">Claim a Founding spot</Link>
               <LinkArrow to="/pricing">See pricing</LinkArrow>
             </div>
             <p className="hero-note">Free to start. {BRAND_NAME} only earns when an athlete pays you: {STANDARD_FEE_PERCENT}% of the pass, and Stripe’s card fees come out of our share, not yours.</p>

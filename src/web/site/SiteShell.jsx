@@ -1,7 +1,7 @@
 // The shell every marketing and policy page shares, from the design's common.py header() and
 // footer() and site.js (the sheet menu, the scrolled hairline, the reveal): the skip link, the
-// sticky header with the wordmark, Pricing / For athletes / Help, Sign in and the App Store
-// button, the mobile sheet menu, <main id="main"> with the page, and the ink footer with four
+// sticky header with the wordmark, Pricing / For athletes / Help, Sign in and the Founding
+// button (coaches join on the web, decision R4; the App Store record is not published), the mobile sheet menu, <main id="main"> with the page, and the ink footer with four
 // columns and the operator line. Scroll-to-top on navigation, the body class that keeps overscroll
 // the canvas colour, and the reveal observer for every page's `.reveal`.
 import { useEffect, useRef, useState } from 'react';
@@ -12,9 +12,7 @@ import { takeAuthReturnNote } from '../api';
 import '../web.css';
 import './site.css';
 import './shell.css';
-import {
-  APP_STORE_URL, BRAND_NAME, INSTAGRAM_URL, LEGAL_ENTITY, LEGAL_ENTITY_STATE, SUPPORT_EMAIL,
-} from './brand';
+import { BRAND_NAME, INSTAGRAM_URL, LEGAL_ENTITY, LEGAL_ENTITY_STATE, SUPPORT_EMAIL } from './brand';
 import { FOUNDING_SLOTS } from './pricing';
 
 const NAV = [
@@ -75,7 +73,7 @@ function HeaderChrome() {
           <Link className="signin" to="/coach">Sign in</Link>
         </nav>
         <div className="header-cta">
-          <a className="btn btn-primary btn-sm" href={APP_STORE_URL}>Get the app</a>
+          <Link className="btn btn-primary btn-sm" to="/founding">Claim a Founding spot</Link>
           <button
             className="menu-btn"
             type="button"
@@ -91,7 +89,7 @@ function HeaderChrome() {
       <nav className={open ? 'mobile-nav open' : 'mobile-nav'} id="mobile-nav" aria-label="Main" onClick={onSheetClick}>
         {NAV.map(({ to, label }) => <Link key={to} to={to}>{label}<span aria-hidden="true">→</span></Link>)}
         <Link to="/coach">Coach sign in<span aria-hidden="true">→</span></Link>
-        <a className="btn btn-primary" href={APP_STORE_URL}>Get {BRAND_NAME} for iPhone</a>
+        <Link className="btn btn-primary" to="/founding">Claim a Founding spot</Link>
       </nav>
     </>
   );
@@ -132,7 +130,6 @@ export function SiteFooter() {
               <li><Link to="/pricing">Pricing</Link></li>
               <li><Link to="/athletes">For athletes</Link></li>
               <li><Link to="/founding">Founding {FOUNDING_SLOTS}</Link></li>
-              <li><a href={APP_STORE_URL}>Get the app</a></li>
             </ul>
           </div>
           <div className="foot-col">
